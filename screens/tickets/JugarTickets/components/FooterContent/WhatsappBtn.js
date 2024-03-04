@@ -1,14 +1,15 @@
 import React from 'react';
 import {IconButton, TextInput} from 'react-native-paper';
-import {Colors, Utils} from '../../../../../utils';
+import {Colors, Helpers, Utils} from '../../../../../utils';
 import {CustomModal} from '../../../../../components';
 import {useCustomNavigation, useLogout, useModal} from '../../../../../hooks';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
-import {Linking, Text} from 'react-native';
+import {Linking} from 'react-native';
 import {registrarTicket} from '../../../../../services/tickets';
 import {useDispatch, useSelector} from 'react-redux';
+import {Text} from 'react-native';
 import {ERROR_CODE_NAMES} from '../../../../../errors';
 import {
   restarCredito,
@@ -67,7 +68,7 @@ export default function WhatsappBtn() {
         error: (
           <Text>
             Parece que no tienes Whatsapp instalado, por favor instalalo y
-            vuleve a intentar.
+            vuelve a intentar.
           </Text>
         ),
       });
@@ -208,7 +209,7 @@ export default function WhatsappBtn() {
         disabled={jugadas.length <= 0}
         icon="whatsapp"
         iconColor={Colors.green}
-        size={30}
+        size={40}
         onPress={handleCompartir}
         style={{margin: 0}}
       />

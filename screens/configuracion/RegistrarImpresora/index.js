@@ -7,8 +7,13 @@ import {
   registerDevice,
   setScanning,
 } from '../../../features/bluetooth/bluetoothSlice';
-import {useBluetooth, useCustomNavigation, usePrinter} from '../../../hooks';
-import {Colors} from '../../../utils';
+import {
+  useBluetooth,
+  useCustomNavigation,
+  usePrinter,
+  useThermalPrinter,
+} from '../../../hooks';
+import {Colors, Print} from '../../../utils';
 import MessageIconBox from '../../../components/MessageIconBox';
 
 export default function RegistrarImpresora() {
@@ -18,6 +23,7 @@ export default function RegistrarImpresora() {
   );
   const bluetooth = useBluetooth();
   const printer = usePrinter();
+  const thermalPrinter = useThermalPrinter();
   const dispatch = useDispatch();
   // START BLUETOOTH CONNECTION AND REQUEST PERMISSIONS
   useEffect(() => {
@@ -54,6 +60,19 @@ export default function RegistrarImpresora() {
     }
   };
 
+  const handlePrint = async () => {
+    try {
+      const isPrintingPossible = await thermalPrinter.isPrintingPossible();
+      if (isPrintingPossible) {
+        await thermalPrinter.print(async function () {
+          await Print.test();
+        });
+      }
+    } catch ({message}) {
+      console.log(message);
+    }
+  };
+
   return (
     <Container>
       {isFocused && <StatusBar backgroundColor={Colors.dark} />}
@@ -87,7 +106,7 @@ export default function RegistrarImpresora() {
             alignItems: 'center',
           }}>
           <Appbar.Action icon="map-search" onPress={handleScanDevices} />
-          {/* <Appbar.Action icon="printer" /> */}
+          {/* <Appbar.Action icon="printer" onPress={handlePrint} /> */}
         </View>
       </Footer>
     </Container>
@@ -125,13 +144,15 @@ function CustomListItem({peripheral}) {
   const bluetooth = useBluetooth();
 
   return (
-    <List.Item
-      onPress={async () => {
-        await bluetooth.connectAndRegisterDevice(peripheral);
-      }}
-      title={bluetooth.getDeviceName(peripheral)}
-      description={connectingToDevice ? 'conectando...' : undefined}
-      left={() => <List.Icon color="#000" icon="printer" />}
-    />
+    <>
+      <List.Item
+        onPress={async () => {
+          await bluetooth.connectAndRegisterDevice(peripheral);
+        }}
+        title={bluetooth.getDeviceName(peripheral)}
+        description={connectingToDevice ? 'conectando...' : undefined}
+        left={() => <List.Icon color="#000" icon="printer" />}
+      />
+    </>
   );
 }

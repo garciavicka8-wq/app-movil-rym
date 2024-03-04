@@ -4,35 +4,24 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   TouchableWithoutFeedback,
 } from 'react-native';
 import {Button, IconButton} from 'react-native-paper';
 import {Colors, Moment, Print, Utils} from '../../../../utils';
 import {useDispatch, useSelector} from 'react-redux';
-import {
-  useAlert,
-  useBluetooth,
-  useCustomNavigation,
-  useModal,
-  usePrinter,
-} from '../../../../hooks';
-import {APP_NAVIGATION} from '../../../../constants';
+import {useModal, useThermalPrinter} from '../../../../hooks';
 import Database from '../../../../database';
 import {CustomModal} from '../../../../components';
 import {setRegistrosAlMomento} from '../../../../features/tickets/cliente/clienteSlice';
 import CancelarTicketDialog from './CancelarTicketDialog';
-import {ERROR_NAMES} from '../../../../errors';
+import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../errors';
 
 export default function CollapsedTotal() {
   const [showList, setShowList] = useState(true);
   const {registrosAlMomento} = useSelector(state => state.cliente);
   const dispatch = useDispatch();
-  const navigation = useCustomNavigation();
   const modal = useModal();
-  const bluetooth = useBluetooth();
-  const printer = usePrinter();
-  const alert = useAlert();
+  const thermalPrinter = useThermalPrinter();
   const total = registrosAlMomento.reduce(
     (acc, b) => acc + parseInt(b.total),
     0,
@@ -54,38 +43,42 @@ export default function CollapsedTotal() {
 
   const handlePrint = async () => {
     try {
-      // VERIFICAR SI SE REGISTRO UNA IMPRESORA
-      const registeredPrinter = await printer.getPrinterRegistered();
-      if (registeredPrinter === null) {
-        throw new Error(ERROR_NAMES.PRINTER_NOT_REGISTERED);
-      }
-      // VERIFICAR SI ESTA ACTIVO EL BLUETOOTH
-      const isBluetoothEnabled = await bluetooth.isEnabled();
-      if (!isBluetoothEnabled) {
-        throw new Error(ERROR_NAMES.BLUETOOTH_NOT_ENABLED);
-      }
       modal.setConfig({
         open: true,
         type: 'progress',
         progressTitle: 'Imprimiendo',
       });
-      // REGISTRAMOS BOLETO
-      printTotal();
+      const isPrintingPossible = await thermalPrinter.isPrintingPossible();
+      if (isPrintingPossible) {
+        printTotal();
+      }
     } catch ({message}) {
-      modal.setConfig({open: false});
-      if (message === ERROR_NAMES.PRINTER_NOT_REGISTERED) {
-        alert.show(message, function () {
-          navigation.navigate(APP_NAVIGATION.TABS.CONFIG);
-        });
+      if (
+        message === 'DEVICE_NOT_LINKED' ||
+        message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
+        message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
+      ) {
+        logout();
         return;
       }
-      if (message === ERROR_NAMES.BLUETOOTH_NOT_ENABLED) {
-        alert.show(message, async function () {
-          await bluetooth.enable();
-        });
+      if (message === 'PRINTING_NOT_POSSIBLE') {
+        modal.setConfig({open: false});
         return;
       }
-      Alert.alert('Mensaje', message);
+      modal.setConfig({
+        type: 'alert',
+        alertTitle: 'Mensaje',
+        contentType: 'error',
+        action: 'error',
+        showCancelBtn: false,
+        error: (
+          <Text>
+            {message === ERROR_NAMES.CONNECTING_DEVICE_FAILED
+              ? 'verifica que la impresora este encendida'
+              : message}
+          </Text>
+        ),
+      });
     }
   };
 
@@ -93,12 +86,9 @@ export default function CollapsedTotal() {
     try {
       const timestamp = await Database.getServerDate();
       // IMPRIMIR
-      const totalAccumulatedShape = Print.totalAccumulated(
-        timestamp,
-        total,
-        registrosAlMomento,
-      );
-      await printer.print(totalAccumulatedShape);
+      await thermalPrinter.print(async function () {
+        await Print.totalAccumulated(timestamp, total, registrosAlMomento);
+      });
       modal.setConfig({open: false});
     } catch ({message}) {
       modal.setConfig({

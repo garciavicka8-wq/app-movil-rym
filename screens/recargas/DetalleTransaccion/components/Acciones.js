@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, Text, View, Alert} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import {Col, Row} from 'react-native-easy-grid';
 import {Button} from 'react-native-paper';
 import {
@@ -10,11 +10,10 @@ import {
 import {CustomInput, CustomModal} from '../../../../components';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {sendTransactionReceipt} from '../../../../services/taecel';
+import {enviarComprobanteTransaccion} from '../../../../services/taecel';
 import {useSelector} from 'react-redux';
 import {Helpers, Print, Storage} from '../../../../utils';
 import {APP_NAVIGATION} from '../../../../constants';
-import {ERROR_NAMES} from '../../../../errors';
 
 export default function Acciones({shareWhatsappBtn = null}) {
   const {transaccionStore} = useSelector(state => state.taecel);
@@ -36,7 +35,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
           type: 'progress',
           progressTitle: 'Enviando',
         });
-        const usuario = Storage.getItem('usuario', true);
+        const usuario = await Storage.get('usuario', true);
         let comision = Helpers.sumWithDecimals(
           transaccionStore.Cargo,
           transaccionStore.Comision,
@@ -48,7 +47,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
               ? transaccionStore._comisionRecargas
               : Money(2);
         }
-        const mensajeEnviado = await sendTransactionReceipt({
+        const mensajeEnviado = await enviarComprobanteTransaccion({
           correo: data.correo,
           status: transaccionStore.Status,
           monto: transaccionStore.Monto,
@@ -120,6 +119,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
     });
   };
   //   IMPRIMIR COMPROBANTE
+  //   IMPRIMIR COMPROBANTE
   const imprimir = async () => {
     try {
       if (!thermalPrinter.isPrinting) {
@@ -131,9 +131,9 @@ export default function Acciones({shareWhatsappBtn = null}) {
         const isPrintingPossible = await thermalPrinter.isPrintingPossible();
         if (isPrintingPossible) {
           // IMPRIMIR COMPROBANTE
-          await thermalPrinter.print(
-            Print.transactionReceipt(transaccionStore),
-          );
+          await thermalPrinter.print(async function () {
+            await Print.transactionReceipt(transaccionStore);
+          });
           modal.setConfig({open: false});
         }
       }
@@ -166,9 +166,11 @@ export default function Acciones({shareWhatsappBtn = null}) {
       modal.setConfig({open: false});
     }
   };
-  const terminar = () => {
+
+  const terminar = async () => {
+    // Utils.setLoginTime();
     modal.setConfig({open: false});
-    navigation.resetStack(APP_NAVIGATION.TABS.RECARGAS);
+    navigation.resetStack(APP_NAVIGATION.SCREENS.RECARGAS_MENU);
   };
 
   if (transaccionStore.Status !== 'Exitosa') {

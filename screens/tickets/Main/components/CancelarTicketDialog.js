@@ -78,12 +78,14 @@ export default function CancelarTicketDialog({numeroBoleto, via, closeDialog}) {
         tipo: 'cancelado',
       }),
     );
-    setAlertMessage('El ticket se canceló correctamente');
-    setOpenSnackbar(true);
-    setOpenDialog(false);
     setTimeout(() => {
-      closeDialog();
-    }, 3000);
+      setAlertMessage('El ticket se canceló correctamente');
+      setOpenSnackbar(true);
+      setOpenDialog(false);
+      setTimeout(() => {
+        closeDialog();
+      }, 3000);
+    }, 5000);
   };
 
   const handleChange = value => {

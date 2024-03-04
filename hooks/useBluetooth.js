@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import BleManager from 'react-native-ble-manager';
 import {isLocationEnabled as isLocationOn} from 'react-native-device-info';
+import {BluetoothManager as BM} from 'tp-react-native-bluetooth-printer';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   addDevice,
@@ -97,7 +98,8 @@ export function useBluetooth() {
         PRINTER_NAMES.includes(device.name)
       ) {
         dispatch(setConnectingToDevice(true));
-        await BleManager.connect(device.id);
+        // await BleManager.connect(device.id);
+        await BM.connect(device.id);
         dispatch(setConnectingToDevice(false));
       }
     } catch ({message}) {
@@ -124,7 +126,8 @@ export function useBluetooth() {
                     PRINTER_NAMES.includes(device.name)
                   ) {
                     dispatch(setConnectingToDevice(true));
-                    await BleManager.connect(device.id);
+                    // await BleManager.connect(device.id);
+                    await BM.connect(device.id);
                     dispatch(setConnectingToDevice(false));
                     Storage.setItem('printer', device, true);
                     dispatch(registerDevice({...device}));
@@ -219,10 +222,8 @@ export function useBluetooth() {
   //   DISCONECT DEVICE
   const disconnectDevice = async (device, clearFromStorage = false) => {
     try {
-      const deviceConnected = await isDeviceConnected(device.id);
-      if (deviceConnected) {
-        await BleManager.disconnect(device.id);
-      }
+      await BM.unpair(device.id);
+      // console.log('unpaired');
       if (clearFromStorage) {
         Storage.removeItem('printer');
         dispatch(registerDevice(null));

@@ -162,7 +162,9 @@ function RegistrarButton() {
             tipo: 'boleto',
           }),
         );
-        await thermalPrinter.print(Print.ticket(boletoRegistrado, true));
+        await thermalPrinter.print(async function () {
+          await Print.ticket(boletoRegistrado, true);
+        });
         modal.setConfig({open: false});
         navigation.goBack();
       }

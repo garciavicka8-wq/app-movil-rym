@@ -1,15 +1,8 @@
 import React, {useEffect} from 'react';
-import {
-  useAlert,
-  useBluetooth,
-  useCustomNavigation,
-  useModal,
-  useThermalPrinter,
-} from '../../../../../hooks';
-import {APP_NAVIGATION} from '../../../../../constants';
+import {useModal, useThermalPrinter} from '../../../../../hooks';
 import Database from '../../../../../database';
 import {Colors, Moment, Money, Print, Utils} from '../../../../../utils';
-import {Alert, StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import {Container, Content} from '../../../../../components/Layout';
 import TicketSection from './TicketSection';
 import CustomRow from './CustomRow';
@@ -88,11 +81,12 @@ export default function EstadoSemanal() {
   const imprimirLiquidacion = async () => {
     try {
       const timestamp = await Database.getServerDate();
-      const structure = Print.accountStatus({
-        ...accountStatus,
-        fechaExp: Moment(timestamp).format('YYYY-MM-DD HH:mm:ss'),
+      await thermalPrinter.print(async function () {
+        await Print.accountStatus({
+          ...accountStatus,
+          fechaExp: Moment(timestamp).format('YYYY-MM-DD HH:mm:ss'),
+        });
       });
-      await thermalPrinter.print(structure);
       modal.setConfig({open: false});
     } catch ({message}) {
       // console.log(message);

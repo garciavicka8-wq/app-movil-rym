@@ -87,7 +87,9 @@ export default function CompartirButton() {
               tipo: 'boleto',
             }),
           );
-          await thermalPrinter.print(Print.ticket(boletoRegistrado));
+          await thermalPrinter.print(async function () {
+            await Print.ticket(boletoRegistrado);
+          });
           modal.setConfig({open: false});
           navigation.goBack();
         }

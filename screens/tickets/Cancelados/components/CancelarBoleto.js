@@ -65,7 +65,9 @@ export default function CancelarBoleto() {
         // SI SE CANCELO CORRECTAMENTE
         if (boletoCancelado) {
           // IMPRIMIR COMPROBANTE CANCELACION
-          await thermalPrinter.print(Print.canceledTicket(boletoCancelado));
+          await thermalPrinter.print(async function () {
+            await Print.canceledTicket(boletoCancelado);
+          });
           modal.setConfig({
             type: 'alert',
             alertTitle: 'Boleto cancelado',

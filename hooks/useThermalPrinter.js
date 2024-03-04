@@ -1,12 +1,11 @@
 import {useState} from 'react';
+import {Alert} from 'react-native';
 import {APP_NAVIGATION} from '../constants';
 import {ERROR_NAMES} from '../errors';
 import {useAlert} from './useAlert';
 import {useBluetooth} from './useBluetooth';
 import {useCustomNavigation} from './useCustomNavigation';
 import {usePrinter} from './usePrinter';
-import ThermalPrinterModule from 'react-native-thermal-printer';
-import {Alert} from 'react-native';
 
 export function useThermalPrinter() {
   const [isPrinting, setIsPrinting] = useState(false);
@@ -27,6 +26,7 @@ export function useThermalPrinter() {
       }
       //   CONNECT TO DEVICE
       await bluetooth.connectToDevice(storage_printer);
+      // await BM.connect(storage_printer.id);
       return true;
     } catch ({message}) {
       if (message === ERROR_NAMES.PRINTER_NOT_REGISTERED) {
@@ -54,22 +54,8 @@ export function useThermalPrinter() {
   const print = async content => {
     try {
       if (!isPrinting) {
-        // console.log('printing');
         setIsPrinting(true);
-        const storage_printer = printer.getPrinterRegistered();
-        //   CONNECT TO DEVICE
-        // await bluetooth.connectToDevice(storage_printer);
-        await ThermalPrinterModule.printBluetooth({
-          ...ThermalPrinterModule.defaultConfig,
-          ip: storage_printer.id,
-          payload: content,
-          // printerWidthMM: 80,
-          printerWidthMM: 48,
-          mmFeedPaper: 0,
-          // printerNbrCharactersPerLine: 42,
-          // printerNbrCharactersPerLine: 40,
-        });
-        // await bluetooth.disconnectDevice(storage_printer);
+        await content();
         setIsPrinting(false);
       }
     } catch ({message}) {

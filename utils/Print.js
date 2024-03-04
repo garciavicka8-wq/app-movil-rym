@@ -1,268 +1,451 @@
-import {Moment, Utils} from '.';
+import {ToastAndroid} from 'react-native';
+import {Moment, Storage, Utils} from '.';
 import Helpers from './Helpers';
 import Money from './Money';
+import {
+  BluetoothEscposPrinter as BEP,
+  ALIGN,
+  ERROR_CORRECTION,
+} from 'tp-react-native-bluetooth-printer';
+import {
+  LOGO_BASE64,
+  LOGO_MAGICO_BASE64,
+  PRINT_TABLE,
+  PRINT_TABLE_HEADER,
+} from '../constants';
 const LOGO_URL =
   'https://recargasymas.com.mx/wp-content/uploads/2023/10/logo-ticket-100.jpg';
+// SECCIONES AJUSTADAS
+// REPORTE
+// TICKET PLUS | MAGICO
+// COMPROBANTE TRANSACCION
+// CANCELAR BOLETO
+// TOTAL ACUMULADO
+// PAGO PREMIO
 
 const Print = (() => {
   // TRANSACTION RECEIPT
-  const transactionReceipt = transaccion => {
-    const LINE_SEPARATOR = Utils.generateLineSeparator(28, '-');
-    let comision = Helpers.sumWithDecimals(
-      transaccion.Cargo,
-      transaccion.Comision,
-    );
-    // SI ES RECARGA
-    if (['1', '2'].includes(transaccion.CategoriaID)) {
-      comision =
-        transaccion._comisionRecargas !== undefined
-          ? transaccion._comisionRecargas
-          : Money(2);
+  const transactionReceipt = async transaccion => {
+    try {
+      let comision = Helpers.sumWithDecimals(
+        transaccion.Cargo,
+        transaccion.Comision,
+      );
+      // SI ES RECARGA
+      if (['1', '2'].includes(transaccion.CategoriaID)) {
+        comision =
+          transaccion._comisionRecargas !== undefined
+            ? transaccion._comisionRecargas
+            : Money(2);
+      }
+      const totalPagar = Helpers.sumWithDecimals(transaccion.Monto, comision);
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`Comprobante transaccion\n\r`, {});
+      await BEP.printText(`${transaccion.Status}\n\r`, {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      await BEP.printText('################################\n\r', {});
+      await BEP.printText(`Fecha: ${transaccion.Fecha}\n\r`, {});
+      await BEP.printText(`TransID: ${transaccion.TransID}\n\r`, {});
+      await BEP.printText(`Folio: ${transaccion.Folio}\n\r`, {});
+      await BEP.printText(`Prov.: ${transaccion.Carrier}\n\r`, {});
+      await BEP.printText(`Bolsa: ${transaccion.Bolsa}\n\r`, {});
+      await BEP.printText(`Ref.: ${transaccion.Telefono}\n\r`, {});
+      if (transaccion.CategoriaID == '4') {
+        await BEP.printText(`Codigo: ${transaccion.pin}\n\r`, {});
+      }
+      await BEP.printText(`Monto: ${transaccion.Monto}\n\r`, {});
+      await BEP.printText(`Comision: ${comision}\n\r`, {});
+      await BEP.printText(`Total: ${totalPagar}\n\r`, {});
+      await BEP.printText('################################\n\r', {});
+      // SOLO SI TIENE LA DESCRIPCION DEL PRODUCTO
+      // if (transaccion.descripcionProducto !== undefined) {
+      //   await BEP.printText(`${transaccion.descripcionProducto}\n\r`, {});
+      // }
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`Gracias Por Su Preferencia\n\r`, {});
+      await BEP.printText(`www.recargasymas.com.mx\n\r`, {});
+      await BEP.printText('\n\r\n\r\n\r', {});
+    } catch (error) {
+      // console.log('error al imprimir', error);
+      ToastAndroid.show('Error: impresora no conectada', ToastAndroid.LONG);
     }
-    const totalPagar = Helpers.sumWithDecimals(transaccion.Monto, comision);
-    //   CONTENT
-    let receipContent = `[C]<img>${LOGO_URL}</img>\n`;
-    receipContent += `[C]<font size='normal'>Comprobante transaccion</font>\n`;
-    receipContent += `[C]<font size='normal'>${transaccion.Status}</font>\n`;
-    receipContent += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    receipContent += `[L]<font size='normal'>Fecha: ${transaccion.Fecha}</font>\n`;
-    receipContent += `[L]<font size='normal'>TransID: ${transaccion.TransID}</font>\n`;
-    receipContent += `[L]<font size='normal'>Folio: ${transaccion.Folio}</font>\n`;
-    receipContent += `[L]<font size='normal'>Prov.: ${transaccion.Carrier}</font>\n`;
-    receipContent += `[L]<font size='normal'>Bolsa: ${transaccion.Bolsa}</font>\n`;
-    receipContent += `[L]<font size='normal'>Ref.: ${transaccion.Telefono}</font>\n`;
-    if (transaccion.CategoriaID == '4') {
-      receipContent += `[L]<font size='normal'>Codigo: ${transaccion.pin}</font>\n`;
-    }
-    receipContent += `[L]<font size='normal'>Monto: ${transaccion.Monto}</font>\n`;
-    receipContent += `[L]<font size='normal'>Comision: ${comision}</font>\n`;
-    receipContent += `[L]<font size='normal'>Total: ${totalPagar}</font>\n`;
-    receipContent += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    return receipContent;
   };
   //  CREATE MODEL FOR TICKET TO BE PRINTED
-  const ticket = (ticketObj, isMagico = false) => {
-    const LINE_SEPARATOR = Utils.generateLineSeparator(28, '-');
-    let text = `[C]<img>${LOGO_URL}</img>\n`;
-    let title = 'Ticket Plus';
-    if (isMagico) {
-      text = `[C]<img>https://recargasymas.com.mx/wp-content/uploads/2023/10/magico.jpg</img>\n`;
-      title = 'Ticket Magico';
+  const ticket = async (boleto, isMagico = false) => {
+    try {
+      try {
+        // await BEP.printPic(isMagico ? LOGO_MAGICO_BASE64 : LOGO_BASE64, {
+        //   width: 220,
+        //   left: 80,
+        // });
+        await BEP.printerAlign(ALIGN.CENTER);
+        await BEP.printText(isMagico ? 'TKT Magic\n\r' : 'TKT Pluss\n\r', {
+          encoding: 'GBK',
+          codepage: 0,
+          widthtimes: 1,
+          heigthtimes: 1,
+          fonttype: 1,
+        });
+        await BEP.printText(
+          `${Utils.obtenerNombreSorteo(boleto.codigoSorteo)} ${Moment(
+            boleto.fechaSorteo,
+          ).format('ddd DD MMM YY')}\n\r`,
+          {
+            encoding: 'GBK',
+            codepage: 0,
+            widthtimes: 0,
+            heigthtimes: 0,
+            fonttype: 1,
+          },
+        );
+        await BEP.printerAlign(ALIGN.LEFT);
+        // await BEP.printText(`${usuarioStorage.nomComercial} \n\r`, {});
+        await BEP.printText(
+          `Impresion ${Moment(boleto.fechaExp).format('DD/MM/YYYY')} ${
+            boleto.horaImpresion
+          }\n\r`,
+          {},
+        );
+        await BEP.printText('################################\n\r', {});
+
+        await BEP.printColumn(
+          PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colSizes,
+          PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colAlignments,
+          PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colData,
+          {},
+        );
+        // IMPRIMIR JUGADAS
+        boleto.jugadas.forEach(async jugada => {
+          let rowData = jugada.lugares.map(item => {
+            if (item.toString() == '0' || item.toString() == '') {
+              return 'XXX';
+            }
+            return Utils.paddedNumber(item);
+          });
+          let colData = [Utils.paddedNumber(jugada.numero, '*'), ...rowData];
+          await BEP.printColumn(
+            PRINT_TABLE[colData.length].colSizes,
+            PRINT_TABLE[colData.length].colAlignments,
+            colData,
+            {},
+          );
+        });
+        await BEP.printText('################################\n\r', {});
+        await BEP.printText(`Reg. ${boleto.jugadas.length}\n\r`, {});
+        await BEP.printText(`Total ${boleto.totalApostado} Pts\n\r`, {});
+        await BEP.printText(`ID ${boleto.numeroBoleto}\n\r`, {});
+        await BEP.printText(`V1N ${Utils.generateRandomNumber(16)}\n\r`, {});
+        await BEP.printText(`CDS ${Utils.generateRandomNumber(8)}\n\r`, {});
+        await BEP.printerAlign(ALIGN.CENTER);
+        await BEP.printQRCode(boleto.numeroBoleto, 120, ERROR_CORRECTION.L, 0);
+        await BEP.printText(`\n\r\n\r`, {});
+      } catch ({message}) {
+        ToastAndroid.show(message, ToastAndroid.LONG);
+      }
+    } catch ({message}) {
+      throw new Error(message);
     }
-    //   CONTENT
-    text += `[C]<font size='big'>${title}</font>\n`;
-    text += `[C]<font size='normal'>${Utils.getDrawName(
-      ticketObj.codigoSorteo,
-    )} ${Moment(ticketObj.fechaSorteo).format('ddd DD MMM YY')}</font>\n`;
-    text += `[L]<font size='normal'>Impresion ${Moment(
-      ticketObj.fechaExp,
-    ).format('DD/MM/YYYY')} ${ticketObj.horaImpresion}</font>\n`;
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `${Utils.createTicketTableBetHeader(
-      ticketObj.jugadas[0].lugares.length,
-    )}\n`;
-    ticketObj.jugadas.forEach(jugada => {
-      text += `${Utils.createTicketTableBetRow(jugada)}`;
-    });
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[L]<font size='normal'>Registros ${ticketObj.jugadas.length}</font>\n`;
-    text += `[L]<font size='normal'>Total ${ticketObj.totalApostado}</font>\n`;
-    text += `[L]<font size='normal'>ID ${ticketObj.numeroBoleto}</font>\n`;
-    text += `[L]<font size='normal'>V1N ${Utils.generateRandomNumber(
-      16,
-    )}</font>\n`;
-    text += `[L]<font size='normal'>CDS ${Utils.generateRandomNumber(
-      8,
-    )}</font>\n`;
-    text += `[L]\n`;
-    text += `[C]<qrcode size='15'>${ticketObj.numeroBoleto}</qrcode>\n`;
-    text += `[L]<font size='normal'>------------------------------------------</font>\n`;
-    text += `[C]<font size='normal'>www.recargasymas.com.mx</font>\n`;
-    return text;
   };
   // CANCELED TICKET
-  const canceledTicket = ticket => {
-    const LINE_SEPARATOR = Utils.generateLineSeparator(28, '-');
-    let text = `[C]<font size='normal'>Cancelado</font>\n`;
-    text += `[C]<font size='normal'>${ticket.numeroBoleto}</font>\n`;
-    text += `[L]<font size='normal'>Cancelacion ${Moment(
-      ticket.timestamp,
-    ).format('DD/MM/YYYY HH:mm:ss')}</font>\n`;
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[C]<font size='normal'>Reembolso</font>\n`;
-    text += `[C]<font size='normal'>${ticket.reembolso}</font>\n`;
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    return text;
+  const canceledTicket = async ticket => {
+    try {
+      const fechaImpresion = Moment(ticket.timestamp).format('DD/MM/YYYY');
+      const horaImpresion = Moment(ticket.timestamp).format('HH:mm:ss');
+      await BEP.printText('\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`Cancelado\n\r`, {});
+      await BEP.printText(`${ticket.numeroBoleto}\n\r`, {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      await BEP.printText(
+        `Cancelacion ${fechaImpresion} ${horaImpresion}\n\r`,
+        {},
+      );
+      await BEP.printText('################################\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText('Reembolso\n\r', {});
+      // IMPRIMIR MONTO PAGO
+      await BEP.printText(`${Money(ticket.reembolso, false)}\n\r`, {
+        widthtimes: 1,
+        heigthtimes: 1,
+      });
+      await BEP.printText('################################\n\r', {});
+      await BEP.printText('\n\r\n\r\n\r', {});
+    } catch (error) {
+      ToastAndroid.show('Error: impresora no conectada', ToastAndroid.LONG);
+    }
   };
   // TOTAL ACCUMULATED
-  const totalAccumulated = (timestamp, total, recordsList) => {
-    const LINE_SEPARATOR = Utils.generateLineSeparator(28, '-');
-    //   CONTENT
-    let text = `[L]<font size='normal'>Fecha ${Moment(timestamp).format(
-      'DD/MM/YYYY',
-    )} ${Moment(timestamp).format('HH:mm:ss')}</font>\n`;
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[R]<font size='normal'>ID<font size='normal'>[R]<font size='normal'>Hora<font size='normal'>[R]<font size='normal'>Pts</font>\n`;
-    recordsList.forEach(item => {
-      text += Utils.createTotalAccumulatedTableRow(item);
-    });
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[L]<font size='normal'>Total ${total} Pts</font>\n`;
-    return text;
+  const totalAccumulated = async (timestamp, total, recordsList) => {
+    try {
+      const usuarioStorage = Storage.getItem('usuario', true);
+      const colWidth = BEP.width58 / 8 / 5;
+      await BEP.printText('\n\r\n\r\n\r', {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      await BEP.printText(`${usuarioStorage.nomComercial}\n\r`, {});
+      await BEP.printText(
+        `Fecha ${Moment(timestamp).format('DD/MM/YYYY')} ${Moment(
+          timestamp,
+        ).format('HH:mm:ss')}\n\r`,
+        {},
+      );
+      await BEP.printText('################################\n\r', {});
+      // IMPRIMIR CABECERA
+      await BEP.printColumn(
+        [colWidth, colWidth, colWidth],
+        [ALIGN.RIGHT, ALIGN.RIGHT, ALIGN.RIGHT],
+        ['ID', 'Hora', 'Pts'],
+        {},
+      );
+      // IMPRIMIR TABLA DE VENTA
+      recordsList.forEach(async registro => {
+        const TEXTO_TOTAL_APOSTADO = {
+          boleto: registro.total.toString(),
+          cancelado: registro.total.toString() + '(C)',
+          pago: registro.total.toString() + '(P)',
+        };
+        await BEP.printColumn(
+          [BEP.width58 / 8 / 4, colWidth, colWidth],
+          [ALIGN.RIGHT, ALIGN.RIGHT, ALIGN.RIGHT],
+          [
+            Utils.shortenID(registro.numeroBoleto).toString(),
+            registro.hora.toString(),
+            TEXTO_TOTAL_APOSTADO[registro.tipo],
+          ],
+          {},
+        );
+      });
+      // TOTAL VENDIDO
+      await BEP.printText('################################\n\r', {});
+      await BEP.printText(`Total ${total} Pts\n\r`, {});
+      await BEP.printText('\n\r\n\r\n\r', {});
+    } catch (error) {
+      console.log('error al imprimir', error);
+      ToastAndroid.show('Error: impresora no conectada', ToastAndroid.LONG);
+    }
   };
   // PAYMENT TICKET
-  const paymentTicket = informacionPago => {
-    const LINE_SEPARATOR = Utils.generateLineSeparator(28, '-');
-    //   CONTENT
-    let text = `[C]<font size='normal'>Comprobante de Pago</font>\n`;
-    text += `[C]<font size='normal'>${informacionPago.numeroBoleto}</font>\n`;
-    text += `[L]<font size='normal'>Fecha ${informacionPago.fechaPago} ${informacionPago.horaPago}</font>\n`;
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[C]<font size='normal'>Monto</font>\n`;
-    text += `[C]<font size='normal'>${Money(informacionPago.premio)}</font>\n`;
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[L]<font size='normal'>Total ${total} Pts</font>\n`;
-    return text;
+  const paymentTicket = async informacionPago => {
+    try {
+      await BEP.printText('\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`Comprobante de Pago\n\r`, {});
+      await BEP.printText(`${informacionPago.numeroBoleto}\n\r`, {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      await BEP.printText(
+        `Fecha ${informacionPago.fechaPago} ${informacionPago.horaPago}\n\r`,
+        {},
+      );
+      await BEP.printText('################################\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText('Monto\n\r', {});
+      // IMPRIMIR MONTO PAGO
+      await BEP.printText(`${Money(informacionPago.premio)}\n\r`, {
+        widthtimes: 1,
+        heigthtimes: 1,
+      });
+      await BEP.printText('################################\n\r', {});
+      await BEP.printText('\n\r\n\r\n\r', {});
+    } catch (error) {
+      // console.log('error al imprimir', error);
+      ToastAndroid.show('Error: impresora no conectada', ToastAndroid.LONG);
+    }
   };
 
-  const accountStatus = report => {
-    const LINE_SEPARATOR = Utils.generateLineSeparator(28, '-');
-    const {lastInform, lastInformPeriod} = report;
-    let text = `[L]<img>${LOGO_URL}</img>\n`;
-    text += `[C]<font size='normal'>Usuario ${report.nomComercial}</font>\n`;
-    text += `[L]<font size='normal'>Periodo ${report.period.start} - ${report.period.end}</font>\n`;
-    text += `[L]<font size='normal'>Impreso ${report.fechaExp}</font>\n`;
-    text += `[L]<font size='normal'>Saldo ant. al ${Moment(
-      lastInformPeriod.end,
-    ).format('YYYY-MM-DD')} ${Money(lastInform.amount)}</font>\n`;
-    if (report.paidPrizesOnMonday.total > 0) {
-      text += `[L]<font size='normal'>P.pagados lun ant. ${Money(
-        report.paidPrizesOnMonday.total,
-      )}</font>\n`;
+  const accountStatus = async accountStatus => {
+    try {
+      const {lastInform, lastInformPeriod} = accountStatus;
+      // await BEP.printPic(LOGO_BASE64, {width: 220, left: 80});
+      await BEP.printerAlign(ALIGN.LEFT);
+      await BEP.printText(`Exp. ${accountStatus.fechaExp}\n\r`, {});
+      await BEP.printText(`${accountStatus.nomComercial}\n\r`, {});
+      await BEP.printText(
+        `Sem. ${accountStatus.period.start} - ${accountStatus.period.end}\n\r`,
+        {},
+      );
+      await BEP.printText(
+        `S.Ant. al ${Moment(lastInformPeriod.end).format('YYYY-MM-DD')} ${Money(
+          lastInform.amount,
+        )}\n\r`,
+        {},
+      );
+      if (accountStatus.paidPrizesOnMonday.total > 0) {
+        await BEP.printText(
+          `P.pagados lun ant. ${Money(
+            accountStatus.paidPrizesOnMonday.total,
+          )}\n\r`,
+          {},
+        );
+      }
+      if (lastInform.totalDeposits > 0) {
+        await BEP.printText(
+          `Su pago ${Money(lastInform.totalDeposits)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.dueBalance > 0) {
+        await BEP.printText(
+          `Saldo vencido ${Money(accountStatus.dueBalance)}\n\r`,
+          {},
+        );
+      }
+      await BEP.printText('################################\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`Venta de la semana\n\r`, {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      if (accountStatus.tickets.total > 0) {
+        await BEP.printText(
+          `Tickets ${Money(accountStatus.tickets.total)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.recharges.total > 0) {
+        await BEP.printText(
+          `Recargas ${Money(accountStatus.recharges.total)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.recharges.chargeToClientForService > 0) {
+        await BEP.printText(
+          `Com. cobrada al clte. ${Money(
+            accountStatus.recharges.chargeToClientForService,
+          )}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.paidServices.total > 0) {
+        await BEP.printText(
+          `Servicios ${Money(accountStatus.paidServices.total)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.giftCards.total > 0) {
+        await BEP.printText(
+          `Gift cards ${Money(accountStatus.giftCards.total)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.totalSalesSum > 0) {
+        await BEP.printText(
+          `Total ventas ${Money(accountStatus.totalSalesSum)}\n\r`,
+          {},
+        );
+      }
+      await BEP.printText('################################\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`Prem. y Com.\n\r`, {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      if (accountStatus.paidPrizesFromTuesdayToSunday.total > 0) {
+        await BEP.printText(
+          `P.pagados mar a dom act ${Money(
+            accountStatus.paidPrizesFromTuesdayToSunday.total,
+          )}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.nextMondayPaidPrizes.total > 0) {
+        await BEP.printText(
+          `P.pagados lun act ${Money(
+            accountStatus.nextMondayPaidPrizes.total,
+          )}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.tickets.commission > 0) {
+        await BEP.printText(
+          `Com tickets ${Money(accountStatus.tickets.commission)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.recharges.commission > 0) {
+        await BEP.printText(
+          `Com recargas ${Money(accountStatus.recharges.commission)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.paidServices.commission > 0) {
+        await BEP.printText(
+          `Com servicios ${Money(accountStatus.paidServices.commission)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.giftCards.commission > 0) {
+        await BEP.printText(
+          `Com gift cards ${Money(accountStatus.giftCards.commission)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.commissionChargedToClient > 0) {
+        await BEP.printText(
+          `Com. cobrada al clte. ${Money(
+            accountStatus.commissionChargedToClient,
+          )}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.totalCommissionsSum > 0) {
+        await BEP.printText(
+          `Total prem y com ${Money(accountStatus.totalCommissionsSum)}\n\r`,
+          {},
+        );
+      }
+      await BEP.printText('################################\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`Abonos, Ajustes y Reembolsos\n\r`, {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      if (accountStatus.payouts.total > 0) {
+        await BEP.printText(
+          `Abonos ${Money(accountStatus.payouts.total)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.refunds.total > 0) {
+        await BEP.printText(
+          `Reembolsos ${Money(accountStatus.refunds.total)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.adjustments.total > 0) {
+        await BEP.printText(
+          `Ajustes ${Money(accountStatus.adjustments.total)}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.totalPrizesAndCommissionsWithoutPayouts > 0) {
+        await BEP.printText(
+          `T.P. y C. - A.${Money(
+            accountStatus.totalPrizesAndCommissionsWithoutPayouts,
+          )}\n\r`,
+          {},
+        );
+      }
+      if (accountStatus.canceledTickets.total > 0) {
+        await BEP.printText(
+          `Cancelados ${Money(accountStatus.canceledTickets.total)}\n\r`,
+          {},
+        );
+      }
+      await BEP.printText('################################\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`Banco y Num Cta\n\r`, {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      await BEP.printText(`Bancomer: 0172490323\n\r`, {});
+      await BEP.printText(`Scotiabank: 25601299356\n\r`, {});
+      await BEP.printText(`HSBC: 4056883101\n\r`, {});
+      await BEP.printText(`B.Azteca: 01720107507910\n\r`, {});
+      await BEP.printText(
+        `Desarrolladora de Sistemas\n\rTecnologicos de Guerrero\n\rS.A. de C.V.\n\r`,
+        {},
+      );
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText('################################\n\r', {});
+      await BEP.printText(`Importe\n\r`, {});
+      await BEP.printText(`${Money(accountStatus.amount)}\n\r`, {});
+      await BEP.printText('################################\n\r', {});
+      await BEP.printText('\n\r\n\r\n\r\n\r', {});
+    } catch ({message}) {
+      ToastAndroid.show(message, ToastAndroid.LONG);
+      throw new Error(message);
     }
-    if (lastInform.totalDeposits > 0) {
-      text += `[L]<font size='normal'>Su pago ${Money(
-        lastInform.totalDeposits,
-      )}</font>\n`;
-    }
-    if (report.dueBalance > 0) {
-      text += `[L]<font size='normal'>Saldo vencido ${Money(
-        report.dueBalance,
-      )}</font>\n`;
-    }
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[C]<font size='normal'>Venta de la semana</font>\n`;
-    if (report.tickets.total > 0) {
-      text += `[L]<font size='normal'>Tickets ${Money(
-        report.tickets.total,
-      )}</font>\n`;
-    }
-    if (report.recharges.total > 0) {
-      text += `[L]<font size='normal'>Recargas ${Money(
-        report.recharges.total,
-      )}</font>\n`;
-    }
-    if (report.recharges.chargeToClientForService > 0) {
-      text += `[L]<font size='normal'>Com. cobrada al clte. ${Money(
-        report.recharges.chargeToClientForService,
-      )}</font>\n`;
-    }
-    if (report.paidServices.total > 0) {
-      text += `[L]<font size='normal'>Servicios ${Money(
-        report.paidServices.total,
-      )}</font>\n`;
-    }
-    if (report.giftCards.total > 0) {
-      text += `[L]<font size='normal'>Gift cards ${Money(
-        report.giftCards.total,
-      )}</font>\n`;
-    }
-    if (report.totalSalesSum > 0) {
-      text += `[L]<font size='normal'>Total ventas ${Money(
-        report.totalSalesSum,
-      )}</font>\n`;
-    }
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[C]<font size='normal'>Premios y Comisiones</font>\n`;
-    if (report.paidPrizesFromTuesdayToSunday.total > 0) {
-      text += `[L]<font size='normal'>P.pagados mar a dom act ${Money(
-        report.paidPrizesFromTuesdayToSunday.total,
-      )}</font>\n`;
-    }
-    if (report.nextMondayPaidPrizes.total > 0) {
-      text += `[L]<font size='normal'>P.pagados lun act ${Money(
-        report.nextMondayPaidPrizes.total,
-      )}</font>\n`;
-    }
-    if (report.tickets.commission > 0) {
-      text += `[L]<font size='normal'>Com tickets ${Money(
-        report.tickets.commission,
-      )}</font>\n`;
-    }
-    if (report.recharges.commission > 0) {
-      text += `[L]<font size='normal'>Com recargas ${Money(
-        report.recharges.commission,
-      )}</font>\n`;
-    }
-    if (report.paidServices.commission > 0) {
-      text += `[L]<font size='normal'>Com servicios ${Money(
-        report.paidServices.commission,
-      )}</font>\n`;
-    }
-    if (report.giftCards.commission > 0) {
-      text += `[L]<font size='normal'>Com gift cards ${Money(
-        report.giftCards.commission,
-      )}</font>\n`;
-    }
-    if (report.commissionChargedToClient > 0) {
-      text += `[L]<font size='normal'>Com. cobrada al clte. ${Money(
-        report.commissionChargedToClient,
-      )}</font>\n`;
-    }
-    if (report.totalCommissionsSum > 0) {
-      text += `[L]<font size='normal'>Total prem y com ${Money(
-        report.totalCommissionsSum,
-      )}</font>\n`;
-    }
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[C]<font size='normal'>Abonos, Ajustes y Reembolsos</font>\n`;
-    if (report.payouts.total > 0) {
-      text += `[L]<font size='normal'>Abonos ${Money(
-        report.payouts.total,
-      )}</font>\n`;
-    }
-    if (report.refunds.total > 0) {
-      text += `[L]<font size='normal'>Reembolsos ${Money(
-        report.refunds.total,
-      )}</font>\n`;
-    }
-    if (report.adjustments.total > 0) {
-      text += `[L]<font size='normal'>Ajustes ${Money(
-        report.adjustments.total,
-      )}</font>\n`;
-    }
-    if (report.totalPrizesAndCommissionsWithoutPayouts > 0) {
-      text += `[L]<font size='normal'>Total prem y com menos abonos ${Money(
-        report.totalPrizesAndCommissionsWithoutPayouts,
-      )}</font>\n`;
-    }
-    if (report.canceledTickets.total > 0) {
-      text += `[L]<font size='normal'>Cancelados ${Money(
-        report.canceledTickets.total,
-      )}</font>\n`;
-    }
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[C]<font size='normal'>Banco y Num Cta</font>\n`;
-    text += `[L]<font size='normal'>Bancomer: 0172490303</font>\n`;
-    text += `[L]<font size='normal'>Scotiabank: 25601299356</font>\n`;
-    text += `[L]<font size='normal'>HSBC: 4056883101</font>\n`;
-    text += `[L]<font size='normal'>B.Azteca: 01720107507910</font>\n`;
-    text += `[L]<font size='normal'>R.Social: Desarrolladora de Sistemas Tecnologicos de Guerrero S.A. de C.V.</font>\n`;
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    text += `[C]<font size='normal'>Importe</font>\n`;
-    text += `[C]<font size='normal'>${Money(report.amount)}</font>\n`;
-    text += `[C]<font size='normal'>${LINE_SEPARATOR}</font>\n`;
-    return text;
   };
 
   const winningNumbers = (fechaSorteo, numeros) => {
@@ -286,6 +469,20 @@ const Print = (() => {
     return text;
   };
 
+  const test = async () => {
+    try {
+      const colWidth = BEP.width58 / 8 / 5;
+      await BEP.printColumn(
+        [colWidth, colWidth, colWidth],
+        [ALIGN.RIGHT, ALIGN.RIGHT, ALIGN.RIGHT],
+        ['ID', 'Hora', 'Pts'],
+        {},
+      );
+    } catch ({message}) {
+      throw new Error(message);
+    }
+  };
+
   return {
     accountStatus,
     transactionReceipt,
@@ -294,6 +491,7 @@ const Print = (() => {
     totalAccumulated,
     paymentTicket,
     winningNumbers,
+    test,
   };
 })();
 

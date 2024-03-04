@@ -135,7 +135,9 @@ export default function RealizarPago() {
           ),
         });
         // IMPRIMIR PAGO
-        await thermalPrinter.print(Print.paymentTicket(pagoRegistrado));
+        await thermalPrinter.print(async function () {
+          await Print.paymentTicket(pagoRegistrado);
+        });
         dispatch(
           agregarRegistroAlMomento({
             id: pagoRegistrado.id,

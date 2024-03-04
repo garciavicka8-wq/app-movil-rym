@@ -410,6 +410,25 @@ const Utils = {
     }
     return lineSeparator;
   },
+  //   OBTENER EL NOMBRE DEL SORTEO
+  obtenerNombreSorteo: function (codigoSorteo) {
+    let lista = {
+      SZOD: 'Zod.',
+      SMAY: 'May.',
+      SSUP: 'Sup.',
+      SESP: 'Esp.',
+      GN: 'GNav.',
+      SGOR: 'GNav.',
+      SGES: 'GEsp.',
+      SMAG: 'Mag.',
+    };
+
+    return lista[codigoSorteo] || '';
+  },
+  // PADD NUMBER LEFT
+  paddedNumber: function (n, paddChar = '0') {
+    return String(n).padStart(3, paddChar);
+  },
 };
 
 export default Utils;

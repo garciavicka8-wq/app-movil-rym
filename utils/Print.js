@@ -8,8 +8,8 @@ import {
   ERROR_CORRECTION,
 } from 'tp-react-native-bluetooth-printer';
 import {
-  LOGO_BASE64,
-  LOGO_MAGICO_BASE64,
+  AMOUNT_COL_SIZE_3,
+  MELATERR_LOGO2,
   PRINT_TABLE,
   PRINT_TABLE_HEADER,
 } from '../constants';
@@ -471,13 +471,45 @@ const Print = (() => {
 
   const test = async () => {
     try {
-      const colWidth = BEP.width58 / 8 / 5;
+      const COL_SIZE = BEP.width58 / 8 / 3;
+      await BEP.printPic(MELATERR_LOGO2, {width: 300, left: 40});
       await BEP.printColumn(
-        [colWidth, colWidth, colWidth],
-        [ALIGN.RIGHT, ALIGN.RIGHT, ALIGN.RIGHT],
-        ['ID', 'Hora', 'Pts'],
+        [COL_SIZE, COL_SIZE],
+        [ALIGN.LEFT, ALIGN.RIGHT],
+        ['SORTEO 3867', 'MIE MAR 06 2024'],
         {},
       );
+      await BEP.printColumn(
+        [BEP.width58 / 8 / 2.5, BEP.width58 / 8 / 3.5],
+        [ALIGN.LEFT, ALIGN.RIGHT],
+        ['SUS NUMEROS SON:', 'MELATICO'],
+        {},
+      );
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText('================================\n\r', {});
+      await BEP.printText('A. * 07 21 26 48 52 54\n\r', {});
+      await BEP.printText('B.** 06 18 28 29 35 56\n\r', {});
+      await BEP.printText('================================\n\r', {});
+      await BEP.printText('** COMB. CON REVANCHA/REVANCHITA\n\r', {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      await BEP.printText('MELATE COMB:     2X $15 $30\n\r', {});
+      await BEP.printText('REVANCHA COMB:   2X $10 $20\n\r', {});
+      await BEP.printText('REVANCHITA COMB: 1X $5  $5\n\r', {});
+      await BEP.printText('Total: $55\n\r', {});
+      await BEP.printText('Boleto: /120020818-05700001/\n\r', {});
+      await BEP.printText('Numero: 4150-0565332507-206218\n\r', {
+        encoding: 'UTF-8',
+      });
+      await BEP.printText('Terminal: 12002409000\n\r', {});
+      await BEP.printColumn(
+        [BEP.width58 / 8 / 2.5, BEP.width58 / 8 / 3.5],
+        [ALIGN.LEFT, ALIGN.RIGHT],
+        ['MAR05/MAR 2024', '20:02:11 HCM'],
+        {},
+      );
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printQRCode('123456789', 120, ERROR_CORRECTION.L, 0);
+      await BEP.printText('\n\n\n', {});
     } catch ({message}) {
       throw new Error(message);
     }

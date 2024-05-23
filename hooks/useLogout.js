@@ -1,15 +1,10 @@
-import {useDispatch} from 'react-redux';
-import {setIsUserLoggedIn} from '../features/auth/authSlice';
-import {Storage, Utils} from '../utils';
+import {useAuthContext} from '../context/AuthContext';
 
 export function useLogout() {
-  const dispatch = useDispatch();
+  const {signout} = useAuthContext();
 
   const logout = () => {
-    Storage.removeItem('usuario');
-    Storage.removeItem('versionApp');
-    Utils.removeLoginTime();
-    dispatch(setIsUserLoggedIn(false));
+    signout();
   };
 
   return {

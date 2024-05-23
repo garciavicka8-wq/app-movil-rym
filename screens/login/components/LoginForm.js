@@ -11,12 +11,12 @@ import {
 import LoginFormInput from './LoginFormInput';
 import {Button} from 'react-native-paper';
 import {Colors, Storage, Utils} from '../../../utils';
-import {iniciarSesion} from '../../../services/auth';
-import {setIsUserLoggedIn} from '../../../features/auth/authSlice';
-import {useDispatch} from 'react-redux';
 import {ReactNativeBiometricsLegacy} from 'react-native-biometrics';
 import * as Keychain from 'react-native-keychain';
 import Ribbon from './Ribbon';
+import {useAuthContext} from '../../../context/AuthContext';
+import {iniciarSesion} from '../../../services/auth';
+import {useDispatch} from 'react-redux';
 const BALL = require('../../../assets/ball.png');
 
 export default function LoginForm() {
@@ -31,6 +31,7 @@ export default function LoginForm() {
   });
   const [userName, setUserName] = useState('');
   const [touchCounter, setTouchCounter] = useState(0);
+  const {setIsAuthenticated} = useAuthContext();
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export default function LoginForm() {
 
   const handlePress = () => {
     // VALIDAR DATOS
-    if (inputs.usuario !== '' && inputs.password !== '') {
+    if (inputs.usuario !== '' && inputs.password !== '' && !startAnimation) {
       Keyboard.dismiss();
       setStartAnimation(true);
       setTimeout(() => {
@@ -93,7 +94,7 @@ export default function LoginForm() {
             Storage.setItem('userName', newUsuario.nomComercial);
             Utils.setLoginTime();
             await Keychain.setGenericPassword(usuario, password);
-            dispatch(setIsUserLoggedIn(true));
+            setIsAuthenticated(true);
           }
           // SI LA APP ESTA DESACTUALIZADA
           if (error !== null && error.update) {

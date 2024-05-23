@@ -15,7 +15,7 @@ export default function UltimosMovimientos() {
   const obtenerUltimasTransacciones = async () => {
     try {
       setCargando(true);
-      const hasSessionExpired = await Utils.hasSessionExpired();
+      const hasSessionExpired = Utils.hasSessionExpired();
       if (!hasSessionExpired) {
         const ultimasTransacciones = await getLastTransactions();
         // console.log(transacciones);

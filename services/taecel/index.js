@@ -19,7 +19,7 @@ export const getProducts = async () => {
       nip: tokens.nip,
     });
     const res = await axios.post(url, data);
-    return res;
+    return res.data;
   } catch (error) {
     console.log('[Error]: ' + error.message, '[Func]: getProducts');
     throw Error('Error al obtener productos');

@@ -32,6 +32,7 @@ export function useCredito() {
           dispatch(setMostrarCredito(false));
         }, 5000);
       } else {
+        console.log('session expired');
         logout();
       }
       dispatch(setCargandoCredito(false));

@@ -3,7 +3,6 @@ import {createSlice} from '@reduxjs/toolkit';
 const initialState = {
   bolsas: [],
   categorias: [],
-  carriers: [],
   carriersFiltradas: [],
   queryCarrierResults: [],
   productos: [],
@@ -14,6 +13,13 @@ const initialState = {
   productoSeleccionado: null,
   transacciones: [],
   transaccionStore: null,
+  // NEW PROPS TO IMPROVE PERFORMANCE
+  loadingProducts: false,
+  mainProducts: [],
+  categories: [],
+  carriers: [],
+  products: [],
+  selectedCategory: null,
 };
 
 export const taecelSlice = createSlice({
@@ -26,11 +32,11 @@ export const taecelSlice = createSlice({
     setCategorias: (state, {payload}) => {
       state.categorias = [...payload];
     },
-    setCarriers: (state, {payload}) => {
-      state.carriers = [...payload];
-      state.carriersFiltradas = [...payload];
-      state.queryCarrierResults = [...payload];
-    },
+    // setCarriers: (state, {payload}) => {
+    //   state.carriers = [...payload];
+    //   state.carriersFiltradas = [...payload];
+    //   state.queryCarrierResults = [...payload];
+    // },
     setProductos: (state, {payload}) => {
       state.productos = [...payload];
     },
@@ -66,13 +72,31 @@ export const taecelSlice = createSlice({
     setProductoSeleccionado: (state, {payload}) => {
       state.productoSeleccionado = payload;
     },
+    // NEW SETTERS TO IMPROVE PERFORMANCE
+    setLoadingProducts: function (state, {payload}) {
+      state.loadingProducts = payload;
+    },
+    setMainProducts: function (state, {payload}) {
+      state.mainProducts = [...payload];
+    },
+    setCategories: function (state, {payload}) {
+      state.categories = [...payload];
+    },
+    setCarriers: function (state, {payload}) {
+      state.carriers = [...payload];
+    },
+    setProducts: function (state, {payload}) {
+      state.products = [...payload];
+    },
+    setSelectedCategory: function (state, {payload}) {
+      state.selectedCategory = {...payload};
+    },
   },
 });
 
 export const {
   setBolsas,
   setCategorias,
-  setCarriers,
   setProductos,
   setFiltrandoProductos,
   setProductosFiltrados,
@@ -83,6 +107,13 @@ export const {
   setProductoSeleccionado,
   setTransacciones,
   setTransaccionStore,
+  // NEW SETTERS
+  setLoadingProducts,
+  setMainProducts,
+  setCarriers,
+  setCategories,
+  setProducts,
+  setSelectedCategory,
 } = taecelSlice.actions;
 
 export default taecelSlice.reducer;

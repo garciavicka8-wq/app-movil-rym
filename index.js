@@ -9,12 +9,15 @@ import {Provider as StoreProvider} from 'react-redux';
 import {store} from './app/store';
 import App from './App';
 import {name as appName} from './app.json';
+import {AuthProvider} from './context/AuthContext';
 
 export default function Main() {
   return (
     <StoreProvider store={store}>
       <PaperProvider>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </PaperProvider>
     </StoreProvider>
   );

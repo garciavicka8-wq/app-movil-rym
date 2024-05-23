@@ -9,6 +9,7 @@ import {
 } from 'tp-react-native-bluetooth-printer';
 import {
   AMOUNT_COL_SIZE_3,
+  CHISPAZO_LOGO,
   MELATERR_LOGO2,
   PRINT_TABLE,
   PRINT_TABLE_HEADER,
@@ -472,7 +473,7 @@ const Print = (() => {
   const test = async () => {
     try {
       const COL_SIZE = BEP.width58 / 8 / 3;
-      await BEP.printPic(MELATERR_LOGO2, {width: 300, left: 40});
+      await BEP.printPic(CHISPAZO_LOGO, {width: 300, left: 40});
       await BEP.printColumn(
         [COL_SIZE, COL_SIZE],
         [ALIGN.LEFT, ALIGN.RIGHT],

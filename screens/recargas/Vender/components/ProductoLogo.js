@@ -1,19 +1,18 @@
 import React from 'react';
 import {Image, StyleSheet, Text, View} from 'react-native';
-import {useSelector} from 'react-redux';
 
-export default function ProductoLogo() {
-  const {carrierSeleccionado} = useSelector(state => state.taecel);
+export default function ProductoLogo({route}) {
+  const {params} = route;
 
   return (
     <>
       <View style={styles.logoBox}>
         <Image
-          source={{uri: carrierSeleccionado.Logotipo}}
+          source={{uri: params.carrier.Logotipo}}
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.logoText}>{carrierSeleccionado.Categoria}</Text>
+        <Text style={styles.logoText}>{params.carrier.Categoria}</Text>
       </View>
     </>
   );

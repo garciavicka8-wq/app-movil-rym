@@ -10,7 +10,7 @@ import LoadingIndicator from '../../../components/LoadingIndicator';
 import {Colors} from '../../../utils';
 import {useCustomNavigation} from '../../../hooks';
 
-export default function Vender() {
+export default function Vender({route}) {
   const {isFocused} = useCustomNavigation();
   const {cargandoCredito} = useSelector(state => state.credito);
   const dispatch = useDispatch();
@@ -27,11 +27,11 @@ export default function Vender() {
     <Container>
       {isFocused && <StatusBar backgroundColor={Colors.blue} />}
       <Content marginBottom={15}>
-        <ProductoLogo />
+        <ProductoLogo route={route} />
         <View style={styles.productoBox}>
           <Card style={{backgroundColor: 'white'}}>
             <Card.Content>
-              <Campos />
+              <Campos route={route} />
             </Card.Content>
           </Card>
         </View>

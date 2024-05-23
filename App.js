@@ -10,45 +10,34 @@ import JugarTickets from './screens/tickets/JugarTickets';
 import Magico from './screens/tickets/Magico';
 import {APP_NAVIGATION} from './constants';
 import colors from './utils/Colors';
-import {Colors, Storage} from './utils';
-import {StatusBar, Text, View} from 'react-native';
+import {Colors} from './utils';
+import {Alert, StatusBar, Text, View} from 'react-native';
 import {IconButton} from 'react-native-paper';
-import {useDispatch, useSelector} from 'react-redux';
-import {setIsUserLoggedIn, setVerifyingUser} from './features/auth/authSlice';
 import ConfiguracionMenu from './screens/configuracion/ConfiguracionMenu';
 import RegistrarImpresora from './screens/configuracion/RegistrarImpresora';
 import CodigoPin from './screens/configuracion/CodigoPin';
 import EstablecerComision from './screens/configuracion/EstablecerComision';
 import Seguridad from './screens/configuracion/Seguridad';
+import {useAuthContext} from './context/AuthContext';
 
 const Stack = createStackNavigator();
 
 export default function App() {
-  const {verifyingUser, isUserLoggedIn} = useSelector(state => state.auth);
-  const dispatch = useDispatch();
+  const {isAuthenticated} = useAuthContext();
 
   useEffect(() => {
-    verificarAutenticacion();
+    initApp();
   }, []);
 
-  const verificarAutenticacion = async () => {
-    dispatch(setVerifyingUser(true));
-    await BleManager.start();
-    SplashScreen.hide();
-    if (Storage.getItem('usuario')) {
-      setTimeout(() => {
-        dispatch(setIsUserLoggedIn(true));
-        dispatch(setVerifyingUser(false));
-      }, 300);
-    } else {
-      setTimeout(() => {
-        dispatch(setIsUserLoggedIn(false));
-        dispatch(setVerifyingUser(false));
-      }, 300);
+  const initApp = async () => {
+    try {
+      await BleManager.start();
+      SplashScreen.hide();
+    } catch ({message}) {
+      SplashScreen.hide();
+      Alert.alert('Error', message);
     }
   };
-
-  if (verifyingUser) return <VerificandoAuthScreen />;
 
   return (
     <NavigationContainer>
@@ -59,7 +48,7 @@ export default function App() {
           },
           headerTintColor: 'white',
         }}>
-        {!isUserLoggedIn && (
+        {!isAuthenticated && (
           <Stack.Screen
             name={APP_NAVIGATION.SCREENS.LOGIN}
             component={Login}
@@ -68,7 +57,7 @@ export default function App() {
             }}
           />
         )}
-        {isUserLoggedIn && (
+        {isAuthenticated && (
           <>
             <Stack.Screen
               name={APP_NAVIGATION.SCREENS.MAIN}

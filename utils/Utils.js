@@ -429,6 +429,13 @@ const Utils = {
   paddedNumber: function (n, paddChar = '0') {
     return String(n).padStart(3, paddChar);
   },
+  // FILTER BY VALUE
+  filterByValue(array, value) {
+    return array.filter(
+      data =>
+        JSON.stringify(data).toLowerCase().indexOf(value.toLowerCase()) !== -1,
+    );
+  },
 };
 
 export default Utils;

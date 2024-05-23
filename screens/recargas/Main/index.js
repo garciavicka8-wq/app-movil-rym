@@ -1,102 +1,36 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {Alert, ScrollView} from 'react-native';
-import {Colors, Storage, Utils, uuid} from '../../../utils';
-import {useCustomNavigation} from '../../../hooks';
+import {Colors, Storage} from '../../../utils';
 import {
   APP_NAVIGATION,
   CATEGORIAS_ICONS,
   CATEGORIAS_ICON_COLORS,
 } from '../../../constants';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import CreditCard from '../../../components/CreditCard';
 import MainMenuIconButton from '../../../components/MainMenuIconButton';
 import MainMenuSectionButtons from '../../../components/MainMenuSectionButtons';
-import {getProducts} from '../../../services/taecel';
 import {
   setCarriers,
   setCategoriaSeleccionada,
-  setCategorias,
-  setProductos,
+  setLoadingProducts,
+  setMainProducts,
+  setProducts,
+  setSelectedCategory,
 } from '../../../features/taecel/taecelSlice';
 import {useNetInfo} from '@react-native-community/netinfo';
 import NoConnection from '../../../components/NoConnection';
 import UltimosMovimientos from '../UltimosMovimientos';
+import {useNavigation} from '@react-navigation/native';
+import {useAuthContext} from '../../../context/AuthContext';
+import {getProducts} from '../../../services/taecel';
 
 export default function RecargasMenu() {
-  const [cargandoProductos, setCargandoProductos] = useState(true);
-  const [buttons, setButtons] = useState([]);
-  const navigation = useCustomNavigation();
+  const {isAuthenticated} = useAuthContext();
+  const {mainProducts, loadingProducts} = useSelector(state => state.taecel);
+  const navigation = useNavigation();
   const dispatch = useDispatch();
   const netInfo = useNetInfo();
-
-  useEffect(() => {
-    verificarUsuarioRegistrado();
-  }, [netInfo?.isConnected]);
-
-  const verificarUsuarioRegistrado = () => {
-    const hasSessionExpired = Utils.hasSessionExpired();
-    const _usuario = Storage.getItem('usuario', true);
-    if (
-      _usuario &&
-      !hasSessionExpired &&
-      netInfo?.isConnected &&
-      cargandoProductos
-    ) {
-      cargarProductos();
-    }
-  };
-
-  const cargarProductos = async () => {
-    try {
-      setCargandoProductos(true);
-      const categoriasStorage = Storage.getItem('categorias', true);
-      const carriersStorage = Storage.getItem('carriers', true);
-      const productosStorage = Storage.getItem('productos', true);
-      let _categorias = [];
-      let _carriers = [];
-      let _productos = [];
-      if (
-        categoriasStorage !== null &&
-        carriersStorage !== null &&
-        productosStorage !== null
-      ) {
-        _categorias = [...categoriasStorage];
-        _carriers = [...carriersStorage];
-        _productos = [...productosStorage];
-      } else {
-        const res = await getProducts();
-        const {data, success} = res.data;
-        if (success) {
-          _categorias = [...data.categorias];
-          _carriers = [...data.carriers];
-          _productos = [...data.productos];
-          Storage.setItem('categorias', JSON.stringify(_categorias));
-          Storage.setItem('carriers', JSON.stringify(_carriers));
-          Storage.setItem('productos', JSON.stringify(_productos));
-        }
-      }
-      // SI SE CARGARON BIEN LOS PRODUCTOS
-      let _buttons = [];
-      _categorias.forEach(categoria => {
-        _buttons.push({
-          id: uuid(),
-          icon: CATEGORIAS_ICONS[categoria.ID],
-          iconColor: CATEGORIAS_ICON_COLORS[categoria.ID],
-          text: categoria.Nombre,
-          empty: false,
-          categoria,
-        });
-      });
-      setButtons(_buttons);
-      dispatch(setCategorias(_categorias));
-      dispatch(setCarriers(_carriers));
-      dispatch(setProductos(_productos));
-      setCargandoProductos(false);
-    } catch ({message}) {
-      Alert.alert('Mensaje', message);
-      setCargandoProductos(false);
-    }
-  };
 
   const handleNavigate = categoria => {
     // VERIFICAR CODIGO PIN
@@ -120,7 +54,43 @@ export default function RecargasMenu() {
       return;
     }
     dispatch(setCategoriaSeleccionada(categoria));
-    navigation.navigate('SeleccionarComp');
+    dispatch(setSelectedCategory(categoria));
+    navigation.navigate('SeleccionarComp', {
+      screenTitle: categoria.Nombre,
+    });
+  };
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    if (isAuthenticated && mainProducts.length === 0) {
+      dispatch(setLoadingProducts(true));
+      const res = await getProducts();
+      const {data, success} = res;
+      let _categories = [];
+      let _carriers = [];
+      let _products = [];
+      if (success) {
+        _categories = [...data.categorias];
+        _carriers = [...data.carriers];
+        _products = [...data.productos];
+      }
+      let _mainProducts = [];
+      _categories.forEach((item, index) => {
+        _mainProducts[index] = {
+          id: index,
+          text: item.Nombre,
+          empty: false,
+          categoria: item,
+        };
+      });
+      dispatch(setMainProducts(_mainProducts));
+      dispatch(setCarriers(_carriers));
+      dispatch(setProducts(_products));
+      dispatch(setLoadingProducts(false));
+    }
   };
 
   if (!netInfo?.isConnected) return <NoConnection />;
@@ -132,33 +102,35 @@ export default function RecargasMenu() {
         cardColor={Colors.darkBlue}
         iconBgColor={Colors.blue}
       />
-      {cargandoProductos && (
-        <MainMenuSectionButtons title="Opciones" titleColor={Colors.darkBlue}>
-          <MainMenuIconButton progress />
-          <MainMenuIconButton progress />
-          <MainMenuIconButton progress />
-          <MainMenuIconButton progress />
-          <MainMenuIconButton progress />
-          <MainMenuIconButton empty />
-        </MainMenuSectionButtons>
+      {loadingProducts && (
+        <>
+          <MainMenuSectionButtons title="Opciones" titleColor={Colors.darkBlue}>
+            <MainMenuIconButton progress />
+            <MainMenuIconButton progress />
+            <MainMenuIconButton progress />
+            <MainMenuIconButton progress />
+            <MainMenuIconButton progress />
+            <MainMenuIconButton empty />
+          </MainMenuSectionButtons>
+        </>
       )}
-      {!cargandoProductos && (
+      {!loadingProducts && (
         <ScrollView>
           <UltimosMovimientos />
           <MainMenuSectionButtons title="Opciones" titleColor={Colors.darkBlue}>
-            {buttons.map(item => (
+            {mainProducts.map(item => (
               <MainMenuIconButton
                 key={item.id}
                 text={item.text}
                 buttonColor={Colors.lightBlue}
-                icon={item.icon}
-                iconColor={item.iconColor}
+                icon={CATEGORIAS_ICONS[item.categoria.ID]}
+                iconColor={CATEGORIAS_ICON_COLORS[item.categoria.ID]}
                 textColor={Colors.darkBlue}
-                empty={item.empty}
+                empty={false}
                 onPress={() => handleNavigate(item.categoria)}
               />
             ))}
-            {buttons.length > 0 && (
+            {mainProducts.length > 0 && (
               <>
                 <MainMenuIconButton
                   text="Registros"

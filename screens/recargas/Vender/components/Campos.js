@@ -1,17 +1,11 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {Alert, Keyboard, Text} from 'react-native';
+import React, {useRef, useState} from 'react';
+import {Alert, Keyboard, StyleSheet, Text} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {CustomModal, CustomScanner} from '../../../../components';
-import CampoMonto from './CampoMonto';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {Button} from 'react-native-paper';
-import {
-  setFiltrandoProductos,
-  setProductoSeleccionado,
-  setProductosFiltrados,
-  setTransaccionStore,
-} from '../../../../features/taecel/taecelSlice';
+import {Button, Menu} from 'react-native-paper';
+import {setTransaccionStore} from '../../../../features/taecel/taecelSlice';
 import {Helpers, Storage} from '../../../../utils';
 import {useCustomNavigation, useLogout, useModal} from '../../../../hooks';
 import {APP_NAVIGATION} from '../../../../constants';
@@ -23,19 +17,20 @@ import {ERROR_CODE_NAMES} from '../../../../errors';
 import {verifyUserAccountStatus} from '../../../../services/reports';
 import {useNetInfo} from '@react-native-community/netinfo';
 
-export default function Campos() {
-  const {
-    carrierSeleccionado,
-    productos,
-    productoSeleccionado,
-    filtrandoProductos,
-  } = useSelector(state => state.taecel);
+export default function Campos({route}) {
+  const {carrier, products} = route.params;
+  const {filtrandoProductos} = useSelector(state => state.taecel);
   const {creditoDisponible} = useSelector(state => state.credito);
-  const [codigoPinStorage, setCodigoPinStorage] = useState('');
+  const [codigoPinStorage] = useState(Storage.getItem('codigoPin'));
+  const [selectedProduct, setSelectedProduct] = useState(
+    carrier.CategoriaID == 3 ? products[0] : null,
+  );
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuButtonText, setMenuButtonText] = useState('$00.00 MXN');
   const campoReferencia = {
-    nombre: carrierSeleccionado.Campos[0].Nombre,
-    minLeng: carrierSeleccionado.Campos[0].Min,
-    maxLeng: carrierSeleccionado.Campos[0].Max,
+    nombre: carrier.Campos[0].Nombre,
+    minLeng: carrier.Campos[0].Min,
+    maxLeng: carrier.Campos[0].Max,
   };
   const referenciaRef = useRef(null);
   const confirmarReferenciaRef = useRef(null);
@@ -80,31 +75,6 @@ export default function Campos() {
       handleTransaction(data);
     },
   });
-
-  useEffect(() => {
-    filtrarProductos();
-  }, []);
-
-  const filtrarProductos = () => {
-    const _codigoPinStorage = Storage.getItem('codigoPin');
-    if (!_codigoPinStorage) {
-      navigation.resetStack(APP_NAVIGATION.SCREENS.RECARGAS_MENU);
-      return;
-    }
-    setCodigoPinStorage(_codigoPinStorage);
-    dispatch(setFiltrandoProductos(true));
-    let _filteredProductos = productos.filter(
-      p =>
-        p.CategoriaID === carrierSeleccionado.CategoriaID &&
-        carrierSeleccionado.ID === p.CarrierID,
-    );
-    // CARGAR PRODUCTO AUTOMATICAMENTE SI LA CATEGORIA ES SEVICIOS
-    if (carrierSeleccionado.CategoriaID === '3') {
-      dispatch(setProductoSeleccionado(_filteredProductos[0]));
-    }
-    dispatch(setProductosFiltrados(_filteredProductos));
-    dispatch(setFiltrandoProductos(false));
-  };
   //   HANDLE MODAL CANCEL
   const handleModalCancel = () => {
     modal.setConfig({open: false});
@@ -142,11 +112,11 @@ export default function Campos() {
       progressTitle: `Transacción En Proceso${'\n'}No Interrumpas La Conexión`,
     });
     // VERIFICAR SI ES RECARGA TELEFONICA , PAQUETE O GIFTCARD
-    if (['1', '2', '4'].includes(carrierSeleccionado.CategoriaID)) {
+    if (['1', '2', '4'].includes(carrier.CategoriaID)) {
       hacerRecarga(data);
     }
     // VERIFICAR SI ES PAGO DE SERVICIO
-    if (carrierSeleccionado.CategoriaID == '3') {
+    if (carrier.CategoriaID == '3') {
       pagarServicio(data);
     }
   };
@@ -156,15 +126,15 @@ export default function Campos() {
       await verifyUserAccountStatus();
       const _esPosibleLaTransaccion = await esPosibleLaTransaccion(data.monto);
       const descripcionProducto =
-        Helpers.descripcionProductoTransaccion(productoSeleccionado);
+        Helpers.descripcionProductoTransaccion(selectedProduct);
       // SI NO HAY CREDITO SUFICIENTE
       if (!_esPosibleLaTransaccion)
         throw new Error(
           'No hay credito suficiente para realizar la transacción',
         );
       const res = await makeRecharge(
-        productoSeleccionado.CategoriaID,
-        productoSeleccionado.Codigo,
+        selectedProduct.CategoriaID,
+        selectedProduct.Codigo,
         data.referencia,
         data.monto,
         descripcionProducto,
@@ -174,7 +144,7 @@ export default function Campos() {
         // RESTAMOS EL MONTO DE LA TRANSACCION AL CREDITO DISPONIBLE
         const montoTransaccion = Helpers.calcularTotalTransaccion(
           res.transaccion,
-          productoSeleccionado.CategoriaID,
+          selectedProduct.CategoriaID,
         );
         dispatch(restarCredito(montoTransaccion));
         dispatch(
@@ -226,7 +196,7 @@ export default function Campos() {
       await verifyUserAccountStatus();
       const _esPosibleLaTransaccion = await esPosibleLaTransaccion(data.monto);
       const descripcionProducto =
-        Helpers.descripcionProductoTransaccion(productoSeleccionado);
+        Helpers.descripcionProductoTransaccion(selectedProduct);
       // SI NO HAY CREDITO SUFICIENTE
       if (!_esPosibleLaTransaccion)
         throw new Error(
@@ -234,8 +204,8 @@ export default function Campos() {
         );
       // SI LA TRANSACCION SE PUEDE REALIZAR
       const res = await payService(
-        productoSeleccionado.CategoriaID,
-        productoSeleccionado.Codigo,
+        selectedProduct.CategoriaID,
+        selectedProduct.Codigo,
         data.referencia,
         data.monto,
         descripcionProducto,
@@ -245,7 +215,7 @@ export default function Campos() {
         // SUMAMOS EL MONTO DE LA TRANSACCION AL CREDITO DISPONIBLE
         const montoTransaccion = Helpers.calcularTotalTransaccion(
           res.transaccion,
-          productoSeleccionado.CategoriaID,
+          selectedProduct.CategoriaID,
         );
         dispatch(restarCredito(montoTransaccion));
         dispatch(
@@ -322,14 +292,14 @@ export default function Campos() {
 
   const handleTextInputChange = (text, inputName) => {
     if (
-      ['1', '2', '4'].includes(carrierSeleccionado.CategoriaID) &&
+      ['1', '2', '4'].includes(carrier.CategoriaID) &&
       inputName === 'referencia' &&
       text.length === 10
     ) {
       confirmarReferenciaRef.current?.focus();
     }
     if (
-      ['1', '2', '4'].includes(carrierSeleccionado.CategoriaID) &&
+      ['1', '2', '4'].includes(carrier.CategoriaID) &&
       inputName === 'confirmarReferencia' &&
       text.length === 10
     ) {
@@ -341,12 +311,85 @@ export default function Campos() {
     formik.setFieldValue(inputName, text);
   };
 
-  const isRecharge = ['1', '2'].includes(carrierSeleccionado.CategoriaID);
+  const handleMenuItemPress = item => {
+    setMenuVisible(false);
+    setMenuButtonText(`$${item.Monto} MXN`);
+    if (item.Monto == '00.00') {
+      formik.setFieldError('monto', 'Este campo es requerido');
+      formik.setFieldValue('monto', '');
+      return;
+    }
+    formik.setFieldValue('monto', item.Monto);
+    setSelectedProduct(item);
+    formik.setFieldValue('monto', item.Monto);
+  };
+
+  const handleInputMontoChange = val => {
+    if (!val) {
+      formik.setFieldError('monto', 'Este campo es requerido');
+    }
+    formik.setFieldValue('monto', !val ? '' : val);
+  };
+
+  const isRecharge = ['1', '2'].includes(carrier.CategoriaID);
 
   return (
     <>
       {/* MONTO */}
-      <CampoMonto formik={formik} />
+      <>
+        {carrier.CategoriaID == 3 ? (
+          <>
+            <CustomNumericField
+              type="currency"
+              onChange={handleInputMontoChange}
+              value={formik.values.monto}
+              error={formik.errors.monto && formik.touched.monto}
+              errorMessage={formik.errors.monto}
+              onBlur={formik.handleBlur('monto')}
+              placeholder="Cantidad a pagar"
+              prefix="$"
+            />
+            {formik.errors.monto && formik.touched.monto && (
+              <ErrorMessage message={formik.errors.monto} />
+            )}
+          </>
+        ) : (
+          <>
+            <Text style={styles.listaProductosLabel}>Elige un monto</Text>
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="chevron-down"
+                  contentStyle={{
+                    flexDirection: 'row-reverse',
+                    justifyContent: 'space-between',
+                  }}
+                  style={{marginTop: 20}}
+                  onPress={() => setMenuVisible(true)}>
+                  {menuButtonText}
+                </Button>
+              }>
+              <Menu.Item
+                title="00.00"
+                onPress={() => handleMenuItemPress({Monto: '00.00'})}
+              />
+              {products.map(item => (
+                <Menu.Item
+                  key={item.Codigo}
+                  title={item.Monto}
+                  onPress={() => handleMenuItemPress(item)}
+                />
+              ))}
+            </Menu>
+            {formik.errors.monto && formik.touched.monto && (
+              <Text style={styles.errorMessage}>{formik.errors.monto}</Text>
+            )}
+          </>
+        )}
+      </>
       {/* REFERENCIA */}
       <CustomNumericField
         placeholder={campoReferencia.nombre}
@@ -376,7 +419,7 @@ export default function Campos() {
         errorMessage={formik.errors.confirmarReferencia}
       />
       {/* SCANNER */}
-      {carrierSeleccionado.CategoriaID == '3' && !filtrandoProductos && (
+      {carrier.CategoriaID == '3' && !filtrandoProductos && (
         <CustomScanner onScanned={handleScannedData} />
       )}
       <CustomNumericField
@@ -419,3 +462,28 @@ export default function Campos() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  listaProductosLabel: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  vigencia: {
+    marginTop: 10,
+    fontWeight: 'bold',
+  },
+  inputBox: {
+    width: '100%',
+    minHeight: 60,
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+  },
+  errorMessage: {
+    color: 'red',
+    fontStyle: 'italic',
+  },
+});

@@ -3,7 +3,7 @@ import {ERROR_CODE_NAMES} from '../../errors';
 import {Moment, Utils} from '../../utils';
 import {obtenerUsuarioDb} from '../auth';
 import {
-  getPaidPrizesByDate,
+  getPaidPrizesByRange,
   getPeriodFromMonday,
   getServerTimestamp,
   getUserWeekInform,
@@ -31,12 +31,14 @@ export async function getUserAccountStatus(period, user) {
     const weekReport = await generateWeekReport(period);
     const weekInform = await createUserWeekInform(weekReport, user);
     const prevPeriod = getPreviousWeekPeriod(period);
-    const nextMonday = Moment(period.end).add(1, 'days').format('YYYY-MM-DD');
-    const nextMondayPaidPrizes = await getPaidPrizesByDate(nextMonday);
-    const userNextMondayPaidPrizes = nextMondayPaidPrizes.filter(
+    const nextPaidPrizes = await getPaidPrizesByRange(
+      Moment(period.end).add(1, 'days').format('YYYY-MM-DD'), // MONDAY
+      Moment(period.end).add(3, 'days').format('YYYY-MM-DD'), // WEDNESDAY
+    );
+    const userNextPaidPrizes = nextPaidPrizes.filter(
       item => item.pagadoPor == user.usuario,
     );
-    const totalUserNextMondayPaidPrizes = userNextMondayPaidPrizes.reduce(
+    const totalUserNextPaidPrizes = userNextPaidPrizes.reduce(
       (acc, item) => acc + parseFloat(item.premio),
       0,
     );
@@ -63,7 +65,7 @@ export async function getUserAccountStatus(period, user) {
       const weekAmount =
         lastInform.dueBalance +
         weekInform.amount -
-        weekInform.paidPrizesOnMonday.total;
+        weekInform.paidPrizesBeforeWeekPaymentLimitDay.total;
       const userInform = {
         id: uuid(),
         user: user.usuario,
@@ -85,19 +87,21 @@ export async function getUserAccountStatus(period, user) {
       toPay:
         lastInform.dueBalance +
         weekInform.amount -
-        weekInform.paidPrizesOnMonday.total,
+        weekInform.paidPrizesBeforeWeekPaymentLimitDay.total,
       amount:
         lastInform.dueBalance +
         weekInform.amount -
-        weekInform.paidPrizesOnMonday.total -
-        totalUserNextMondayPaidPrizes,
+        weekInform.paidPrizesBeforeWeekPaymentLimitDay.total -
+        totalUserNextPaidPrizes,
       lastInform,
       lastInformPeriod: prevPeriod,
-      dueBalance: lastInform.dueBalance - weekInform.paidPrizesOnMonday.total,
+      dueBalance:
+        lastInform.dueBalance -
+        weekInform.paidPrizesBeforeWeekPaymentLimitDay.total,
       nomComercial: user.nomComercial,
-      nextMondayPaidPrizes: {
-        total: totalUserNextMondayPaidPrizes,
-        recordsFound: userNextMondayPaidPrizes.length,
+      nextPaidPrizesBeforeWeekPaymentLimitDay: {
+        total: totalUserNextPaidPrizes,
+        recordsFound: userNextPaidPrizes.length,
       },
     };
   } catch ({message}) {
@@ -192,18 +196,25 @@ export async function createUserWeekInform(weekReport, user) {
       (acc, item) => acc + parseFloat(item.premio),
       0,
     );
-    const paidPrizesOnMonday = userWeekReport.paidPrizes.filter(item =>
-      ['lunes'].includes(dateToDayLowerCase(item.fechaPago)),
+    const paidPrizesBeforeWeekPaymentLimitDay =
+      userWeekReport.paidPrizes.filter(item =>
+        ['lunes', 'martes', 'miercoles'].includes(
+          dateToDayLowerCase(item.fechaPago),
+        ),
+      );
+    const totalPaidPrizesBeforeWeekPaymentLimitDay =
+      paidPrizesBeforeWeekPaymentLimitDay.reduce(
+        (acc, item) => acc + parseFloat(item.premio),
+        0,
+      );
+    const paidPrizesAfterWeekPaymentLimitDay = userWeekReport.paidPrizes.filter(
+      item =>
+        ['jueves', 'viernes', 'sabado', 'domingo'].includes(
+          dateToDayLowerCase(item.fechaPago),
+        ),
     );
-    const totalPaidPrizesOnMonday = paidPrizesOnMonday.reduce(
-      (acc, item) => acc + parseFloat(item.premio),
-      0,
-    );
-    const paidPrizesFromTuesdayToSunday = userWeekReport.paidPrizes.filter(
-      item => !['lunes'].includes(dateToDayLowerCase(item.fechaPago)),
-    );
-    const totalPaidPrizesFromTuesdayToSunday =
-      paidPrizesFromTuesdayToSunday.reduce(
+    const totalPaidPrizesAfterWeekPaymentLimitDay =
+      paidPrizesAfterWeekPaymentLimitDay.reduce(
         (acc, item) => acc + parseFloat(item.premio),
         0,
       );
@@ -258,7 +269,7 @@ export async function createUserWeekInform(weekReport, user) {
       '4',
     );
     // VERIFICAR PERIODO DEL 2023-08-28 AL 2023-09-03
-    let paidPrizes = totalPaidPrizesFromTuesdayToSunday;
+    let paidPrizes = totalPaidPrizesAfterWeekPaymentLimitDay;
     if (
       Moment(period.start).isSameOrBefore(Moment('2023-08-28')) &&
       Moment(period.end).isSameOrBefore(Moment('2023-09-03'))
@@ -307,14 +318,14 @@ export async function createUserWeekInform(weekReport, user) {
         total: totalPaidPrizes,
         recordsFound: paidPrizes.length,
       },
-      paidPrizesOnMonday: {
-        total: totalPaidPrizesOnMonday,
-        recordsFound: paidPrizesOnMonday.length,
+      paidPrizesBeforeWeekPaymentLimitDay: {
+        total: totalPaidPrizesBeforeWeekPaymentLimitDay,
+        recordsFound: paidPrizesBeforeWeekPaymentLimitDay.length,
         commission: 0,
       },
-      paidPrizesFromTuesdayToSunday: {
-        total: totalPaidPrizesFromTuesdayToSunday,
-        recordsFound: paidPrizesFromTuesdayToSunday.length,
+      paidPrizesAfterWeekPaymentLimitDay: {
+        total: totalPaidPrizesAfterWeekPaymentLimitDay,
+        recordsFound: paidPrizesAfterWeekPaymentLimitDay.length,
         commission: 0,
       },
       recharges: {
@@ -441,7 +452,9 @@ export async function verifyUserAccountStatus() {
     // IF USER HAS PAID DUE BALANCES SO FAR EXCEPT THE LAST ONE
     // LOG USER OUT AND UPDATE DISABLE ACCOUNT REASON PROP
     if (
-      Moment(timestamp).format('dddd').toLowerCase() !== 'lunes' &&
+      ['jueves', 'viernes', 'sabado', 'domingo'].includes(
+        Moment(timestamp).format('dddd').toLowerCase(),
+      ) &&
       beforePrevInform &&
       prevInform &&
       beforePrevInform.paymentCompleted &&

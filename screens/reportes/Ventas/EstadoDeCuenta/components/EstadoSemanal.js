@@ -116,8 +116,8 @@ export default function EstadoSemanal() {
           />
           <CustomRow
             cols={[
-              'PREMIOS PAGADOS LUNES ANTERIOR',
-              Money(accountStatus.paidPrizesOnMonday.total),
+              'PREMIOS PAGADOS LUNES A MIERCOLES ANTERIOR',
+              Money(accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total),
             ]}
           />
           <CustomRow cols={['SU PAGO', Money(lastInform.totalDeposits)]} />
@@ -168,16 +168,19 @@ export default function EstadoSemanal() {
         <TicketSection subtitle="PREMIOS Y COMISIONES">
           <CustomRow
             cols={[
-              'PREMIOS PAGADOS MARTES A DOMINGO',
-              accountStatus.paidPrizesFromTuesdayToSunday.recordsFound,
-              Money(accountStatus.paidPrizesFromTuesdayToSunday.total),
+              'PREMIOS PAGADOS JUEVES A DOMINGO',
+              accountStatus.paidPrizesAfterWeekPaymentLimitDay.recordsFound,
+              Money(accountStatus.paidPrizesAfterWeekPaymentLimitDay.total),
             ]}
           />
           <CustomRow
             cols={[
-              'PREMIOS PAGADOS LUNES ACTUAL',
-              accountStatus.nextMondayPaidPrizes.recordsFound,
-              Money(accountStatus.nextMondayPaidPrizes.total),
+              'PREMIOS PAGADOS LUNES A MIERCOLES ACTUAL',
+              accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay
+                .recordsFound,
+              Money(
+                accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay.total,
+              ),
             ]}
           />
           <CustomRow

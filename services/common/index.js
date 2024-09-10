@@ -85,3 +85,17 @@ export async function saveUserWeekInform(weekInform) {
     throw new Error(message);
   }
 }
+
+export async function getPaidPrizesByRange(start, end) {
+  try {
+    const paidPrizes = await Database.getItemsInRange(
+      DATABASE_TABLES.PAID_PRIZES,
+      'fechaPago',
+      start,
+      end,
+    );
+    return paidPrizes;
+  } catch ({message}) {
+    throw new Error(message);
+  }
+}

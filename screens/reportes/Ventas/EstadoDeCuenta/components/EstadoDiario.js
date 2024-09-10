@@ -151,16 +151,16 @@ export default function EstadoDiario() {
         <TicketSection subtitle="PREMIOS">
           <CustomRow
             cols={[
-              'PAGOS LUNES',
-              accountStatus.paidPrizesOnMonday.recordsFound,
-              Money(accountStatus.paidPrizesOnMonday.total),
+              'PAGOS LUNES A MIERCOLES',
+              accountStatus.paidPrizesBeforeWeekPaymentLimitDay.recordsFound,
+              Money(accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total),
             ]}
           />
           <CustomRow
             cols={[
-              'PAGOS MARTES A DOMINGO',
-              accountStatus.paidPrizesFromTuesdayToSunday.recordsFound,
-              Money(accountStatus.paidPrizesFromTuesdayToSunday.total),
+              'PAGOS JUEVES A DOMINGO',
+              accountStatus.paidPrizesAfterWeekPaymentLimitDay.recordsFound,
+              Money(accountStatus.paidPrizesAfterWeekPaymentLimitDay.total),
             ]}
           />
         </TicketSection>

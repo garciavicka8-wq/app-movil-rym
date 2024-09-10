@@ -136,7 +136,7 @@ const Print = (() => {
         await BEP.printText(`Total ${boleto.totalApostado} Pts\n\r`, {});
         await BEP.printText(`ID ${boleto.numeroBoleto}\n\r`, {});
         await BEP.printText(`V1N ${Utils.generateRandomNumber(16)}\n\r`, {});
-        await BEP.printText(`CDS ${Utils.generateRandomNumber(8)}\n\r`, {});
+        await BEP.printText(`COS ${Utils.generateRandomNumber(8)}\n\r`, {});
         await BEP.printerAlign(ALIGN.CENTER);
         await BEP.printQRCode(boleto.numeroBoleto, 120, ERROR_CORRECTION.L, 0);
         await BEP.printText(`\n\r\n\r`, {});
@@ -269,10 +269,10 @@ const Print = (() => {
         )}\n\r`,
         {},
       );
-      if (accountStatus.paidPrizesOnMonday.total > 0) {
+      if (accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total > 0) {
         await BEP.printText(
-          `P.pagados lun ant. ${Money(
-            accountStatus.paidPrizesOnMonday.total,
+          `P.pagados lun a mie ant. ${Money(
+            accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total,
           )}\n\r`,
           {},
         );
@@ -335,18 +335,18 @@ const Print = (() => {
       await BEP.printerAlign(ALIGN.CENTER);
       await BEP.printText(`Prem. y Com.\n\r`, {});
       await BEP.printerAlign(ALIGN.LEFT);
-      if (accountStatus.paidPrizesFromTuesdayToSunday.total > 0) {
+      if (accountStatus.paidPrizesAfterWeekPaymentLimitDay.total > 0) {
         await BEP.printText(
-          `P.pagados mar a dom act ${Money(
-            accountStatus.paidPrizesFromTuesdayToSunday.total,
+          `P.pagados jue a dom act ${Money(
+            accountStatus.paidPrizesAfterWeekPaymentLimitDay.total,
           )}\n\r`,
           {},
         );
       }
-      if (accountStatus.nextMondayPaidPrizes.total > 0) {
+      if (accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay.total > 0) {
         await BEP.printText(
-          `P.pagados lun act ${Money(
-            accountStatus.nextMondayPaidPrizes.total,
+          `P.pagados lun a mie act ${Money(
+            accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay.total,
           )}\n\r`,
           {},
         );

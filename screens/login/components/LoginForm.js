@@ -104,12 +104,14 @@ export default function LoginForm() {
           }
           // SI HAY ALGUN ERROR
           if (error !== null) {
+            console.log(error, ' line 107');
             setStartAnimation(false);
             alert(error.message);
           }
         },
       );
     } catch ({message}) {
+      console.log(message, ' line 114');
       setStartAnimation(false);
       alert(message);
     }

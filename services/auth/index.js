@@ -24,6 +24,7 @@ export const iniciarSesion = async (numeroUsuario, password, callback) => {
       throw new Error(
         'La cuenta que ingresaste no se encuentra en el sistema.',
       );
+    // console.log(usuarioDB);
     // SI EL USUARIO ESTA DESACTIVADO
     if (usuarioDB.activo !== undefined && !usuarioDB.activo)
       throw new Error(usuarioDB.disableAccountReason);

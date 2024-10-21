@@ -12,6 +12,7 @@ import {
   serverTimestamp,
   startAt,
   endAt,
+  orderByKey,
 } from 'firebase/database';
 
 const Database = (() => {
@@ -176,6 +177,24 @@ const Database = (() => {
     // RETORNAR LISTA DE ITEMS
     return filterFnc ? items.filter(filterFnc) : items; // [{...}, {...}] || []
   };
+  // GET ITEM BY KEY
+  const getItemByKey = async (refName, childKey) => {
+    // const item = await _database.ref(refName).child(childKey).once('value');
+    // return item.val() ? {...item.val(), key: item.key} : null;
+    const _query = query(
+      child(DATABASE_REF, refName),
+      orderByKey(),
+      equalTo(childKey),
+    );
+    const snapshot = await get(_query);
+    let item = null;
+    if (snapshot.exists()) {
+      snapshot.forEach(el => {
+        item = {...el.val(), key: el.key};
+      });
+    }
+    return item;
+  };
   // EXPOSE API
   return {
     getItems,
@@ -185,6 +204,7 @@ const Database = (() => {
     getObject,
     getItemsInRange,
     getFullObjectInRange,
+    getItemByKey,
     save,
     update,
     deleteItem,

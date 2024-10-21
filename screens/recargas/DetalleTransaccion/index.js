@@ -43,6 +43,7 @@ export default function DetalleTransaccion() {
   const actualizarTransaccion = async () => {
     try {
       setCargando(true);
+      // console.log(transaccionStore);
       const tempTransaction = await Database.getItemByKey(
         DATABASE_TABLES.TRANSACCIONES,
         transaccionStore.key,

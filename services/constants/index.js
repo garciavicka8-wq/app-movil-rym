@@ -21,6 +21,11 @@ export const DATABASE_TABLES = {
   TEST: 'test',
 };
 
+export const DEPOSIT_DAYS = {
+  OUT_OF_LIMIT: ['jueves', 'viernes', 'sabado', 'domingo'],
+  TOLERANCE_PERIOD: [],
+};
+
 export const TRANSACTION_STRUCTURE = {
   tempId: '', // SIRVE PARA PODER ACTUALIZAR LA TRANSACCION DEPUES DE RECIBIR LA RESPUESTA DE TAE
   TransID: '',

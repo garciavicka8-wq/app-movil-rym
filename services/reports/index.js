@@ -10,7 +10,7 @@ import {
   saveUserWeekInform,
   updateUser,
 } from '../common';
-import {DATABASE_TABLES} from '../constants';
+import {DATABASE_TABLES, DEPOSIT_DAYS} from '../constants';
 const {
   dateToDayLowerCase,
   ticketsSaleComision,
@@ -452,7 +452,7 @@ export async function verifyUserAccountStatus() {
     // IF USER HAS PAID DUE BALANCES SO FAR EXCEPT THE LAST ONE
     // LOG USER OUT AND UPDATE DISABLE ACCOUNT REASON PROP
     if (
-      ['jueves', 'viernes', 'sabado', 'domingo'].includes(
+      DEPOSIT_DAYS.OUT_OF_LIMIT.includes(
         Moment(timestamp).format('dddd').toLowerCase(),
       ) &&
       beforePrevInform &&

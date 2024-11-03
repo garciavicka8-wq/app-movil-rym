@@ -7,8 +7,10 @@ import Database from '../../database';
 import {DATABASE_TABLES, TRANSACTION_STRUCTURE} from '../constants';
 import {actualizarCredito} from '../credito';
 import {getPeriodFromMonday, getServerTimestamp} from '../common';
+import {TRANSACTION_STATES, TXN} from '../../constants';
 const qs = require('qs');
 const bcrypt = require('react-native-bcrypt');
+const TXN_STATUS_SUCCESS = 'SUCCESS';
 // GET TAECEL PRODUCTS
 export const getProducts = async () => {
   try {
@@ -69,10 +71,13 @@ export const makeRecharge = async (
       data = await getStatusRequest(transID);
       const end = new Date();
       seconds = Math.floor((end.getTime() - start.getTime()) / 1000);
-    } while (data.status === 'PROCESSING' && seconds < 60);
+    } while (data.status === TXN.STATES.PROCESSING && seconds < 60);
     // VERIFICAR SI LA TRANSACCION FALLO
-    const errorStatusList = ['ERROR', 'FAILED', 'PROCESSING'];
-    if (errorStatusList.includes(data.status)) {
+    if (
+      [TXN.STATES.ERROR, TXN.STATES.FAILED, TXN.STATES.PROCESSING].includes(
+        data.status,
+      )
+    ) {
       // UPDATE TRANSACTION
       await updateTransaction({
         tempId,
@@ -86,7 +91,7 @@ export const makeRecharge = async (
       throw new Error(`${data.transaccion.Nota}`);
     }
     // VERIFICA SI LA TRANSACCION TUVO EXITO
-    if (data.status === 'SUCCESS') data.status = 'success';
+    if (data.status === TXN_STATUS_SUCCESS) data.status = 'success';
     // UPDATE TRANSACTION
     await updateTransaction({
       tempId,
@@ -147,10 +152,13 @@ export const payService = async (
       data = await getStatusRequest(transID);
       const end = new Date();
       seconds = Math.floor((end.getTime() - start.getTime()) / 1000);
-    } while (data.status === 'PROCESSING' && seconds < 60);
+    } while (data.status === TRANSACTION_STATES.PROCESSING && seconds < 60);
     // VERIFICAR SI LA TRANSACCION FALLO
-    const errorStatusList = ['ERROR', 'FAILED', 'PROCESSING'];
-    if (errorStatusList.includes(data.status)) {
+    if (
+      [TXN.STATES.ERROR, TXN.STATES.FAILED, TXN.STATES.PROCESSING].includes(
+        data.status,
+      )
+    ) {
       // UPDATE TRANSACTION
       await updateTransaction({
         tempId,
@@ -162,7 +170,7 @@ export const payService = async (
       throw new Error(`${data.transaccion.Nota}`);
     }
     // VERIFICA SI LA TRANSACCION TUVO EXITO
-    if (data.status === 'SUCCESS') data.status = 'success';
+    if (data.status === TXN_STATUS_SUCCESS) data.status = 'success';
     // UPDATE TRANSACTION
     await updateTransaction({
       tempId,
@@ -290,17 +298,18 @@ async function saveTransaction({
   try {
     const timestamp = await Database.getServerDate();
     // EL ABONO SOLO APLICA A LAS GIFTCARDS = 4
-    const _abono = categoriaID == '4' ? parseFloat(monto) * 0.02 : 0;
+    const _abono =
+      categoriaID == TXN.CODES.GIFTCARD ? parseFloat(monto) * 0.02 : 0;
     // EL CARGO SOLO APLICA A LOS SERVICIOS = 3
-    const _cargo = categoriaID == '3' ? 5 : 0;
+    const _cargo = categoriaID == TXN.CODES.SERVICIO ? 5 : 0;
     // LA COMISION SOLO LA APLICAN RECARGAS Y SERVICIOS = [1,2,3]
     let _comision = 0;
     // COMISION RECARGAS
-    if (['1', '2'].includes(categoriaID)) {
+    if ([TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(categoriaID)) {
       _comision = comisionRecargas;
     }
     // COMISION SERVICIOS
-    if (['3'].includes(categoriaID)) {
+    if ([TXN.CODES.SERVICIO].includes(categoriaID)) {
       _comision = 7;
     }
     const tempTransaction = {
@@ -314,10 +323,14 @@ async function saveTransaction({
       Telefono: referencia,
       Monto: Money(monto),
       tempId,
-      _comisionRecargas: ['1', '2'].includes(categoriaID)
+      _comisionRecargas: [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
+        categoriaID,
+      )
         ? Money(_comision)
         : Money(0),
-      _comisionRecargasFecha: ['1', '2'].includes(categoriaID)
+      _comisionRecargasFecha: [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
+        categoriaID,
+      )
         ? comisionRecargasFecha
         : '',
       _usuario: usuario,
@@ -397,10 +410,14 @@ async function updateTransaction({
         _hora: Moment(transaccion.Fecha).format('HH:mm:ss'),
         descripcionProducto,
         // SE APLICA SOLO PARA RECARGAS
-        _comisionRecargas: ['1', '2'].includes(categoriaID)
+        _comisionRecargas: [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
+          categoriaID,
+        )
           ? Money(comisionRecargas)
           : Money(0),
-        _comisionRecargasFecha: ['1', '2'].includes(categoriaID)
+        _comisionRecargasFecha: [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
+          categoriaID,
+        )
           ? comisionRecargasFecha
           : '',
       };
@@ -412,7 +429,7 @@ async function updateTransaction({
       );
     }
     // ACTUALIZAMOS EL CREDITO SI LA TRANSACCION FUE EXITOSA
-    if (transaccion.Status === 'Exitosa') {
+    if (transaccion.Status === TXN.STATES.SUCCESS) {
       const credito = await Database.getItem(
         DATABASE_TABLES.CREDITS,
         'usuario',
@@ -453,7 +470,7 @@ export const getTransactions = async periodo => {
 };
 export async function saveRechargeCommission(comision, password, callback) {
   try {
-    const userStorage = Storage.getItem('usuario', true);
+    const userStorage = Storage.getUser();
     const userDB = await Database.getItem(
       DATABASE_TABLES.USERS,
       'usuario',

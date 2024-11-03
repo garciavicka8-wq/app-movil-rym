@@ -1,0 +1,25 @@
+const DATABASE_TABLES = {
+  BOLETOS: 'boletos',
+  AGENCIAS: 'usuarios',
+  // AGENCIAS: 'users',
+  SORTEOS: 'ajustes/sorteos',
+  FECHA_SERVIDOR: 'fechaServidor',
+  LIMITE_APUESTAS: 'ajustes/limiteApuestas',
+  HORA_CIERRE: 'ajustes/horaCierre',
+  ABONOS: 'ajustes/abonos',
+  PRONOSTICOS: 'futbol/pronosticos',
+  NUMEROS_GANADORES: 'ajustes/numerosGanadores',
+  PREMIOS_PAGADOS: 'premiosPagados',
+  BOLETOS_CANCELADOS: 'boletosCancelados',
+  VERSIONES: 'ajustes/versiones',
+  MANTENIMIENTO: 'ajustes/mantenimiento',
+  LISTA_SORTEOS: 'ajustes/listaSorteos',
+  LIBERAR_ESPACIO: 'ajustes/liberarEspacio',
+  TRANSACCIONES: 'transacciones',
+  ESTADOS_DE_CUENTA: 'estadosDeCuenta',
+  DEPOSITOS: 'depositos',
+  DISPOSITIVOS_REGISTRADOS: 'dispositivosRegistrados',
+  CREDITOS: 'creditos',
+};
+
+export default DATABASE_TABLES;

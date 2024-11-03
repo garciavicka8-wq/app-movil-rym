@@ -7,22 +7,8 @@ import {
   ALIGN,
   ERROR_CORRECTION,
 } from 'tp-react-native-bluetooth-printer';
-import {
-  AMOUNT_COL_SIZE_3,
-  CHISPAZO_LOGO,
-  MELATERR_LOGO2,
-  PRINT_TABLE,
-  PRINT_TABLE_HEADER,
-} from '../constants';
-const LOGO_URL =
-  'https://recargasymas.com.mx/wp-content/uploads/2023/10/logo-ticket-100.jpg';
-// SECCIONES AJUSTADAS
-// REPORTE
-// TICKET PLUS | MAGICO
-// COMPROBANTE TRANSACCION
-// CANCELAR BOLETO
-// TOTAL ACUMULADO
-// PAGO PREMIO
+import {CHISPAZO_LOGO, PRINT_TABLE, PRINT_TABLE_HEADER} from '../constants';
+import {TKP_LOGO_URL} from '../constants';
 
 const Print = (() => {
   // TRANSACTION RECEIPT
@@ -255,7 +241,6 @@ const Print = (() => {
   const accountStatus = async accountStatus => {
     try {
       const {lastInform, lastInformPeriod} = accountStatus;
-      // await BEP.printPic(LOGO_BASE64, {width: 220, left: 80});
       await BEP.printerAlign(ALIGN.LEFT);
       await BEP.printText(`Exp. ${accountStatus.fechaExp}\n\r`, {});
       await BEP.printText(`${accountStatus.nomComercial}\n\r`, {});
@@ -456,7 +441,7 @@ const Print = (() => {
       2: 'do',
       3: 'er',
     };
-    let text = `[C]<img>${LOGO_URL}</img>\n`;
+    let text = `[C]<img>${TKP_LOGO_URL}</img>\n`;
     text += `[C]<font size='normal'>${Moment(fechaSorteo).format(
       'ddd DD MMM YY',
     )}</font>\n`;

@@ -7,10 +7,11 @@ import {
 } from '../features/credito/creditoSlice';
 import {obtenerCreditoDisponible} from '../services/tickets';
 import Database from '../database';
-import {Moment, Utils} from '../utils';
+import {Moment, Storage, Utils} from '../utils';
 import {useLogout} from './useLogout';
 import {ERROR_CODE_NAMES} from '../errors';
 import {verifyUserAccountStatus} from '../services/reports';
+import {DATABASE_TABLES} from '../services/constants';
 
 export function useCredito() {
   const dispatch = useDispatch();
@@ -49,7 +50,29 @@ export function useCredito() {
     }
   };
 
+  const restarCredito = async amount => {
+    try {
+      const user = Storage.getUser();
+      const credito = await Database.getItem(
+        DATABASE_TABLES.CREDITS,
+        'usuario',
+        user.usuario,
+      );
+      if (credito) {
+        // RESTAMOS EL MONTO DE LA TRANSACCION AL CREDITO DISPONIBLE
+        const saldoNuevo = credito.saldo - amount;
+        await Database.update(DATABASE_TABLES.CREDITS, credito.key, {
+          saldo: saldoNuevo <= 0 ? 0 : saldoNuevo,
+        });
+        dispatch(setCreditoDisponible(saldoNuevo <= 0 ? 0 : saldoNuevo));
+      }
+    } catch ({message}) {
+      throw new Error(message);
+    }
+  };
+
   return {
     obtenerCredito,
+    restarCredito,
   };
 }

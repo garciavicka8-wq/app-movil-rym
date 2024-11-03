@@ -8,7 +8,7 @@ import {Button, Menu} from 'react-native-paper';
 import {setTransaccionStore} from '../../../../features/taecel/taecelSlice';
 import {Helpers, Storage} from '../../../../utils';
 import {useCustomNavigation, useLogout, useModal} from '../../../../hooks';
-import {APP_NAVIGATION} from '../../../../constants';
+import {APP_NAVIGATION, TXN} from '../../../../constants';
 import {makeRecharge, payService} from '../../../../services/taecel';
 import {restarCredito} from '../../../../features/credito/creditoSlice';
 import CustomNumericField from '../../../../components/CustomNumericField';
@@ -23,7 +23,7 @@ export default function Campos({route}) {
   const {creditoDisponible} = useSelector(state => state.credito);
   const [codigoPinStorage] = useState(Storage.getItem('codigoPin'));
   const [selectedProduct, setSelectedProduct] = useState(
-    carrier.CategoriaID == 3 ? products[0] : null,
+    carrier.CategoriaID == TXN.CODES.SERVICIO ? products[0] : null,
   );
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuButtonText, setMenuButtonText] = useState('$00.00 MXN');
@@ -112,11 +112,15 @@ export default function Campos({route}) {
       progressTitle: `Transacción En Proceso${'\n'}No Interrumpas La Conexión`,
     });
     // VERIFICAR SI ES RECARGA TELEFONICA , PAQUETE O GIFTCARD
-    if (['1', '2', '4'].includes(carrier.CategoriaID)) {
+    if (
+      [TXN.CODES.RECARGA, TXN.CODES.PAQUETE, TXN.CODES.GIFTCARD].includes(
+        carrier.CategoriaID,
+      )
+    ) {
       hacerRecarga(data);
     }
     // VERIFICAR SI ES PAGO DE SERVICIO
-    if (carrier.CategoriaID == '3') {
+    if (carrier.CategoriaID == TXN.CODES.SERVICIO) {
       pagarServicio(data);
     }
   };
@@ -292,14 +296,18 @@ export default function Campos({route}) {
 
   const handleTextInputChange = (text, inputName) => {
     if (
-      ['1', '2', '4'].includes(carrier.CategoriaID) &&
+      [TXN.CODES.RECARGA, TXN.CODES.PAQUETE, TXN.CODES.GIFTCARD].includes(
+        carrier.CategoriaID,
+      ) &&
       inputName === 'referencia' &&
       text.length === 10
     ) {
       confirmarReferenciaRef.current?.focus();
     }
     if (
-      ['1', '2', '4'].includes(carrier.CategoriaID) &&
+      [TXN.CODES.RECARGA, TXN.CODES.PAQUETE, TXN.CODES.GIFTCARD].includes(
+        carrier.CategoriaID,
+      ) &&
       inputName === 'confirmarReferencia' &&
       text.length === 10
     ) {
@@ -331,13 +339,15 @@ export default function Campos({route}) {
     formik.setFieldValue('monto', !val ? '' : val);
   };
 
-  const isRecharge = ['1', '2'].includes(carrier.CategoriaID);
+  const isRecharge = [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
+    carrier.CategoriaID,
+  );
 
   return (
     <>
       {/* MONTO */}
       <>
-        {carrier.CategoriaID == 3 ? (
+        {carrier.CategoriaID == TXN.CODES.SERVICIO ? (
           <>
             <CustomNumericField
               type="currency"
@@ -419,7 +429,7 @@ export default function Campos({route}) {
         errorMessage={formik.errors.confirmarReferencia}
       />
       {/* SCANNER */}
-      {carrier.CategoriaID == '3' && !filtrandoProductos && (
+      {carrier.CategoriaID == TXN.CODES.SERVICIO && !filtrandoProductos && (
         <CustomScanner onScanned={handleScannedData} />
       )}
       <CustomNumericField

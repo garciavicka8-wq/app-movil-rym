@@ -1,59 +1,50 @@
 import {Moment, Money} from '.';
-import {LOGOS_URL} from '../constants';
+import {LOGOS_URL, TXN} from '../constants';
 
 const Helpers = {
   // DECRIPCION PRODUCTO TRANSACCIONES
   descripcionProductoTransaccion(producto) {
     // SI ES RECARGA | PAQUETE
-    if (['1', '2'].includes(producto.CategoriaID)) {
+    if ([TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(producto.CategoriaID)) {
       return producto.Descripcion;
     }
     // SI ES SERVICIO
-    if (producto.CategoriaID == '3') {
+    if (producto.CategoriaID == TXN.CODES.SERVICIO) {
       return 'Tiene 5 dias naturales para solicitar aclaraciones sobre el cobro de su recibo, despues de esta fecha no nos responsabilizamos por sus pagos.**Una vez procesado el pago ya no habra reembolsos ni devoluciones. RECARGAS y MAS no se responsabiliza por cargos de reconexion o multas.';
     }
     // SI ES GIFT CARD
-    if (producto.CategoriaID == '4') {
+    if (producto.CategoriaID == TXN.CODES.GIFTCARD) {
       return producto.Vigencia;
     }
     // SI NADA COINCIDE
     return '';
   },
   // CALCULAR TRANSACCION
-  calcularTotalTransaccion: (transaccion, categoriaID) => {
-    let ventaTransaccion = 0;
+  calcularTotalTransaccion: (txn, categoriaID) => {
+    let ventaTxn = 0;
     // SI ES RECARGA | PAQUETE | GIFTCARD
-    if (['1', '2'].includes(categoriaID)) {
-      // const comision =
-      //   transaccion._comisionRecargas !== undefined
-      //     ? transaccion._comisionRecargas
-      //     : Money(2);
+    if ([TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(categoriaID)) {
       const comisionSobreRecarga =
-        parseFloat(Helpers.toMoneyWithDecimals(transaccion.Monto, false)) *
-        0.04;
-      ventaTransaccion =
-        parseFloat(Helpers.toMoneyWithDecimals(transaccion.Monto, false)) -
+        parseFloat(Helpers.toMoneyWithDecimals(txn.Monto, false)) * 0.04;
+      ventaTxn =
+        parseFloat(Helpers.toMoneyWithDecimals(txn.Monto, false)) -
         parseFloat(comisionSobreRecarga);
-      // ventaTransaccion = parseFloat(
-      //   Helpers.toMoneyWithDecimals(transaccion.Monto, false),
-      // );
     }
     // SI ES SERVICIO
-    if (['3', '4'].includes(categoriaID)) {
+    if ([TXN.CODES.SERVICIO, TXN.CODES.GIFTCARD].includes(categoriaID)) {
       const txnComision =
-        parseFloat(Helpers.toMoneyWithDecimals(transaccion.Comision, false)) /
-        2;
+        parseFloat(Helpers.toMoneyWithDecimals(txn.Comision, false)) / 2;
       const cargoMasComision = Helpers.sumWithDecimals(
-        transaccion.Cargo,
+        txn.Cargo,
         txnComision,
         false,
       );
-      const resultado =
-        parseFloat(Helpers.toMoneyWithDecimals(transaccion.Monto, false)) +
+      const result =
+        parseFloat(Helpers.toMoneyWithDecimals(txn.Monto, false)) +
         parseFloat(cargoMasComision);
-      ventaTransaccion = parseFloat(resultado);
+      ventaTxn = parseFloat(result);
     }
-    return ventaTransaccion;
+    return ventaTxn;
   },
   //   COVIERTE UNA CADENA A FORMATO DECIMAL
   toMoneyWithDecimals: (amount, withSimbol = true, number = false) => {

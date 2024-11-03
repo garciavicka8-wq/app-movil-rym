@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {Linking, View} from 'react-native';
+import {Linking, Text, View} from 'react-native';
 import {Container, Content} from '../../../components/Layout';
 import DetallesHeader from './components/DetallesHeader';
 import Detalles from './components/Detalles';
@@ -8,17 +8,18 @@ import LoadingIndicator from '../../../components/LoadingIndicator';
 import {useDispatch, useSelector} from 'react-redux';
 import {getStatusRequest} from '../../../services/taecel';
 import Database from '../../../database';
-import {DATABASE_TABLES} from '../../../constants';
+import {DATABASE_TABLES, TRANSACTION_STATES, TXN} from '../../../constants';
 import {
   setTransaccionStore,
   setTransacciones,
 } from '../../../features/taecel/taecelSlice';
-import {Colors, Moment} from '../../../utils';
+import {Colors, Helpers, Moment} from '../../../utils';
 import NoConnection from '../../../components/NoConnection';
 import {useNetInfo} from '@react-native-community/netinfo';
 import {Button} from 'react-native-paper';
 import {captureRef} from 'react-native-view-shot';
 import Share from 'react-native-share';
+import {useCredito} from '../../../hooks';
 
 export default function DetalleTransaccion() {
   const {transaccionStore, transacciones} = useSelector(state => state.taecel);
@@ -27,6 +28,8 @@ export default function DetalleTransaccion() {
   const dispatch = useDispatch();
   const netInfo = useNetInfo();
   const imageRef = useRef();
+  const [isTxnProcessed, setIsTxnProcessed] = useState(false);
+  const {restarCredito} = useCredito();
 
   useEffect(() => {
     // VERIFICAR CONEXION
@@ -61,18 +64,31 @@ export default function DetalleTransaccion() {
           _comisionRecargas: tempTransaction._comisionRecargas,
           _comisionRecargasFecha: tempTransaction._comisionRecargasFecha,
         };
+
+        setIsTxnProcessed(newTransaction.Status !== TXN.STATES.PROCESSING);
+        //  UPDATE TRANSACCION
         await Database.save(
           DATABASE_TABLES.TRANSACCIONES,
           newTransaction,
           tempTransaction.key,
         );
+
         const transaccionIndex = transacciones.findIndex(
           item => item.key === tempTransaction.key,
         );
+
         let _transacciones = [...transacciones];
         _transacciones[transaccionIndex] = newTransaction;
         dispatch(setTransacciones(_transacciones));
         dispatch(setTransaccionStore(newTransaction));
+        // SI LA TRANSACCION ES EXITOSA ACTUALIZAMOS EL CREDITO
+        if (newTransaction.Status === TXN.STATES.SUCCESS) {
+          const montoTransaccion = Helpers.calcularTotalTransaccion(
+            newTransaction,
+            newTransaction.CategoriaID,
+          );
+          await restarCredito(montoTransaccion);
+        }
       }
       setCargando(false);
     } catch ({message}) {
@@ -90,6 +106,7 @@ export default function DetalleTransaccion() {
         transaccionStore.TransID,
       );
       dispatch(setTransaccionStore(txn));
+      setIsTxnProcessed(true);
       setCargando(false);
     } catch ({message}) {
       console.log(message);
@@ -118,6 +135,33 @@ export default function DetalleTransaccion() {
   if (!netInfo?.isConnected) return <NoConnection />;
 
   if (cargando) return <LoadingIndicator />;
+
+  if (!cargando && !isTxnProcessed)
+    return (
+      <View
+        style={{
+          display: 'flex',
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginHorizontal: '2.5%',
+        }}>
+        <Text style={{fontSize: 18, marginBottom: 20, textAlign: 'center'}}>
+          La transacción no ha sido procesada, intente de nuevo más tarde
+        </Text>
+        <Button
+          mode="contained"
+          buttonColor={Colors.blue}
+          uppercase
+          icon={'reload'}
+          onPress={() => {
+            if (cargando) return;
+            actualizarTransaccion();
+          }}>
+          Volver a intentar
+        </Button>
+      </View>
+    );
 
   return (
     <Container bgColor="#fff">

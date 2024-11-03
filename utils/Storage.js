@@ -24,11 +24,17 @@ const Storage = (() => {
     if (!item) return null;
     appStorage.delete(key);
   };
+  const getUser = () => {
+    const item = appStorage.getString('usuario');
+    if (!item) return null;
+    return JSON.parse(item);
+  };
   //  EXPOSE API
   return {
     getItem,
     setItem,
     removeItem,
+    getUser,
   };
 })();
 

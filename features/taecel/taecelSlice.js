@@ -13,6 +13,7 @@ const initialState = {
   productoSeleccionado: null,
   transacciones: [],
   transaccionStore: null,
+  ultimasTransacciones: [],
   // NEW PROPS TO IMPROVE PERFORMANCE
   loadingProducts: false,
   mainProducts: [],
@@ -66,6 +67,9 @@ export const taecelSlice = createSlice({
     setTransacciones: (state, {payload}) => {
       state.transacciones = [...payload];
     },
+    setUltimasTransacciones: (state, {payload}) => {
+      state.ultimasTransacciones = [...payload];
+    },
     setTransaccionStore: (state, {payload}) => {
       state.transaccionStore = {...payload};
     },
@@ -106,6 +110,7 @@ export const {
   setCarrierSeleccionado,
   setProductoSeleccionado,
   setTransacciones,
+  setUltimasTransacciones,
   setTransaccionStore,
   // NEW SETTERS
   setLoadingProducts,

@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingVertical: 5,
     textTransform: 'uppercase',
-    fontSize: 16,
+    fontSize: 14,
   },
   divider: {
     marginVertical: 20,

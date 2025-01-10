@@ -8,6 +8,7 @@ import {DATABASE_TABLES, TRANSACTION_STRUCTURE} from '../constants';
 import {actualizarCredito} from '../credito';
 import {getPeriodFromMonday, getServerTimestamp} from '../common';
 import {TRANSACTION_STATES, TXN} from '../../constants';
+import {logError} from '../logger';
 const qs = require('qs');
 const bcrypt = require('react-native-bcrypt');
 const TXN_STATUS_SUCCESS = 'SUCCESS';
@@ -23,7 +24,7 @@ export const getProducts = async () => {
     const res = await axios.post(url, data);
     return res.data;
   } catch (error) {
-    console.log('[Error]: ' + error.message, '[Func]: getProducts');
+    logError('getProducts', error.message);
     throw Error('Error al obtener productos');
   }
 };
@@ -346,26 +347,27 @@ async function saveTransaction({
 // GET TXN STATUS
 export const getStatusRequest = async transID => {
   try {
-    const res = await statusTXN(transID);
-    const response = res.data;
-    let status = 'FAILED';
-    // console.log('getStatusRequest: ', response.data);
-    if (!response.success || response.data.Status === 'Fracasada') {
-      status = 'FAILED';
-    }
-    if (response.success && response.data.Status === '') {
-      status = 'PROCESSING';
-    }
-    if (response.success && response.data.Status === 'Exitosa') {
-      status = 'SUCCESS';
-    }
-    return {status: status, transaccion: response.data};
-  } catch ({message}) {
-    const _message = message ? message : 'Transacción Exitosa';
-    console.log('[Error]: ' + _message, '[Func]: getStatusRequest');
-    throw Error(_message);
+    const {data: response} = await statusTXN(transID);
+    const {success, data} = response;
+
+    // Determinar el estado basándonos en las condiciones
+    const status =
+      !success || data.Status === 'Fracasada'
+        ? 'FAILED'
+        : data.Status === ''
+        ? 'PROCESSING'
+        : data.Status === 'Exitosa'
+        ? 'SUCCESS'
+        : 'FAILED';
+
+    return {status, transaccion: data};
+  } catch (error) {
+    const errorMessage = error.message || 'Transacción Exitosa';
+    logError('getStatusRequest', errorMessage);
+    throw new Error(errorMessage);
   }
 };
+
 // TXN STATUS
 export const statusTXN = async transID => {
   try {

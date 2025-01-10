@@ -1,6 +1,6 @@
 import Database from '../../database';
 import {ERROR_CODE_NAMES} from '../../errors';
-import {Moment, Utils} from '../../utils';
+import {Moment, Utils, Storage} from '../../utils';
 import {obtenerUsuarioDb} from '../auth';
 import {
   getPaidPrizesByRange,
@@ -10,6 +10,7 @@ import {
   saveUserWeekInform,
   updateUser,
 } from '../common';
+import * as Request from '../http';
 import {DATABASE_TABLES, DEPOSIT_DAYS} from '../constants';
 const {
   dateToDayLowerCase,
@@ -27,6 +28,7 @@ const {
 // USER
 export async function getUserAccountStatus(period, user) {
   try {
+    console.log('here');
     const timestamp = await getServerTimestamp();
     const weekReport = await generateWeekReport(period);
     const weekInform = await createUserWeekInform(weekReport, user);
@@ -460,6 +462,7 @@ export async function verifyUserAccountStatus() {
       beforePrevInform.paymentCompleted &&
       !prevInform.paymentCompleted
     ) {
+      console.log('verifyUserAccountStatus line: 464');
       await updateUser(userDB.key, {
         activo: false,
         disableAccountReason:
@@ -469,5 +472,39 @@ export async function verifyUserAccountStatus() {
     }
   } catch ({message}) {
     throw new Error(message);
+  }
+}
+// UPLOAD DEPOSIT RECEIPT
+export async function uploadDepositReceipt(formData) {
+  try {
+    const response = await Request.post(
+      'comprobantes/depositos/subirCaptura',
+      formData,
+      false,
+    );
+    if (response.data.error) {
+      throw new Error(response.data.error_message);
+    }
+
+    return response.data.data.url || '';
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+// SAVE DEPOPSIT RECEIPT
+export async function saveDepositReceipt(imageUrl) {
+  try {
+    const user = Storage.getUser();
+    const timestamp = await getServerTimestamp();
+
+    await Database.save(DATABASE_TABLES.VOUCHERS, {
+      numeroUsuario: user.usuario,
+      capturaUrl: imageUrl,
+      fecha: Moment(timestamp).format('YYYY-MM-DD HH:mm:ss'),
+    });
+
+    return true;
+  } catch (error) {
+    throw new Error(error.message);
   }
 }

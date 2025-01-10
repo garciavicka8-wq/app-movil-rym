@@ -10,6 +10,8 @@ export default function ReporteButton({
   disabled = false,
   btnColor = Colors.lightRed,
   icon,
+  iconColor = Colors.primary,
+  textColor,
 }) {
   if (disabled) {
     return (
@@ -24,8 +26,14 @@ export default function ReporteButton({
     <Col style={styles.diaCol}>
       <TouchableWithoutFeedback onPress={onPress}>
         <View style={[styles.diaBtn, {backgroundColor: btnColor}]}>
-          {icon && <IconButton icon={icon} iconColor={Colors.primary} />}
-          <Text style={styles.diaText}>{label}</Text>
+          {icon && <IconButton icon={icon} iconColor={iconColor} />}
+          <Text
+            style={{
+              ...styles.diaText,
+              color: textColor !== undefined ? textColor : Colors.primary,
+            }}>
+            {label}
+          </Text>
         </View>
       </TouchableWithoutFeedback>
     </Col>
@@ -44,7 +52,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   diaText: {
-    color: Colors.primary,
     fontWeight: 'bold',
   },
   selectedDiaBtn: {

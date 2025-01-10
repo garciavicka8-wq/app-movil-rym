@@ -23,22 +23,17 @@ export default function Tabla() {
   const modalInputs = useModalInputs();
 
   const obtenerNumColumnas = codigoSorteo => {
-    if (codigoSorteo === 'SMAY') {
-      return ['1°', '2°', '3°'];
-    }
-    if (
-      codigoSorteo === 'SSUP' ||
-      codigoSorteo === 'SESP' ||
-      codigoSorteo === 'GN' ||
-      codigoSorteo === 'SMAG'
-    ) {
-      return ['1°', '2°'];
-    }
-    if (codigoSorteo === 'SZOD' || codigoSorteo === 'SGSE') {
-      return ['1°'];
-    }
+    const sorteosMap = {
+      SMAY: ['1°', '2°', '3°'],
+      SSUP: ['1°', '2°'],
+      SESP: ['1°', '2°'],
+      GN: ['1°', '2°'],
+      SMAG: ['1°', '2°'],
+      SZOD: ['1°'],
+      SGSE: ['1°'],
+    };
 
-    return [];
+    return sorteosMap[codigoSorteo] || [];
   };
 
   const onRowPress = item => {

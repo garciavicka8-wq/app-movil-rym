@@ -9,16 +9,13 @@ import Database from '../../database';
 import {Utils, Moment, Storage} from '../../utils';
 import VersionCheck from 'react-native-version-check';
 import {ERROR_CODE_NAMES} from '../../errors';
+import {getDbUser, updateDbUser} from '../common';
 const bcrypt = require('react-native-bcrypt');
 // SI EL EQUIPO ES DE ADMINISTRADOR PUEDE ACCEDER A CUALQUIER CUENTA
 // DISPOSITIVOS REGISTRADOS : ID unico del dispositivo, Nombre dispositivo,
 export const iniciarSesion = async (numeroUsuario, password, callback) => {
   try {
-    const usuarioDB = await Database.getItem(
-      DATABASE_TABLES.USERS,
-      'usuario',
-      numeroUsuario,
-    );
+    const usuarioDB = await getDbUser(numeroUsuario);
     // SI EL USUARIO NO EXISTE
     if (!usuarioDB)
       throw new Error(
@@ -36,7 +33,7 @@ export const iniciarSesion = async (numeroUsuario, password, callback) => {
     bcrypt.compare(password, usuarioDB.bpassword, async (err, res) => {
       // VERIFICAMOS SI LA CONTRASEÑA COINCIDE O NO
       if (!res) {
-        await Database.update(DATABASE_TABLES.USERS, usuarioDB.key, {
+        await updateDbUser(usuarioDB.key, {
           loginAttempts: parseInt(usuarioDB.loginAttempts) + 1,
         });
         return callback(null, null, {
@@ -52,14 +49,23 @@ export const iniciarSesion = async (numeroUsuario, password, callback) => {
             'La cuenta y el dispositivo desde donde intentas acceder no estan vinculados.',
         });
       }
-      // SI EL USUARIO Y PASSWORD SON CORRECTOS
-      await Database.update(DATABASE_TABLES.USERS, usuarioDB.key, {
-        loginAttempts: 0,
-        versionAppActualizada: true,
-      });
       // OBTENER VERSION DE LA APP
       const versiones = await Database.getObject(DATABASE_TABLES.VERSIONS);
       const currentAppVersion = VersionCheck.getCurrentVersion();
+      // SI EL USUARIO Y PASSWORD SON CORRECTOS
+      await updateDbUser(
+        usuarioDB.key,
+        __DEV__
+          ? {
+              loginAttempts: 0,
+              versionAppActualizada: true,
+            }
+          : {
+              loginAttempts: 0,
+              versionAppActualizada: true,
+              versionAppInstalada: currentAppVersion,
+            },
+      );
       // SI VERSIONES EXISTE EN EL DISPOSITIVO
       if (!Utils.hasLastVersion(currentAppVersion, versiones.app)) {
         return callback(null, null, {

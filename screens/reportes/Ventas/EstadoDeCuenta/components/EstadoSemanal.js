@@ -272,9 +272,8 @@ export default function EstadoSemanal() {
             cols={['A PAGAR', '', Money(accountStatus.toPay)]}
           />
           <CustomRow header cols={['Banco', 'N°Cta']} underlined={false} />
-          <CustomRow cols={['Bancomer', '0172490323']} underlined={false} />
+          <CustomRow cols={['BBVA', '0172490323']} underlined={false} />
           <CustomRow cols={['Scotiabank', '25601299356']} underlined={false} />
-          <CustomRow cols={['HSBC', '4056883101']} underlined={false} />
           <CustomRow cols={['B.Azteca', '01720107507910']} underlined={false} />
           <CustomRow
             cols={[

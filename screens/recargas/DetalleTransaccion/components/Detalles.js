@@ -2,8 +2,9 @@ import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useSelector} from 'react-redux';
 import {Helpers, Money, Storage} from '../../../../utils';
+import {TXN} from '../../../../constants';
 
-export default function Detalles() {
+export default function Detalles({sharedBtnClicked}) {
   const {transaccionStore} = useSelector(state => state.taecel);
   const [usuario, setUsuario] = useState({nomComercial: ''});
   const [comision, setComision] = useState('');
@@ -45,6 +46,25 @@ export default function Detalles() {
         label="Total"
         value={Helpers.sumWithDecimals(transaccionStore.Monto, comision)}
       />
+      {sharedBtnClicked && (
+        <AvisoPagoServicios categoriaID={transaccionStore.CategoriaID} />
+      )}
+    </View>
+  );
+}
+
+function AvisoPagoServicios({categoriaID}) {
+  if (categoriaID !== TXN.CODES.SERVICIO) return null;
+
+  return (
+    <View>
+      <Text style={{textAlign: 'justify', fontWeight: 'bold'}}>
+        Por favor, pague solo recibos vigentes, ya que los vencidos no son
+        reconocidos por el sistema y podrían generar cargos adicionales. Los
+        pagos se reflejan de 24 a 48 horas hábiles, pero si se realizan en fines
+        de semana o días festivos, podrían demorar más. Tiene 48 horas después
+        de procesado el pago para reportar cualquier aclaración.
+      </Text>
     </View>
   );
 }

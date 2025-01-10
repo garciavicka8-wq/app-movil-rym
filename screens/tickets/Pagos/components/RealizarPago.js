@@ -12,6 +12,8 @@ import {establecerCredito} from '../../../../features/credito/creditoSlice';
 import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../errors';
 import {verifyUserAccountStatus} from '../../../../services/reports';
 import {useNetInfo} from '@react-native-community/netinfo';
+import UploadImageModal from '../../../../components/UploadImageModal';
+import {MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE} from '../../../../constants';
 
 export default function RealizarPago() {
   const {cargandoPagos} = useSelector(state => state.pagos);
@@ -19,6 +21,7 @@ export default function RealizarPago() {
   const [boletoGanador, setBoletoGanador] = useState(null);
   const [comprobandoTicket, setComprobandoTicket] = useState(false);
   const [registrandoPago, setRegistrandoPago] = useState(false);
+  const [capturarBoleto, setCapturarBoleto] = useState(false);
   const modal = useModal();
   const thermalPrinter = useThermalPrinter();
   const dispatch = useDispatch();
@@ -30,11 +33,15 @@ export default function RealizarPago() {
   };
   //   HANDLE MODAL ACCEPT
   const handleModalAccept = () => {
-    if (modal.config.action === 'error' || modal.config.action === 'mensaje') {
+    if (['error', 'mensaje'].includes(modal.config.action)) {
       handleModalCancel();
     }
     if (modal.config.action === 'pagar') {
-      handlePagarPremio();
+      if (boletoGanador.premio > MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE) {
+        handleCapturarBoleto();
+      } else {
+        handlePagarPremio();
+      }
     }
   };
   //   COMPROBAR BOLETO
@@ -70,7 +77,7 @@ export default function RealizarPago() {
         }
         //   SI EL BOLETO ES GANADOR
         if (res.esGanador) {
-          const newBoleto = {...res.boleto, premio: res.premio};
+          const newBoleto = {...res.boleto, premio: res.premio, capturaUrl: ''};
           // sound.play();
           setBoletoGanador(newBoleto);
           setFormik(_formik);
@@ -115,59 +122,49 @@ export default function RealizarPago() {
         type: 'progress',
         progressTitle: 'Registrando pago',
       });
-      // CHECK IF BLUETOOTH IS ENABLED AND PRINTER IS REGISTERED AND CONNECTED
+      // Verifica si la impresión es posible y si no se está registrando un pago
       const isPrintingPossible = await thermalPrinter.isPrintingPossible();
-      if (isPrintingPossible && !registrandoPago) {
-        setRegistrandoPago(true);
-        const pagoRegistrado = await payPrize(boletoGanador);
-        //  SI SE REGISTRO CORRECTAMENTE
-        modal.setConfig({
-          type: 'alert',
-          alertTitle: 'Pago Registrado',
-          contentType: 'mensaje',
-          action: 'mensaje',
-          showCancelBtn: false,
-          confirmBtnText: 'Aceptar',
-          content: (
-            <Text>
-              por favor pague al cliente {Money(boletoGanador.premio)}
-            </Text>
-          ),
-        });
-        // IMPRIMIR PAGO
-        await thermalPrinter.print(async function () {
-          await Print.paymentTicket(pagoRegistrado);
-        });
-        dispatch(
-          agregarRegistroAlMomento({
-            id: pagoRegistrado.id,
-            fecha: pagoRegistrado.fechaPago,
-            numeroBoleto: pagoRegistrado.numeroBoleto,
-            hora: pagoRegistrado.horaPago,
-            total: -Math.abs(pagoRegistrado.premio),
-            tipo: 'pago',
-          }),
-        );
-        dispatch(agregarPagoRegistrado(pagoRegistrado));
-        // ACTUIALIZAMOS CREDITO
-        dispatch(establecerCredito(pagoRegistrado.nuevoSaldo));
-        formik.handleReset();
-        setRegistrandoPago(false);
-      }
+      if (!isPrintingPossible || registrandoPago) return;
+      // Registrar pago
+      registrarPago(boletoGanador);
     } catch ({message}) {
-      if (
-        message === 'DEVICE_NOT_LINKED' ||
-        message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
-        message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
-      ) {
-        logout();
-        return;
-      }
-      if (message === 'PRINTING_NOT_POSSIBLE') {
-        modal.setConfig({open: false});
-        return;
-      }
-      if (message === ERROR_NAMES.CONNECTING_DEVICE_FAILED) {
+      handlePaymentError({message});
+    } finally {
+      setRegistrandoPago(false);
+    }
+  };
+  // CAPTURAR BOLETO
+  const handleCapturarBoleto = async () => {
+    try {
+      modal.setConfig({
+        open: true,
+        type: 'progress',
+        progressTitle: 'Registrando pago',
+      });
+      // Verifica si la impresión es posible y si no se está registrando un pago
+      const isPrintingPossible = await thermalPrinter.isPrintingPossible();
+      if (!isPrintingPossible || registrandoPago) return;
+      // Se muestra el modal de la camara
+      setCapturarBoleto(true);
+    } catch ({message}) {
+      handlePaymentError({message});
+    } finally {
+      setRegistrandoPago(false);
+    }
+  };
+  // TOMAR CAPTURA BOLETO
+  const handleOnCaptureUploaded = async imageUrl => {
+    setCapturarBoleto(false);
+    registrarPago({...boletoGanador, capturaUrl: imageUrl});
+  };
+  // Manejo de errores separado para mayor claridad y reutilización
+  const handlePaymentError = ({message}) => {
+    const errorConfigs = {
+      DEVICE_NOT_LINKED: () => logout(),
+      PRINTING_NOT_POSSIBLE: () => modal.setConfig({open: false}),
+      [ERROR_CODE_NAMES.OUTDATED_APP_VERSION]: () => logout(),
+      [ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT]: () => logout(),
+      [ERROR_NAMES.CONNECTING_DEVICE_FAILED]: () =>
         modal.setConfig({
           type: 'alert',
           alertTitle: 'Mensaje',
@@ -175,20 +172,64 @@ export default function RealizarPago() {
           action: 'error',
           showCancelBtn: false,
           confirmBtnText: 'Entendido',
-          error: <Text>verifica que la impresora este encendida</Text>,
-        });
-        return;
-      }
+          error: <Text>Verifica que la impresora esté encendida</Text>,
+        }),
+      default: () =>
+        modal.setConfig({
+          type: 'alert',
+          alertTitle: 'Mensaje',
+          contentType: 'error',
+          action: 'error',
+          showCancelBtn: false,
+          confirmBtnText: 'Entendido',
+          error: <Text>{message}</Text>,
+        }),
+    };
+
+    (errorConfigs[message] || errorConfigs.default)();
+  };
+  // Se cierra el modal de la camara
+  const handleCloseCameraModal = () => {
+    modal.setConfig({open: false});
+    setCapturarBoleto(false);
+  };
+
+  const registrarPago = async ticket => {
+    setRegistrandoPago(true);
+    try {
+      const pagoRegistrado = await payPrize(ticket);
+      //  SI SE REGISTRO CORRECTAMENTE
       modal.setConfig({
         type: 'alert',
-        alertTitle: 'Mensaje',
-        contentType: 'error',
-        action: 'error',
+        alertTitle: 'Pago Registrado',
+        contentType: 'mensaje',
+        action: 'mensaje',
         showCancelBtn: false,
-        confirmBtnText: 'Entendido',
-        error: <Text>{message}</Text>,
+        confirmBtnText: 'Aceptar',
+        content: <Text>por favor pague al cliente {Money(ticket.premio)}</Text>,
       });
+
+      // IMPRIMIR PAGO
+      await thermalPrinter.print(() => Print.paymentTicket(pagoRegistrado));
+
+      dispatch(
+        agregarRegistroAlMomento({
+          id: pagoRegistrado.id,
+          fecha: pagoRegistrado.fechaPago,
+          numeroBoleto: pagoRegistrado.numeroBoleto,
+          hora: pagoRegistrado.horaPago,
+          total: -Math.abs(pagoRegistrado.premio),
+          tipo: 'pago',
+        }),
+      );
+
+      dispatch(agregarPagoRegistrado(pagoRegistrado));
+      dispatch(establecerCredito(pagoRegistrado.nuevoSaldo));
+
       formik.handleReset();
+    } catch ({message}) {
+      handlePaymentError(message);
+    } finally {
       setRegistrandoPago(false);
     }
   };
@@ -222,6 +263,14 @@ export default function RealizarPago() {
         {modal.config.contentType === 'pagar' && modal.config.content}
         {modal.config.contentType === 'error' && modal.config.error}
       </CustomModal>
+      {/* CAPTURA BOLETO COMPONENT */}
+      {capturarBoleto && (
+        <UploadImageModal
+          onUploaded={handleOnCaptureUploaded}
+          onClose={handleCloseCameraModal}
+          type={'prize-ticket'}
+        />
+      )}
     </>
   );
 }

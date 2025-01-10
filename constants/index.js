@@ -17,6 +17,9 @@ import {
   CHISPAZO_LOGO,
 } from './LogosBase64';
 
+const RYM_API_URL = 'https://rym.recargasymas.com.mx/api/v1';
+const MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE = 998;
+
 export {
   DATABASE_TABLES,
   APP_NAVIGATION,
@@ -34,4 +37,6 @@ export {
   CHISPAZO_LOGO,
   TKP_LOGO_URL,
   TXN,
+  RYM_API_URL,
+  MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE,
 };

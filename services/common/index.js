@@ -10,6 +10,19 @@ export async function getServerTimestamp() {
     throw new Error(message);
   }
 }
+// GET USER
+export async function getDbUser(userNumber) {
+  try {
+    const user = await Database.getItem(
+      DATABASE_TABLES.USERS,
+      'usuario',
+      userNumber,
+    );
+    return user;
+  } catch ({message}) {
+    throw new Error(message);
+  }
+}
 // RETURNS A PERIOD OF TIME FROM MONDAY TO NOW
 // @param timestamp
 export function getPeriodFromMonday(serverTimestamp) {
@@ -51,7 +64,7 @@ export async function getUserWeekInform(reference) {
   }
 }
 // UPDATE USER
-export async function updateUser(userKey, data) {
+export async function updateDbUser(userKey, data) {
   try {
     await Database.update(DATABASE_TABLES.USERS, userKey, data);
   } catch ({message}) {

@@ -1,6 +1,6 @@
 {
   "name": "rymapp2",
-  "version": "4.3.8",
+  "version": "4.5.1",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -17,6 +17,7 @@
     "@react-navigation/stack": "^6.3.18",
     "@reduxjs/toolkit": "^1.9.5",
     "axios": "^1.5.1",
+    "buffer": "^6.0.3",
     "currency.js": "^2.0.4",
     "decimal.js": "^10.4.3",
     "firebase": "^10.4.0",
@@ -34,6 +35,7 @@
     "react-native-currency-input": "^1.1.1",
     "react-native-device-info": "^10.11.0",
     "react-native-easy-grid": "^0.2.2",
+    "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.13.1",
     "react-native-get-random-values": "^1.9.0",
     "react-native-keychain": "^8.1.2",

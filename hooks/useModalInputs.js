@@ -19,6 +19,7 @@ export function useModalInputs() {
 
   const [cantidadFija, setCantidadFija] = useState(false);
   const [conPar, setConPar] = useState(false);
+  const [candado, setCandado] = useState(false);
 
   const [numPlaces, setNumPlaces] = useState(0);
   const [data, setData] = useState(null);
@@ -95,6 +96,7 @@ export function useModalInputs() {
     setData(null);
     setConPar(false);
     setCantidadFija(false);
+    setCandado(false);
   };
 
   const clearValue = inputName => {
@@ -110,113 +112,73 @@ export function useModalInputs() {
   };
 
   const validInputs = () => {
-    // VALIDAR CANTIDAD PAR SI ESTA ACTIVO
+    // Validar si hay errores en cantidadPar
     if (errors.cantidadPar) {
       return false;
     }
-    if (
-      numPlaces === 1 &&
-      !errors.apuesta &&
-      !errors.primero &&
-      inputs.primero.length > 0
-    ) {
+
+    // Verificar las condiciones comunes
+    const noErrors = !errors.apuesta && !errors.primero;
+    const inputsFilled =
+      inputs.primero.length > 0 ||
+      inputs.segundo?.length > 0 ||
+      inputs.tercero?.length > 0;
+
+    if (noErrors && inputsFilled) {
+      // Prepara los valores de 'primero', 'segundo', 'tercero' asegurando que no sean vacíos
+      const updatedInputs = {
+        primero: inputs.primero || '0',
+        segundo: inputs.segundo || '0',
+        tercero: inputs.tercero || '0',
+      };
+
+      // Actualiza el estado de inputs
       setInputs(prevState => ({
         ...prevState,
-        primero: inputs.primero,
+        ...updatedInputs,
       }));
+
+      // Configura los datos basados en el número de lugares
+      const lugares = [
+        removeLeadingZero(updatedInputs.primero),
+        numPlaces > 1 ? removeLeadingZero(updatedInputs.segundo) : undefined,
+        numPlaces > 2 ? removeLeadingZero(updatedInputs.tercero) : undefined,
+      ].filter(Boolean); // Filtrar valores `undefined`
+
       setData({
         numero: inputs.apuesta,
-        lugares: [removeLeadingZero(inputs.primero)],
+        lugares,
       });
+
       return true;
     }
-    if (
-      numPlaces === 2 &&
-      !errors.apuesta &&
-      !errors.primero &&
-      !errors.segundo &&
-      (inputs.primero.length > 0 || inputs.segundo.length > 0)
-    ) {
-      setInputs(prevState => ({
-        ...prevState,
-        primero: inputs.primero === '' ? '0' : inputs.primero,
-        segundo: inputs.segundo === '' ? '0' : inputs.segundo,
-      }));
-      setData({
-        numero: inputs.apuesta,
-        lugares: [
-          removeLeadingZero(inputs.primero),
-          removeLeadingZero(inputs.segundo),
-        ],
-      });
-      return true;
-    }
-    if (
-      numPlaces === 3 &&
-      !errors.apuesta &&
-      !errors.primero &&
-      !errors.segundo &&
-      !errors.tercero &&
-      (inputs.primero.length > 0 ||
-        inputs.segundo.length > 0 ||
-        inputs.tercero.length > 0)
-    ) {
-      setInputs(prevState => ({
-        ...prevState,
-        primero: inputs.primero === '' ? '0' : inputs.primero,
-        segundo: inputs.segundo === '' ? '0' : inputs.segundo,
-        tercero: inputs.tercero === '' ? '0' : inputs.tercero,
-      }));
-      setData({
-        numero: inputs.apuesta,
-        lugares: [
-          removeLeadingZero(inputs.primero),
-          removeLeadingZero(inputs.segundo),
-          removeLeadingZero(inputs.tercero),
-        ],
-      });
-      return true;
-    }
+
     return false;
   };
 
   const fillData = () => {
-    const _inputs = {
-      primero: inputs.primero === '' ? '0' : removeLeadingZero(inputs.primero),
-      segundo: inputs.segundo === '' ? '0' : removeLeadingZero(inputs.segundo),
-      tercero: inputs.tercero === '' ? '0' : removeLeadingZero(inputs.tercero),
-    };
-    if (numPlaces === 1 && !errors.apuesta && !errors.primero) {
+    const sanitizedInputs = ['primero', 'segundo', 'tercero'].reduce(
+      (acc, key) => {
+        acc[key] = inputs[key] === '' ? '0' : removeLeadingZero(inputs[key]);
+        return acc;
+      },
+      {},
+    );
+
+    const noErrors =
+      !errors.apuesta && !errors.primero && !errors.segundo && !errors.tercero;
+
+    if (noErrors) {
+      const lugares = [
+        sanitizedInputs.primero,
+        numPlaces > 1 ? sanitizedInputs.segundo : undefined,
+        numPlaces > 2 ? sanitizedInputs.tercero : undefined,
+      ].filter(Boolean); // Eliminar valores `undefined`
+
       setData({
         numero: inputs.apuesta,
-        lugares: [_inputs.primero],
+        lugares,
       });
-      return;
-    }
-    if (
-      numPlaces === 2 &&
-      !errors.apuesta &&
-      !errors.primero &&
-      !errors.segundo
-    ) {
-      setData({
-        numero: inputs.apuesta,
-        lugares: [_inputs.primero, _inputs.segundo],
-      });
-      return;
-    }
-    if (
-      numPlaces === 3 &&
-      !errors.apuesta &&
-      !errors.primero &&
-      !errors.segundo &&
-      !errors.tercero
-    ) {
-      setData({
-        numero: inputs.apuesta,
-        lugares: [_inputs.primero, _inputs.segundo, _inputs.tercero],
-      });
-      return;
     }
   };
 
@@ -226,10 +188,20 @@ export function useModalInputs() {
 
   const handleConPar = value => {
     setConPar(value);
+    setCandado(false);
   };
 
   const removeLeadingZero = value => {
     return parseInt(value).toString();
+  };
+
+  const toggleCandado = () => {
+    setCandado(prevState => !prevState);
+    setConPar(false);
+    setInputs(prevState => ({
+      ...prevState,
+      cantidadPar: '',
+    }));
   };
 
   return {
@@ -246,5 +218,7 @@ export function useModalInputs() {
     conPar,
     handleConPar,
     clearValue,
+    toggleCandado,
+    candado,
   };
 }

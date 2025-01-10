@@ -67,7 +67,7 @@ const Utils = {
   },
   // COMISION VENTA DE TICKET
   totalWithoutCommissionTicket(totalApostado) {
-    const comision = totalApostado * 0.15;
+    const comision = totalApostado * 0.1;
     return totalApostado - comision;
     // return totalApostado;
   },
@@ -435,6 +435,30 @@ const Utils = {
       data =>
         JSON.stringify(data).toLowerCase().indexOf(value.toLowerCase()) !== -1,
     );
+  },
+  // GENERA TODAS LAS COMBINACIONES POSIBLES DE UN NUMERO DADO
+  permutations(number) {
+    // Convertir el número a una cadena y dividirlo en un array de dígitos
+    const digits = String(number).split('');
+
+    if (digits.length !== 3) {
+      throw new Error('El número debe tener exactamente 3 cifras.');
+    }
+
+    const combinations = new Set();
+
+    // Generar todas las combinaciones posibles
+    for (let i = 0; i < digits.length; i++) {
+      for (let j = 0; j < digits.length; j++) {
+        for (let k = 0; k < digits.length; k++) {
+          if (i !== j && i !== k && j !== k) {
+            combinations.add(digits[i] + digits[j] + digits[k]);
+          }
+        }
+      }
+    }
+
+    return [...combinations];
   },
 };
 

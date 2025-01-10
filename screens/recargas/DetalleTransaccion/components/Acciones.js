@@ -14,6 +14,7 @@ import {enviarComprobanteTransaccion} from '../../../../services/taecel';
 import {useSelector} from 'react-redux';
 import {Helpers, Print, Storage} from '../../../../utils';
 import {APP_NAVIGATION} from '../../../../constants';
+import {ERROR_NAMES} from '../../../../errors';
 
 export default function Acciones({shareWhatsappBtn = null}) {
   const {transaccionStore} = useSelector(state => state.taecel);
@@ -236,6 +237,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   actions: {
+    width: '100%',
     marginVertical: 20,
   },
   col: {

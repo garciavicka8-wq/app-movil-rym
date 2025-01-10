@@ -4,6 +4,7 @@ import {obtenerUsuarioDb} from '../auth';
 import {DATABASE_TABLES} from '../constants';
 import {actualizarCredito} from '../credito';
 import {verifyUserAccountStatus} from '../reports';
+import * as Request from '../http';
 
 export const obtenerSorteos = async () => {
   try {
@@ -640,11 +641,12 @@ export const payPrize = async boleto => {
     // COMPLETAR INFORMACION PAGO
     const usuarioDB = await obtenerUsuarioDb();
     const timestamp = await Database.getServerDate();
+    const formatedDate = formatStr => Moment(timestamp).format(formatStr);
     const informacionPago = {
       id: uuid(),
       fechaSorteo: boleto.fechaSorteo,
-      fechaPago: Moment(timestamp).format('YYYY-MM-DD'),
-      horaPago: Moment(timestamp).format('HH:mm:ss'),
+      fechaPago: formatedDate('YYYY-MM-DD'),
+      horaPago: formatedDate('HH:mm:ss'),
       numeroBoleto: boleto.numeroBoleto,
       pagadoPor: usuarioDB.usuario,
       premio: boleto.premio,
@@ -653,6 +655,7 @@ export const payPrize = async boleto => {
       boleto,
       timestamp,
       boleto_id: boleto.id !== undefined ? boleto.id : '',
+      capturaUrl: boleto.capturaUrl,
     };
     // GUARDAR PAGO
     await Database.save(DATABASE_TABLES.PAID_PRIZES, informacionPago);
@@ -789,5 +792,22 @@ export async function cancelTicket(
     return {...ticketCanceladoInfo, nuevoSaldo};
   } catch ({message}) {
     throw new Error(message);
+  }
+}
+
+export async function uploadTicketCapture(formData) {
+  try {
+    const response = await Request.post(
+      'comprobantes/premios/subirCaptura',
+      formData,
+      false,
+    );
+    if (response.data.error) {
+      throw new Error(response.data.error_message);
+    }
+
+    return response.data.data.url || '';
+  } catch (error) {
+    throw new Error(error.message);
   }
 }

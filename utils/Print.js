@@ -48,7 +48,36 @@ const Print = (() => {
       // if (transaccion.descripcionProducto !== undefined) {
       //   await BEP.printText(`${transaccion.descripcionProducto}\n\r`, {});
       // }
-      await BEP.printerAlign(ALIGN.CENTER);
+      const wrapText = (text, maxLineWidth) => {
+        const words = text.split(' ');
+        let lines = [];
+        let currentLine = '';
+
+        words.forEach(word => {
+          if ((currentLine + word).length <= maxLineWidth) {
+            currentLine += (currentLine ? ' ' : '') + word;
+          } else {
+            lines.push(currentLine);
+            currentLine = word;
+          }
+        });
+
+        if (currentLine) lines.push(currentLine);
+        return lines;
+      };
+      const removeAccents = text => {
+        return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      };
+      const text = `Por favor, tenga en cuenta que solo podemos procesar pagos de recibos vigentes. Si intenta pagar un recibo vencido, el sistema no lo reconocera y podrian generarse cargos adicionales, como reconexion o multas, de los cuales no nos hacemos responsables. El pago puede tardar entre 24 y 48 horas habiles en reflejarse.Si realiza su pago durante fin de semana y dias festivos,  este proceso podria demorar un poco mas. En caso de que el importe no se refleje despues de este tiempo,  tendra un maximo de 48 horas adicionales para reportarlo y solicitar una aclaracion. Pasado ese plazo, no podremos realizar ajustes. Esto es para garantizar que su pago se procese correctamente y evitar inconvenientes`;
+
+      const maxLineWidth = 32; // Ancho estándar de impresión para una impresora térmica de 58 mm
+      const wrappedLines = wrapText(removeAccents(text), maxLineWidth);
+
+      for (const line of wrappedLines) {
+        await printLine(line); // Imprime cada línea ajustada al ancho
+      }
+
+      await alignText('center');
       await BEP.printText(`Gracias Por Su Preferencia\n\r`, {});
       await BEP.printText(`www.recargasymas.com.mx\n\r`, {});
       await BEP.printText('\n\r\n\r\n\r', {});
@@ -240,194 +269,14 @@ const Print = (() => {
 
   const accountStatus = async accountStatus => {
     try {
-      const {lastInform, lastInformPeriod} = accountStatus;
-      await BEP.printerAlign(ALIGN.LEFT);
-      await BEP.printText(`Exp. ${accountStatus.fechaExp}\n\r`, {});
-      await BEP.printText(`${accountStatus.nomComercial}\n\r`, {});
-      await BEP.printText(
-        `Sem. ${accountStatus.period.start} - ${accountStatus.period.end}\n\r`,
-        {},
-      );
-      await BEP.printText(
-        `S.Ant. al ${Moment(lastInformPeriod.end).format('YYYY-MM-DD')} ${Money(
-          lastInform.amount,
-        )}\n\r`,
-        {},
-      );
-      if (accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total > 0) {
-        await BEP.printText(
-          `P.pagados lun a mie ant. ${Money(
-            accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total,
-          )}\n\r`,
-          {},
-        );
-      }
-      if (lastInform.totalDeposits > 0) {
-        await BEP.printText(
-          `Su pago ${Money(lastInform.totalDeposits)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.dueBalance > 0) {
-        await BEP.printText(
-          `Saldo vencido ${Money(accountStatus.dueBalance)}\n\r`,
-          {},
-        );
-      }
-      await BEP.printText('################################\n\r', {});
-      await BEP.printerAlign(ALIGN.CENTER);
-      await BEP.printText(`Venta de la semana\n\r`, {});
-      await BEP.printerAlign(ALIGN.LEFT);
-      if (accountStatus.tickets.total > 0) {
-        await BEP.printText(
-          `Tickets ${Money(accountStatus.tickets.total)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.recharges.total > 0) {
-        await BEP.printText(
-          `Recargas ${Money(accountStatus.recharges.total)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.recharges.chargeToClientForService > 0) {
-        await BEP.printText(
-          `Com. cobrada al clte. ${Money(
-            accountStatus.recharges.chargeToClientForService,
-          )}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.paidServices.total > 0) {
-        await BEP.printText(
-          `Servicios ${Money(accountStatus.paidServices.total)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.giftCards.total > 0) {
-        await BEP.printText(
-          `Gift cards ${Money(accountStatus.giftCards.total)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.totalSalesSum > 0) {
-        await BEP.printText(
-          `Total ventas ${Money(accountStatus.totalSalesSum)}\n\r`,
-          {},
-        );
-      }
-      await BEP.printText('################################\n\r', {});
-      await BEP.printerAlign(ALIGN.CENTER);
-      await BEP.printText(`Prem. y Com.\n\r`, {});
-      await BEP.printerAlign(ALIGN.LEFT);
-      if (accountStatus.paidPrizesAfterWeekPaymentLimitDay.total > 0) {
-        await BEP.printText(
-          `P.pagados jue a dom act ${Money(
-            accountStatus.paidPrizesAfterWeekPaymentLimitDay.total,
-          )}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay.total > 0) {
-        await BEP.printText(
-          `P.pagados lun a mie act ${Money(
-            accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay.total,
-          )}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.tickets.commission > 0) {
-        await BEP.printText(
-          `Com tickets ${Money(accountStatus.tickets.commission)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.recharges.commission > 0) {
-        await BEP.printText(
-          `Com recargas ${Money(accountStatus.recharges.commission)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.paidServices.commission > 0) {
-        await BEP.printText(
-          `Com servicios ${Money(accountStatus.paidServices.commission)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.giftCards.commission > 0) {
-        await BEP.printText(
-          `Com gift cards ${Money(accountStatus.giftCards.commission)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.commissionChargedToClient > 0) {
-        await BEP.printText(
-          `Com. cobrada al clte. ${Money(
-            accountStatus.commissionChargedToClient,
-          )}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.totalCommissionsSum > 0) {
-        await BEP.printText(
-          `Total prem y com ${Money(accountStatus.totalCommissionsSum)}\n\r`,
-          {},
-        );
-      }
-      await BEP.printText('################################\n\r', {});
-      await BEP.printerAlign(ALIGN.CENTER);
-      await BEP.printText(`Abonos, Ajustes y Reembolsos\n\r`, {});
-      await BEP.printerAlign(ALIGN.LEFT);
-      if (accountStatus.payouts.total > 0) {
-        await BEP.printText(
-          `Abonos ${Money(accountStatus.payouts.total)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.refunds.total > 0) {
-        await BEP.printText(
-          `Reembolsos ${Money(accountStatus.refunds.total)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.adjustments.total > 0) {
-        await BEP.printText(
-          `Ajustes ${Money(accountStatus.adjustments.total)}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.totalPrizesAndCommissionsWithoutPayouts > 0) {
-        await BEP.printText(
-          `T.P. y C. - A.${Money(
-            accountStatus.totalPrizesAndCommissionsWithoutPayouts,
-          )}\n\r`,
-          {},
-        );
-      }
-      if (accountStatus.canceledTickets.total > 0) {
-        await BEP.printText(
-          `Cancelados ${Money(accountStatus.canceledTickets.total)}\n\r`,
-          {},
-        );
-      }
-      await BEP.printText('################################\n\r', {});
-      await BEP.printerAlign(ALIGN.CENTER);
-      await BEP.printText(`Banco y Num Cta\n\r`, {});
-      await BEP.printerAlign(ALIGN.LEFT);
-      await BEP.printText(`Bancomer: 0172490323\n\r`, {});
-      await BEP.printText(`Scotiabank: 25601299356\n\r`, {});
-      await BEP.printText(`HSBC: 4056883101\n\r`, {});
-      await BEP.printText(`B.Azteca: 01720107507910\n\r`, {});
-      await BEP.printText(
-        `Desarrolladora de Sistemas\n\rTecnologicos de Guerrero\n\rS.A. de C.V.\n\r`,
-        {},
-      );
-      await BEP.printerAlign(ALIGN.CENTER);
-      await BEP.printText('################################\n\r', {});
-      await BEP.printText(`Importe\n\r`, {});
-      await BEP.printText(`${Money(accountStatus.amount)}\n\r`, {});
-      await BEP.printText('################################\n\r', {});
-      await BEP.printText('\n\r\n\r\n\r\n\r', {});
+      // AccountStatus HEADER
+      await printAccountStatusHeader(accountStatus);
+      // AccountStatus BODY
+      await printAccountStatusBody(accountStatus);
+      // BANK INFO
+      await printBankInfo();
+      // PRINT AccountStatus FOOTER
+      await printAccountStatusFooter(accountStatus);
     } catch ({message}) {
       ToastAndroid.show(message, ToastAndroid.LONG);
       throw new Error(message);
@@ -500,6 +349,167 @@ const Print = (() => {
       throw new Error(message);
     }
   };
+  // PRIVATE FUNCTIONS
+  // TICKET HEADER
+  async function printAccountStatusHeader(accountStatus) {
+    const {lastInform, lastInformPeriod} = accountStatus;
+
+    const staticFields = [
+      {text: `Exp. ${accountStatus.fechaExp}`},
+      {text: `${accountStatus.nomComercial}`},
+      {
+        text: `Sem. ${accountStatus.period.start} - ${accountStatus.period.end}`,
+      },
+      {
+        text: `S.Ant. al ${Moment(lastInformPeriod.end).format(
+          'YYYY-MM-DD',
+        )} ${Money(lastInform.amount)}`,
+      },
+    ];
+
+    const conditionalFields = [
+      {
+        condition: accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total > 0,
+        text: `P.pagados lun a mie ant. ${Money(
+          accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total,
+        )}`,
+      },
+      {
+        condition: lastInform.totalDeposits > 0,
+        text: `Su pago ${Money(lastInform.totalDeposits)}`,
+      },
+      {
+        condition: accountStatus.dueBalance > 0,
+        text: `Saldo vencido ${Money(accountStatus.dueBalance)}`,
+      },
+    ];
+
+    await alignText('left');
+
+    // Print static fields
+    for (const field of staticFields) {
+      await printLine(field.text);
+    }
+
+    // Print conditional fields
+    for (const field of conditionalFields) {
+      if (field.condition) {
+        await printLine(field.text);
+      }
+    }
+
+    await hashesSeparator();
+  }
+  // TICKET BODY
+  async function printAccountStatusBody(accountStatus) {
+    const sections = [
+      {
+        title: 'Venta de la semana',
+        fields: [
+          {label: 'Tickets', value: accountStatus.tickets.total},
+          {label: 'Recargas', value: accountStatus.recharges.total},
+          {
+            label: 'Com. cobrada al clte.',
+            value: accountStatus.recharges.chargeToClientForService,
+          },
+          {label: 'Servicios', value: accountStatus.paidServices.total},
+          {label: 'Gift cards', value: accountStatus.giftCards.total},
+          {label: 'Total ventas', value: accountStatus.totalSalesSum},
+        ],
+      },
+      {
+        title: 'Prem. y Com.',
+        fields: [
+          {
+            label: 'P.pagados jue a dom act',
+            value: accountStatus.paidPrizesAfterWeekPaymentLimitDay.total,
+          },
+          {
+            label: 'P.pagados lun a mie act',
+            value: accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay.total,
+          },
+          {label: 'Com tickets', value: accountStatus.tickets.commission},
+          {label: 'Com recargas', value: accountStatus.recharges.commission},
+          {
+            label: 'Com servicios',
+            value: accountStatus.paidServices.commission,
+          },
+          {label: 'Com gift cards', value: accountStatus.giftCards.commission},
+          {
+            label: 'Com. cobrada al clte.',
+            value: accountStatus.commissionChargedToClient,
+          },
+          {
+            label: 'Total prem y com',
+            value: accountStatus.totalCommissionsSum,
+          },
+        ],
+      },
+      {
+        title: 'Abonos, Ajustes y Reembolsos',
+        fields: [
+          {label: 'Abonos', value: accountStatus.payouts.total},
+          {label: 'Reembolsos', value: accountStatus.refunds.total},
+          {label: 'Ajustes', value: accountStatus.adjustments.total},
+          {
+            label: 'T.P. y C. - A.',
+            value: accountStatus.totalPrizesAndCommissionsWithoutPayouts,
+          },
+          {label: 'Cancelados', value: accountStatus.canceledTickets.total},
+        ],
+      },
+    ];
+
+    for (const section of sections) {
+      await printSectionTitle(section.title);
+      for (const field of section.fields) {
+        if (field.value > 0) {
+          await printLine(`${field.label} ${Money(field.value)}`);
+        }
+      }
+      await hashesSeparator();
+    }
+  }
+
+  // PRINT SECTION TITLE
+  async function printSectionTitle(title) {
+    await alignText('center');
+    await printLine(title);
+    await alignText('left');
+  }
+
+  // BANK INFO
+  async function printBankInfo() {
+    await hashesSeparator();
+    await printSectionTitle('Banco y Num Cta');
+    await printLine('BBVA: 0172490323');
+    await printLine('Scotiabank: 25601299356');
+    await printLine('B.Azteca: 01720107507910');
+    await printLine('Desarrolladora de Sistemas');
+    await printLine('Tecnologicos de Guerrero');
+    await printLine('S.A. de C.V.');
+  }
+  // TICKET FOOTER
+  async function printAccountStatusFooter(accountStatus) {
+    await alignText('center');
+    await hashesSeparator();
+    await printLine('Importe');
+    await printLine(Money(accountStatus.amount));
+    await hashesSeparator();
+    await BEP.printText('\n\r\n\r\n\r\n\r', {});
+  }
+
+  async function alignText(alignment) {
+    await BEP.printerAlign(alignment === 'left' ? ALIGN.LEFT : ALIGN.CENTER);
+  }
+
+  async function printLine(text) {
+    await BEP.printText(`${text}\n\r`, {});
+  }
+
+  async function hashesSeparator() {
+    await BEP.printText('################################\n\r', {});
+  }
 
   return {
     accountStatus,

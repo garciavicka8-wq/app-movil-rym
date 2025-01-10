@@ -1,11 +1,11 @@
 import React, {useEffect, useRef} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Alert, StyleSheet, Text, View} from 'react-native';
 import {IconButton, Switch} from 'react-native-paper';
 import {useDispatch, useSelector} from 'react-redux';
 import {CustomModal, CustomNumericField} from '../../../../../components';
 import {agregarJugadaStore} from '../../../../../features/tickets/jugarTickets/jugarTicketsSlice';
 import {useModal, useModalInputs} from '../../../../../hooks';
-import {Colors, uuid} from '../../../../../utils';
+import {Colors, Utils, uuid} from '../../../../../utils';
 
 export default function AgregarJugadaButton() {
   const {sorteoSeleccionado} = useSelector(state => state.jugarTickets);
@@ -43,20 +43,27 @@ export default function AgregarJugadaButton() {
   };
 
   const handleAgregar = () => {
-    const {validInputs, data, conPar, inputs} = modalInputs;
+    const {validInputs, data, conPar, inputs, candado} = modalInputs;
+    // VALIDAMOS LOS CAMPOS
     if (validInputs() && data && hasIntegers(data.lugares)) {
-      dispatch(
-        agregarJugadaStore({
-          id: uuid(),
-          numero: data.numero,
-          lugares: data.lugares,
-          totalApostado: data.lugares.reduce(
-            (acc, cantidad) => acc + parseInt(cantidad),
-            0,
-          ),
-        }),
-      );
-      apuestaInputRef?.current?.focus();
+      // ALMACENAMOS LA JUGADA SI CANDADO ESTA DESACTIVADO
+      if (candado) {
+        const apuestaDigits = new Set(data.numero.split(''));
+        if (apuestaDigits.size === 1 || data.numero.length < 3) {
+          Alert.alert(
+            'Mensaje',
+            'Al jugar candado el numero debe ser de tres digitos y tener al menos uno diferente. Ejemplo: 123, 113, 456, etc.',
+            [{text: 'Entendido'}],
+          );
+          return;
+        }
+        const permutaciones = Utils.permutations(data.numero);
+        permutaciones.forEach(numero => {
+          almacenarJugada(numero, data.lugares);
+        });
+      } else {
+        almacenarJugada(data.numero, data.lugares);
+      }
       // SI CON EL PAR ES TRUE
       if (conPar && data.numero.length === 3) {
         let newJugadaPar = {
@@ -78,9 +85,11 @@ export default function AgregarJugadaButton() {
         );
         dispatch(agregarJugadaStore(newJugadaPar));
       }
-      // SI CANTIDAD FIJA ES TRUE
+      // SI CANTIDAD FIJA ES TRUE SOLO LIMPIAMOS EL CAMPO APUESTA
       if (modalInputs.cantidadFija) return modalInputs.clearValue('apuesta');
-      // SI CANTIDAD FIJA ES FALSO
+      // PONER FOCUS EL INPUT APUESTA
+      apuestaInputRef?.current?.focus();
+      // LIMPIAR CAMPOS
       modalInputs.handleReset();
     }
   };
@@ -95,6 +104,21 @@ export default function AgregarJugadaButton() {
     });
     return integersFound > 0;
   };
+
+  const almacenarJugada = (numero, lugares) => {
+    dispatch(
+      agregarJugadaStore({
+        id: uuid(),
+        numero: numero,
+        lugares: lugares,
+        totalApostado: lugares.reduce(
+          (acc, cantidad) => acc + parseInt(cantidad),
+          0,
+        ),
+      }),
+    );
+  };
+
   return (
     <>
       <IconButton
@@ -240,6 +264,11 @@ const ModalAgregarContent = ({sorteo, modalInputs, apuestaInputRef}) => {
         onChange={() =>
           modalInputs.handleFijarCantidad(!modalInputs.cantidadFija)
         }
+      />
+      <CustomSwitch
+        label="Candado"
+        value={modalInputs.candado}
+        onChange={() => modalInputs.toggleCandado()}
       />
     </View>
   );

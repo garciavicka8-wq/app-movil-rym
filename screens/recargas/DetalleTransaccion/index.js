@@ -12,6 +12,7 @@ import {DATABASE_TABLES, TRANSACTION_STATES, TXN} from '../../../constants';
 import {
   setTransaccionStore,
   setTransacciones,
+  setUltimasTransacciones,
 } from '../../../features/taecel/taecelSlice';
 import {Colors, Helpers, Moment} from '../../../utils';
 import NoConnection from '../../../components/NoConnection';
@@ -72,14 +73,29 @@ export default function DetalleTransaccion() {
           newTransaction,
           tempTransaction.key,
         );
-
-        const transaccionIndex = transacciones.findIndex(
-          item => item.key === tempTransaction.key,
+        // UPDATE TRANSACTIONS AND LAST TRANSACTIONS LIST
+        dispatch(
+          setTransacciones(prevState =>
+            prevState.map(txn => {
+              if (txn.key === tempTransaction.key) {
+                return {...newTransaction};
+              }
+              return txn;
+            }),
+          ),
         );
-
-        let _transacciones = [...transacciones];
-        _transacciones[transaccionIndex] = newTransaction;
-        dispatch(setTransacciones(_transacciones));
+        // UPDATE LAST TRANSACTIONS LIST
+        dispatch(
+          setUltimasTransacciones(prevState =>
+            prevState.map(txn => {
+              if (txn.key === tempTransaction.key) {
+                return {...newTransaction};
+              }
+              return txn;
+            }),
+          ),
+        );
+        // UPDATE TRANSACTION STORE
         dispatch(setTransaccionStore(newTransaction));
         // SI LA TRANSACCION ES EXITOSA ACTUALIZAMOS EL CREDITO
         if (newTransaction.Status === TXN.STATES.SUCCESS) {
@@ -166,13 +182,19 @@ export default function DetalleTransaccion() {
   return (
     <Container bgColor="#fff">
       <Content marginBottom={0}>
+        <View collapsable={false} style={{backgroundColor: '#fff'}}>
+          <DetallesHeader />
+          <Detalles sharedBtnClicked={false} />
+        </View>
+        {/* PRINTABLE VIEW ONLY */}
         <View
           ref={imageRef}
           collapsable={false}
-          style={{backgroundColor: '#fff'}}>
+          style={{backgroundColor: '#fff', position: 'absolute', left: 500}}>
           <DetallesHeader />
-          <Detalles />
+          <Detalles sharedBtnClicked={compartirWABtnClicked} />
         </View>
+        {/* PRINTABLE VIEW ONLY */}
         <Acciones
           shareWhatsappBtn={
             <Button

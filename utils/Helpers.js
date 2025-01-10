@@ -21,30 +21,27 @@ const Helpers = {
   },
   // CALCULAR TRANSACCION
   calcularTotalTransaccion: (txn, categoriaID) => {
-    let ventaTxn = 0;
-    // SI ES RECARGA | PAQUETE | GIFTCARD
+    const monto = parseFloat(Helpers.toMoneyWithDecimals(txn.Monto, false));
+
     if ([TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(categoriaID)) {
-      const comisionSobreRecarga =
-        parseFloat(Helpers.toMoneyWithDecimals(txn.Monto, false)) * 0.04;
-      ventaTxn =
-        parseFloat(Helpers.toMoneyWithDecimals(txn.Monto, false)) -
-        parseFloat(comisionSobreRecarga);
+      // Calcular total para RECARGA o PAQUETE
+      const comisionSobreRecarga = monto * 0.04;
+      return monto - comisionSobreRecarga;
     }
-    // SI ES SERVICIO
+
     if ([TXN.CODES.SERVICIO, TXN.CODES.GIFTCARD].includes(categoriaID)) {
-      const txnComision =
+      // Calcular total para SERVICIO o GIFTCARD
+      const comision =
         parseFloat(Helpers.toMoneyWithDecimals(txn.Comision, false)) / 2;
       const cargoMasComision = Helpers.sumWithDecimals(
         txn.Cargo,
-        txnComision,
+        comision,
         false,
       );
-      const result =
-        parseFloat(Helpers.toMoneyWithDecimals(txn.Monto, false)) +
-        parseFloat(cargoMasComision);
-      ventaTxn = parseFloat(result);
+      return monto + parseFloat(cargoMasComision);
     }
-    return ventaTxn;
+
+    return 0; // Valor por defecto si no coincide con ninguna categoría
   },
   //   COVIERTE UNA CADENA A FORMATO DECIMAL
   toMoneyWithDecimals: (amount, withSimbol = true, number = false) => {

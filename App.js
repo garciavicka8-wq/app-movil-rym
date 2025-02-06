@@ -24,11 +24,11 @@ import PagoConTarjeta from './src/screens/PagoConTarjeta';
 const Stack = createStackNavigator();
 
 export default function App() {
-  useEffect(() => {
-    SplashScreen.hide();
-  }, []);
+  // useEffect(() => {
+  //   SplashScreen.hide();
+  // }, []);
 
-  return <PagoConTarjeta />;
+  // return <PagoConTarjeta />;
   const {isAuthenticated} = useAuthContext();
 
   useEffect(() => {

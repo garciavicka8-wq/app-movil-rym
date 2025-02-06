@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Formulario de Tarjeta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="flex items-center justify-center h-screen bg-gray-100">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">Datos de Tarjeta</h2>
+
+      <form id="cardForm">
+        <label class="block text-gray-600 text-sm">Número de Tarjeta</label>
+        <input
+          type="text"
+          id="card_number"
+          class="w-full p-2 border rounded-lg mb-3"
+          placeholder="4111 1111 1111 1111"
+          required />
+
+        <label class="block text-gray-600 text-sm">Nombre del Titular</label>
+        <input
+          type="text"
+          id="holder_name"
+          class="w-full p-2 border rounded-lg mb-3"
+          placeholder="Juan Pérez"
+          required />
+
+        <div class="flex space-x-2">
+          <div class="w-1/2">
+            <label class="block text-gray-600 text-sm">Mes Exp.</label>
+            <input
+              type="text"
+              id="exp_month"
+              class="w-full p-2 border rounded-lg"
+              placeholder="MM"
+              required />
+          </div>
+          <div class="w-1/2">
+            <label class="block text-gray-600 text-sm">Año Exp.</label>
+            <input
+              type="text"
+              id="exp_year"
+              class="w-full p-2 border rounded-lg"
+              placeholder="YY"
+              required />
+          </div>
+        </div>
+
+        <label class="block text-gray-600 text-sm mt-3">CVV</label>
+        <input
+          type="text"
+          id="cvv"
+          class="w-full p-2 border rounded-lg mb-3"
+          placeholder="123"
+          required />
+
+        <button
+          type="submit"
+          class="w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">
+          Enviar
+        </button>
+      </form>
+    </div>
+
+    <script>
+      document
+        .getElementById('cardForm')
+        .addEventListener('submit', function (event) {
+          event.preventDefault();
+          const values = {
+            card_number: document.getElementById('card_number').value,
+            holder_name: document.getElementById('holder_name').value,
+            expiration_month: document.getElementById('exp_month').value,
+            expiration_year: document.getElementById('exp_year').value,
+            cvv2: document.getElementById('cvv').value,
+          };
+
+          const isCardNumberValid = OpenPay.card.validateCardNumber(
+            values.card_number,
+          );
+          const isCVVvalid = OpenPay.card.validateCVC(
+            values.cvv2,
+            values.card_number,
+          );
+          console.log({isCardNumberValid, isCVVvalid});
+          const cardData = {
+            card_number: values.card_number,
+            holder_name: values.holder_name,
+            expiration_month: values.expiration_month,
+            expiration_year: values.expiration_year,
+            cvv2: values.cvv2,
+          };
+
+          console.log('Datos de Tarjeta:', cardData);
+          alert('Formulario enviado correctamente.');
+        });
+    </script>
+  </body>
+</html>

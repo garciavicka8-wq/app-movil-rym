@@ -16,6 +16,8 @@ export function useThermalPrinter() {
 
   const isPrintingPossible = async () => {
     try {
+      // SI ESTA EN MODO DESARROLLO
+      // if (__DEV__) return true;
       const storage_printer = printer.getPrinterRegistered();
       if (storage_printer === null) {
         throw new Error(ERROR_NAMES.PRINTER_NOT_REGISTERED);

@@ -20,6 +20,13 @@ export function useModalInputs() {
   const [cantidadFija, setCantidadFija] = useState(false);
   const [conPar, setConPar] = useState(false);
   const [candado, setCandado] = useState(false);
+  const [automatico, setAutomatico] = useState(false);
+  const [automaticoConfig, setAutomaticoConfig] = useState({
+    active: false,
+    cifras: 'tres',
+    numeroJugadas: 1,
+    lugares: null,
+  });
 
   const [numPlaces, setNumPlaces] = useState(0);
   const [data, setData] = useState(null);
@@ -97,6 +104,12 @@ export function useModalInputs() {
     setConPar(false);
     setCantidadFija(false);
     setCandado(false);
+    setAutomaticoConfig({
+      active: false,
+      cifras: 'tres',
+      numeroJugadas: 1,
+      lugares: null,
+    });
   };
 
   const clearValue = inputName => {
@@ -204,6 +217,20 @@ export function useModalInputs() {
     }));
   };
 
+  const toggleAutomatico = () => {
+    setAutomaticoConfig(prevState => ({
+      ...prevState,
+      active: !prevState.active,
+    }));
+  };
+
+  const handleAutomaticoConfig = (propName, value) => {
+    setAutomaticoConfig(prevState => ({
+      ...prevState,
+      [propName]: value,
+    }));
+  };
+
   return {
     inputs,
     errors,
@@ -220,5 +247,8 @@ export function useModalInputs() {
     clearValue,
     toggleCandado,
     candado,
+    automaticoConfig,
+    handleAutomaticoConfig,
+    toggleAutomatico,
   };
 }

@@ -19,6 +19,10 @@ import {
 
 const RYM_API_URL = 'https://rym.recargasymas.com.mx/api/v1';
 const MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE = 998;
+const TICKET_TYPE = {
+  PLUS: 'ticket plus',
+  MAGICO: 'ticket magico',
+};
 
 export {
   DATABASE_TABLES,
@@ -39,4 +43,5 @@ export {
   TXN,
   RYM_API_URL,
   MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE,
+  TICKET_TYPE,
 };

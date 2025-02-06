@@ -5,6 +5,7 @@ import {DATABASE_TABLES} from '../constants';
 import {actualizarCredito} from '../credito';
 import {verifyUserAccountStatus} from '../reports';
 import * as Request from '../http';
+import {TICKET_TYPE} from '../../constants';
 
 export const obtenerSorteos = async () => {
   try {
@@ -139,7 +140,7 @@ export const registrarTicket = async (
     // ESTRUCTURA DEL NUEVO BOLETO
     const newBoleto = {
       id: uuid(),
-      tipo: 'ticket plus',
+      tipo: TICKET_TYPE.PLUS,
       numeroBoleto: Utils.generateTicketId(),
       numeroAgencia: usuarioDb.usuario,
       jugadas: jugadas,
@@ -384,7 +385,7 @@ export async function registrarMagico({
       jugadas: jugadasAleatorias,
       numeroAgencia: usuarioDb.usuario,
       numeroBoleto: await Utils.generateTicketId(),
-      tipo: 'ticket magico',
+      tipo: TICKET_TYPE.MAGICO,
       totalApostado: jugadasAleatorias.reduce(
         (acc, el) => acc + parseInt(el.totalApostado),
         0,

@@ -4,25 +4,31 @@ import {createStackNavigator} from '@react-navigation/stack';
 import SplashScreen from 'react-native-splash-screen';
 import BleManager from 'react-native-ble-manager';
 // PANTALLAS
-import Login from './screens/login';
-import Main from './screens/Main';
-import JugarTickets from './screens/tickets/JugarTickets';
-import Magico from './screens/tickets/Magico';
-import {APP_NAVIGATION} from './constants';
-import colors from './utils/Colors';
-import {Colors} from './utils';
+import Login from './src/screens/login';
+import Main from './src/screens/Main';
+import JugarTickets from './src/screens/tickets/JugarTickets';
+import Magico from './src/screens/tickets/Magico';
+import {APP_NAVIGATION} from './src/constants';
+import colors from './src/utils/Colors';
+import {Colors} from './src/utils';
 import {Alert, StatusBar, Text, View} from 'react-native';
 import {IconButton} from 'react-native-paper';
-import ConfiguracionMenu from './screens/configuracion/ConfiguracionMenu';
-import RegistrarImpresora from './screens/configuracion/RegistrarImpresora';
-import CodigoPin from './screens/configuracion/CodigoPin';
-import EstablecerComision from './screens/configuracion/EstablecerComision';
-import Seguridad from './screens/configuracion/Seguridad';
-import {useAuthContext} from './context/AuthContext';
+import ConfiguracionMenu from './src/screens/configuracion/ConfiguracionMenu';
+import RegistrarImpresora from './src/screens/configuracion/RegistrarImpresora';
+import CodigoPin from './src/screens/configuracion/CodigoPin';
+import EstablecerComision from './src/screens/configuracion/EstablecerComision';
+import Seguridad from './src/screens/configuracion/Seguridad';
+import {useAuthContext} from './src/context/AuthContext';
+import PagoConTarjeta from './src/screens/PagoConTarjeta';
 
 const Stack = createStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    SplashScreen.hide();
+  }, []);
+
+  return <PagoConTarjeta />;
   const {isAuthenticated} = useAuthContext();
 
   useEffect(() => {

@@ -6,10 +6,10 @@ import React from 'react';
 import {AppRegistry} from 'react-native';
 import {Provider as PaperProvider} from 'react-native-paper';
 import {Provider as StoreProvider} from 'react-redux';
-import {store} from './app/store';
+import {store} from './src/app/store';
 import App from './App';
 import {name as appName} from './app.json';
-import {AuthProvider} from './context/AuthContext';
+import {AuthProvider} from './src/context/AuthContext';
 
 export default function Main() {
   return (

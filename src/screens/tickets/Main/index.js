@@ -29,26 +29,19 @@ export default function Main() {
         <MainMenuIconButton
           text="Registrar"
           buttonColor={Colors.lightRed}
-          icon="laptop"
+          icon="receipt"
           iconColor={Colors.dark}
           textColor={Colors.primary}
           onPress={() => handleNavigate('JUGAR_TICKETS')}
+          fullwidth
         />
-        <MainMenuIconButton
+        {/* <MainMenuIconButton
           text="Mágico"
           buttonColor={Colors.lightRed}
           icon="auto-fix"
           iconColor={Colors.dark}
           textColor={Colors.primary}
           onPress={() => handleNavigate('MAGICO')}
-        />
-        {/* <MainMenuIconButton
-          text="Resultados"
-          buttonColor={Colors.lightRed}
-          icon="pin"
-          iconColor={Colors.lightBrown}
-          textColor={Colors.primary}
-          onPress={() => handleNavigate('NUMEROS_GANADORES')}
         /> */}
         <MainMenuIconButton
           text="Pagos"

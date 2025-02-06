@@ -8,7 +8,7 @@ import {
   getServerTimestamp,
   getUserWeekInform,
   saveUserWeekInform,
-  updateUser,
+  updateDbUser,
 } from '../common';
 import * as Request from '../http';
 import {DATABASE_TABLES, DEPOSIT_DAYS} from '../constants';
@@ -444,7 +444,7 @@ export async function verifyUserAccountStatus() {
       !beforePrevInform.paymentCompleted &&
       !prevInform.paymentCompleted
     ) {
-      await updateUser(userDB.key, {
+      await updateDbUser(userDB.key, {
         activo: false,
         disableAccountReason:
           'Su cuenta ha sido desactivada debido a que tiene un pago atrasado sin cubrir.',
@@ -463,7 +463,7 @@ export async function verifyUserAccountStatus() {
       !prevInform.paymentCompleted
     ) {
       console.log('verifyUserAccountStatus line: 464');
-      await updateUser(userDB.key, {
+      await updateDbUser(userDB.key, {
         activo: false,
         disableAccountReason:
           'Su cuenta ha sido desactivada debido a que no ha cubierto en su totalidad el pago de liquidación semanal.',

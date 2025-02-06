@@ -1,6 +1,12 @@
 import React from 'react';
 import {ScrollView, StyleSheet, Text, View} from 'react-native';
-import {ActivityIndicator, Button, Dialog, Portal} from 'react-native-paper';
+import {
+  ActivityIndicator,
+  Button,
+  Dialog,
+  IconButton,
+  Portal,
+} from 'react-native-paper';
 import colors from '../utils/Colors';
 
 export default function CustomModal({
@@ -16,6 +22,8 @@ export default function CustomModal({
   confirmButtonText = 'Entendido',
   showConfirmBtn = true,
   scrollableContent = false,
+  showCloseBtn = false,
+  onClose,
 }) {
   return (
     <Portal>
@@ -35,6 +43,8 @@ export default function CustomModal({
             confirmButtonText={confirmButtonText}
             showConfirmBtn={showConfirmBtn}
             scrollableContent={scrollableContent}
+            showCloseBtn={showCloseBtn}
+            onClose={onClose}
           />
         )}
       </Dialog>
@@ -74,10 +84,26 @@ const AlertContent = ({
   confirmButtonText,
   showConfirmBtn,
   scrollableContent,
+  showCloseBtn,
+  onClose,
 }) => {
   return (
     <>
-      <Dialog.Title style={{fontSize: 18}}>{title}</Dialog.Title>
+      {!showCloseBtn && (
+        <Dialog.Title style={{fontSize: 18}}>{title}</Dialog.Title>
+      )}
+      {showCloseBtn && (
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+          <Dialog.Title style={{fontSize: 18}}>{title}</Dialog.Title>
+          <IconButton icon={'close'} onPress={onClose} />
+        </View>
+      )}
       {scrollableContent && (
         <Dialog.ScrollArea>
           <ScrollView style={{maxHeight: 400}}>{content}</ScrollView>
@@ -85,7 +111,7 @@ const AlertContent = ({
       )}
       {!scrollableContent && <Dialog.Content>{content}</Dialog.Content>}
       <Dialog.Actions>
-        {showCancelButton && (
+        {showCancelButton && !showCloseBtn && (
           <Button onPress={() => onCancel()}>{cancelButtonText}</Button>
         )}
         {showConfirmBtn && (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {View, StyleSheet, Image, StatusBar} from 'react-native';
 import {useCustomNavigation} from '../../hooks';
 import LoginForm from './components/LoginForm';

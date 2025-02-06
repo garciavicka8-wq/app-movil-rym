@@ -37,6 +37,11 @@ export default function Tabla() {
   };
 
   const onRowPress = item => {
+    // SI EL NUMERO CONTIENE ALGUNA X SE TRATA DE UNA
+    // APUESTA AUTOMATICA POR LO TANTO NO SE PUEDE EDITAR
+    if (item.numero.includes('X')) return;
+    // SI NO CONTIENE NINGUNA X ENTONCES SE TRATA DE UNA
+    // JUGADA REGULAR Y ES POSIBLE EDITARLA
     setJugadaSeleccionada(item);
     modal.setConfig({
       open: true,
@@ -135,11 +140,11 @@ export default function Tabla() {
         type={modal.config.type}
         progressTitle={modal.config.progressTitle}
         alertTitle={modal.config.alertTitle}
-        showCancelButton={modal.config.showCancelBtn}
         cancelButtonText={modal.config.cancelBtnText}
         confirmButtonText={modal.config.confirmBtnText}
         showConfirmBtn={modal.config.showConfirmBtn}
-        onCancel={handleModalCancel}
+        showCloseBtn={true}
+        onClose={handleModalCancel}
         onAccept={handleModalAccept}>
         {modal.config.contentType === 'editar' && jugadaSeleccionada && (
           <ModalInputGroup

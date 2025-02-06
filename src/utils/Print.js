@@ -88,78 +88,18 @@ const Print = (() => {
   };
   //  CREATE MODEL FOR TICKET TO BE PRINTED
   const ticket = async (boleto, isMagico = false) => {
+    // SI ESTA EN MODO DESARROLLO
+    // if (__DEV__) return true;
     try {
-      try {
-        // await BEP.printPic(isMagico ? LOGO_MAGICO_BASE64 : LOGO_BASE64, {
-        //   width: 220,
-        //   left: 80,
-        // });
-        await BEP.printerAlign(ALIGN.CENTER);
-        await BEP.printText(isMagico ? 'TKT Magic\n\r' : 'TKT Pluss\n\r', {
-          encoding: 'GBK',
-          codepage: 0,
-          widthtimes: 1,
-          heigthtimes: 1,
-          fonttype: 1,
-        });
-        await BEP.printText(
-          `${Utils.obtenerNombreSorteo(boleto.codigoSorteo)} ${Moment(
-            boleto.fechaSorteo,
-          ).format('ddd DD MMM YY')}\n\r`,
-          {
-            encoding: 'GBK',
-            codepage: 0,
-            widthtimes: 0,
-            heigthtimes: 0,
-            fonttype: 1,
-          },
-        );
-        await BEP.printerAlign(ALIGN.LEFT);
-        // await BEP.printText(`${usuarioStorage.nomComercial} \n\r`, {});
-        await BEP.printText(
-          `Impresion ${Moment(boleto.fechaExp).format('DD/MM/YYYY')} ${
-            boleto.horaImpresion
-          }\n\r`,
-          {},
-        );
-        await BEP.printText('################################\n\r', {});
-
-        await BEP.printColumn(
-          PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colSizes,
-          PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colAlignments,
-          PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colData,
-          {},
-        );
-        // IMPRIMIR JUGADAS
-        boleto.jugadas.forEach(async jugada => {
-          let rowData = jugada.lugares.map(item => {
-            if (item.toString() == '0' || item.toString() == '') {
-              return 'XXX';
-            }
-            return Utils.paddedNumber(item);
-          });
-          let colData = [Utils.paddedNumber(jugada.numero, '*'), ...rowData];
-          await BEP.printColumn(
-            PRINT_TABLE[colData.length].colSizes,
-            PRINT_TABLE[colData.length].colAlignments,
-            colData,
-            {},
-          );
-        });
-        await BEP.printText('################################\n\r', {});
-        await BEP.printText(`Reg. ${boleto.jugadas.length}\n\r`, {});
-        await BEP.printText(`Total ${boleto.totalApostado} Pts\n\r`, {});
-        await BEP.printText(`ID ${boleto.numeroBoleto}\n\r`, {});
-        await BEP.printText(`V1N ${Utils.generateRandomNumber(16)}\n\r`, {});
-        await BEP.printText(`COS ${Utils.generateRandomNumber(8)}\n\r`, {});
-        await BEP.printerAlign(ALIGN.CENTER);
-        await BEP.printQRCode(boleto.numeroBoleto, 120, ERROR_CORRECTION.L, 0);
-        await BEP.printText(`\n\r\n\r`, {});
-      } catch ({message}) {
-        ToastAndroid.show(message, ToastAndroid.LONG);
-      }
-    } catch ({message}) {
-      throw new Error(message);
+      // TICKET HEADER
+      await printTicketHeader(boleto, isMagico);
+      // IMPRIMIR JUGADAS
+      await printTicketBody(boleto);
+      // PRINT TICKET FOOTER
+      await printTicketFooter(boleto);
+    } catch (e) {
+      ToastAndroid.show(e.message, ToastAndroid.LONG);
+      throw new Error(e);
     }
   };
   // CANCELED TICKET
@@ -498,12 +438,80 @@ const Print = (() => {
     await hashesSeparator();
     await BEP.printText('\n\r\n\r\n\r\n\r', {});
   }
+  // PRINT TICKET HEADER
+  async function printTicketHeader(boleto, isMagico) {
+    await alignText('center');
+    await BEP.printText(isMagico ? 'TKT Magic\n\r' : 'TKT Pluss\n\r', {
+      encoding: 'GBK',
+      codepage: 0,
+      widthtimes: 1,
+      heigthtimes: 1,
+      fonttype: 1,
+    });
+    await BEP.printText(
+      `${Utils.obtenerNombreSorteo(boleto.codigoSorteo)} ${Moment(
+        boleto.fechaSorteo,
+      ).format('ddd DD MMM YY')}\n\r`,
+      {
+        encoding: 'GBK',
+        codepage: 0,
+        widthtimes: 0,
+        heigthtimes: 0,
+        fonttype: 1,
+      },
+    );
+    await printLine(
+      `Impresion ${Moment(boleto.fechaExp).format('DD/MM/YYYY')} ${
+        boleto.horaImpresion
+      }`,
+    );
+
+    await hashesSeparator();
+  }
+  // PRINT JUGADAS
+  async function printTicketBody(boleto) {
+    await BEP.printColumn(
+      PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colSizes,
+      PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colAlignments,
+      PRINT_TABLE_HEADER[boleto.jugadas[0].lugares.length].colData,
+      {},
+    );
+    boleto.jugadas.forEach(async jugada => {
+      let rowData = jugada.lugares.map(item => {
+        if (item.toString() == '0' || item.toString() == '') {
+          return 'XXX';
+        }
+        return Utils.paddedNumber(item);
+      });
+      let colData = [Utils.paddedNumber(jugada.numero, '*'), ...rowData];
+      await BEP.printColumn(
+        PRINT_TABLE[colData.length].colSizes,
+        PRINT_TABLE[colData.length].colAlignments,
+        colData,
+        {},
+      );
+    });
+  }
+
+  async function printTicketFooter(boleto) {
+    await hashesSeparator();
+    await printLine(`Reg. ${boleto.jugadas.length}`);
+    await printLine(`Total ${boleto.totalApostado} Pts`);
+    await printLine(`ID ${boleto.numeroBoleto}`);
+    await printLine(`V1N ${Utils.generateRandomNumber(16)}`);
+    await printLine(`COS ${Utils.generateRandomNumber(8)}`);
+
+    await alignText('center');
+    await BEP.printQRCode(boleto.numeroBoleto, 120, ERROR_CORRECTION.L, 0);
+    await BEP.printText(`\n\r\n\r`, {});
+  }
 
   async function alignText(alignment) {
     await BEP.printerAlign(alignment === 'left' ? ALIGN.LEFT : ALIGN.CENTER);
   }
 
   async function printLine(text) {
+    await alignText('left');
     await BEP.printText(`${text}\n\r`, {});
   }
 

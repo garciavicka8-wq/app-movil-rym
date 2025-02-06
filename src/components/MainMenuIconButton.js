@@ -18,6 +18,7 @@ export default function MainMenuIconButton({
   progress = false,
   text = '',
   onPress,
+  fullwidth = false,
 }) {
   const [scaleValue, setScaleValue] = useState(new Animated.Value(1));
 
@@ -66,7 +67,7 @@ export default function MainMenuIconButton({
           styles.button,
           {
             backgroundColor: buttonColor,
-            width: size,
+            width: fullwidth ? size * 2 : size,
             height: size,
             transform: [{scale: scaleValue}],
           },

@@ -62,71 +62,57 @@ export default function Ventas() {
     try {
       await obtenerUsuarioDb();
       const timestamp = await Database.getServerDate();
-      const semanas = [];
-      for (let i = 0; i < 9; i++) {
+
+      return Array.from({length: 9}, (_, i) => {
         const periodo = obtenerPeriodo(timestamp, i);
-        const fecha = {
+        return {
           id: uuid(),
           inicial: periodo[0],
-          final: periodo[periodo.length - 1],
+          final: periodo.at(-1), // `.at(-1)` es más limpio que `periodo[periodo.length - 1]`
           active: false,
         };
-        semanas.push(fecha);
-      }
-      return semanas;
-    } catch ({message}) {
-      throw new Error(message);
+      });
+    } catch (error) {
+      throw new Error(error.message || 'Error al obtener fechas');
     }
   };
 
   const obtenerPeriodo = (timestamp, semanaID) => {
-    let ocurrencies = 9;
-    let ocurrenciesCounter = 0;
-    let counter = 0;
-    let dias_lunes = [];
-    // OBTENEMOS SOLO LOS DIAS LUNES
-    while (ocurrenciesCounter !== ocurrencies) {
-      if (
-        Moment(timestamp)
-          .subtract(counter, 'days')
-          .format('dddd')
-          .toLowerCase() === 'lunes'
-      ) {
-        dias_lunes.push(
-          Moment(timestamp).subtract(counter, 'days').format('YYYY-MM-DD'),
-        );
-        ocurrenciesCounter++;
-      }
-      counter++;
+    const ocurrencies = 9;
+    let diasLunes = [];
+    let fecha = Moment(timestamp);
+
+    // Asegurar que `timestamp` sea un lunes inicial válido
+    if (fecha.day() !== 1) {
+      fecha = fecha.startOf('week').add(1, 'days'); // Forzar inicio de semana en lunes
     }
-    // FECHAS FINALES
-    const fechasFinales = {
-      0: Moment(timestamp).format('YYYY-MM-DD'),
-      1: Moment(dias_lunes[0]).subtract(1, 'days').format('YYYY-MM-DD'),
-      2: Moment(dias_lunes[1]).subtract(1, 'days').format('YYYY-MM-DD'),
-      3: Moment(dias_lunes[2]).subtract(1, 'days').format('YYYY-MM-DD'),
-      4: Moment(dias_lunes[3]).subtract(1, 'days').format('YYYY-MM-DD'),
-      5: Moment(dias_lunes[4]).subtract(1, 'days').format('YYYY-MM-DD'),
-      6: Moment(dias_lunes[5]).subtract(1, 'days').format('YYYY-MM-DD'),
-      7: Moment(dias_lunes[6]).subtract(1, 'days').format('YYYY-MM-DD'),
-      8: Moment(dias_lunes[7]).subtract(1, 'days').format('YYYY-MM-DD'),
-    };
-    // OBTENER DIAS DE LA SEMANA
-    let _fechas = [];
-    let counter2 = 0;
-    while (
-      !Moment(dias_lunes[semanaID])
-        .add(counter2, 'days')
-        .isSame(Moment(fechasFinales[semanaID]))
-    ) {
-      _fechas.push(
-        Moment(dias_lunes[semanaID]).add(counter2, 'days').format('YYYY-MM-DD'),
-      );
-      counter2++;
+
+    // Obtener los últimos 9 lunes
+    while (diasLunes.length < ocurrencies) {
+      diasLunes.push(fecha.format('YYYY-MM-DD'));
+      fecha = fecha.subtract(7, 'days'); // Restamos 7 días cada vez para ir de lunes en lunes
     }
-    _fechas.push(
-      Moment(dias_lunes[semanaID]).add(counter2, 'days').format('YYYY-MM-DD'),
+
+    // Generar fechas finales (domingo anterior a cada lunes)
+    const fechasFinales = diasLunes.map(
+      lunes => Moment(lunes).add(6, 'days').format('YYYY-MM-DD'), // Avanzamos 6 días para llegar al domingo
     );
+
+    // Validar si `semanaID` está dentro del rango válido
+    if (semanaID < 0 || semanaID >= diasLunes.length) {
+      throw new Error('semanaID fuera de rango');
+    }
+
+    // Obtener todos los días desde el lunes hasta el domingo
+    let _fechas = [];
+    let currentDate = Moment(diasLunes[semanaID]);
+    const endDate = Moment(fechasFinales[semanaID]);
+
+    while (currentDate.isSameOrBefore(endDate)) {
+      _fechas.push(currentDate.format('YYYY-MM-DD'));
+      currentDate.add(1, 'days');
+    }
+
     return _fechas;
   };
 

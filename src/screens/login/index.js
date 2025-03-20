@@ -1,17 +1,14 @@
-import React, {useEffect} from 'react';
-import {View, StyleSheet, Image, StatusBar} from 'react-native';
-import {useCustomNavigation} from '../../hooks';
+import React from 'react';
+import {View, StyleSheet, Image} from 'react-native';
 import LoginForm from './components/LoginForm';
-import {Colors} from '../../utils';
 import Ribbon from './components/Ribbon';
+import CustomStatusBar from '../../components/CustomStatusBar';
 const LOGO = require('../../assets/logo.jpg');
 
 export default function Login() {
-  const {isFocused} = useCustomNavigation();
-
   return (
     <>
-      {isFocused && <StatusBar backgroundColor={Colors.primary} />}
+      <CustomStatusBar />
       <View style={styles.container}>
         <Image
           source={LOGO}

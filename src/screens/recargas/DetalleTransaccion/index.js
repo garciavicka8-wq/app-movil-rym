@@ -8,7 +8,7 @@ import LoadingIndicator from '../../../components/LoadingIndicator';
 import {useDispatch, useSelector} from 'react-redux';
 import {getStatusRequest} from '../../../services/taecel';
 import Database from '../../../database';
-import {DATABASE_TABLES, TRANSACTION_STATES, TXN} from '../../../constants';
+import {DATABASE_TABLES, TXN} from '../../../constants';
 import {
   setTransaccionStore,
   setTransacciones,
@@ -23,7 +23,7 @@ import Share from 'react-native-share';
 import {useCredito} from '../../../hooks';
 
 export default function DetalleTransaccion() {
-  const {transaccionStore, transacciones} = useSelector(state => state.taecel);
+  const {transaccionStore} = useSelector(state => state.taecel);
   const [cargando, setCargando] = useState(true);
   const [compartirWABtnClicked, setCompartirWABtnClicked] = useState(false);
   const dispatch = useDispatch();
@@ -114,7 +114,6 @@ export default function DetalleTransaccion() {
 
   const cargarTransaccionDB = async () => {
     try {
-      // console.log(transaccionStore);
       setCargando(true);
       const txn = await Database.getItem(
         DATABASE_TABLES.TRANSACCIONES,

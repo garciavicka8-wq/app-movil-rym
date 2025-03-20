@@ -67,15 +67,14 @@ export default function RecargasMenu() {
   const loadProducts = async () => {
     if (isAuthenticated && mainProducts.length === 0) {
       dispatch(setLoadingProducts(true));
-      const res = await getProducts();
-      const {data, success} = res;
+      const taecelResponse = await getProducts();
       let _categories = [];
       let _carriers = [];
       let _products = [];
-      if (success) {
-        _categories = [...data.categorias];
-        _carriers = [...data.carriers];
-        _products = [...data.productos];
+      if (taecelResponse.success) {
+        _categories = [...taecelResponse.data.categorias];
+        _carriers = [...taecelResponse.data.carriers];
+        _products = [...taecelResponse.data.productos];
       }
       let _mainProducts = [];
       _categories.forEach((item, index) => {

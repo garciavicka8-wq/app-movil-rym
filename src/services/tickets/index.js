@@ -1,5 +1,5 @@
 import Database from '../../database';
-import {Helpers, Moment, Utils, uuid} from '../../utils';
+import {Helpers, Moment, Money, Utils, uuid} from '../../utils';
 import {obtenerUsuarioDb} from '../auth';
 import {DATABASE_TABLES} from '../constants';
 import {actualizarCredito} from '../credito';
@@ -184,12 +184,13 @@ export const registrarTicket = async (
     if (parseInt(creditoDisponible) <= 0)
       throw new Error('Limite de venta alcanzado.');
     // SI LLEGA AL LIMITE DE VENTA PERMITIDO AGREGANDO EL TOTAL DEL NUEVO BOLETO
-    if (parseInt(creditoDisponible) - parseInt(newBoleto.totalApostado) < 0)
+    if (parseInt(creditoDisponible) - parseInt(newBoleto.totalApostado) < 0) {
       throw new Error(
         `Con el total de este boleto se supera el limite semanal, por favor ajusta el total de puntos e intenta nuevamente.\n\nTotal boleto ${
           newBoleto.totalApostado
         }\nPuntos restantes ${Money(creditoDisponible, false)}`,
       );
+    }
     // SI NO HAY ERRORES GUARDAMOS EL BOLETO
     // console.log('el guardado esta desactivado, no olvidar reactivar');
     await Database.save(DATABASE_TABLES.TICKETS, newBoleto);

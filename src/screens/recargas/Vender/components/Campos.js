@@ -9,7 +9,7 @@ import {setTransaccionStore} from '../../../../features/taecel/taecelSlice';
 import {Helpers, Storage} from '../../../../utils';
 import {useCustomNavigation, useLogout, useModal} from '../../../../hooks';
 import {APP_NAVIGATION, TXN} from '../../../../constants';
-import {makeRecharge, payService} from '../../../../services/taecel';
+import {makeTransaction} from '../../../../services/taecel';
 import {restarCredito} from '../../../../features/credito/creditoSlice';
 import CustomNumericField from '../../../../components/CustomNumericField';
 import Descripcion from './Descripcion';
@@ -111,21 +111,11 @@ export default function Campos({route}) {
       type: 'progress',
       progressTitle: `Transacción En Proceso${'\n'}No Interrumpas La Conexión`,
     });
-    // VERIFICAR SI ES RECARGA TELEFONICA , PAQUETE O GIFTCARD
-    if (
-      [TXN.CODES.RECARGA, TXN.CODES.PAQUETE, TXN.CODES.GIFTCARD].includes(
-        carrier.CategoriaID,
-      )
-    ) {
-      hacerRecarga(data);
-    }
-    // VERIFICAR SI ES PAGO DE SERVICIO
-    if (carrier.CategoriaID == TXN.CODES.SERVICIO) {
-      pagarServicio(data);
-    }
+    // REALIZAR TRANSACCION
+    hacerTransaccion(data);
   };
-  // MAKE RECHARGE
-  const hacerRecarga = async data => {
+  // HACER TRANSACCION
+  const hacerTransaccion = async data => {
     try {
       await verifyUserAccountStatus();
       const _esPosibleLaTransaccion = await esPosibleLaTransaccion(data.monto);
@@ -136,12 +126,15 @@ export default function Campos({route}) {
         throw new Error(
           'No hay credito suficiente para realizar la transacción',
         );
-      const res = await makeRecharge(
+      const res = await makeTransaction(
         selectedProduct.CategoriaID,
         selectedProduct.Codigo,
         data.referencia,
         data.monto,
         descripcionProducto,
+        carrier.CategoriaID == TXN.CODES.SERVICIO
+          ? 'payService'
+          : 'makeRecharge',
       );
       // MOSTRAR PANTALLA DE DETALLE EN CASO DE SER EXITOSA
       if (res.status == 'success') {
@@ -163,23 +156,12 @@ export default function Campos({route}) {
           },
         ]);
       }
-      // MOSTRAR MENSAJE EN CASO DE ERROR
-      if (res.status == 'error') {
-        const {titulo, mensaje} = textoRespuesta(res.status);
-        modal.setConfig({
-          type: 'alert',
-          alertTitle: titulo,
-          contentType: 'error',
-          action: 'error',
-          showCancelBtn: false,
-          error: <Text>{mensaje}</Text>,
-        });
-      }
-    } catch ({message}) {
+    } catch (error) {
+      console.log(error.message);
       if (
-        message == 'DEVICE_NOT_LINKED' ||
-        message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
-        message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
+        error.message == 'DEVICE_NOT_LINKED' ||
+        error.message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
+        error.message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
       ) {
         logout();
         return;
@@ -190,78 +172,7 @@ export default function Campos({route}) {
         contentType: 'error',
         action: 'error',
         showCancelBtn: false,
-        error: <Text>{message}</Text>,
-      });
-    }
-  };
-  // PAY SERVICE
-  const pagarServicio = async data => {
-    try {
-      await verifyUserAccountStatus();
-      const _esPosibleLaTransaccion = await esPosibleLaTransaccion(data.monto);
-      const descripcionProducto =
-        Helpers.descripcionProductoTransaccion(selectedProduct);
-      // SI NO HAY CREDITO SUFICIENTE
-      if (!_esPosibleLaTransaccion)
-        throw new Error(
-          'No hay credito suficiente para realizar la transacción',
-        );
-      // SI LA TRANSACCION SE PUEDE REALIZAR
-      const res = await payService(
-        selectedProduct.CategoriaID,
-        selectedProduct.Codigo,
-        data.referencia,
-        data.monto,
-        descripcionProducto,
-      );
-      // MOSTRAR PANTALLA DE DETALLE EN CASO DE SER EXITOSA
-      if (res.status == 'success') {
-        // SUMAMOS EL MONTO DE LA TRANSACCION AL CREDITO DISPONIBLE
-        const montoTransaccion = Helpers.calcularTotalTransaccion(
-          res.transaccion,
-          selectedProduct.CategoriaID,
-        );
-        dispatch(restarCredito(montoTransaccion));
-        dispatch(
-          setTransaccionStore({...res.transaccion, descripcionProducto}),
-        );
-        // RESET LOGIN TIME
-        // await Utils.setLoginTime();
-        navigation.changeStack(1, [
-          {name: APP_NAVIGATION.SCREENS.RECARGAS_MENU},
-          {
-            name: APP_NAVIGATION.SCREENS.DETALLE_TRANSACCION,
-          },
-        ]);
-      }
-      // MOSTRAR MENSAJE EN CASO DE ERROR
-      if (res.status == 'error') {
-        const {titulo, mensaje} = textoRespuesta(res.status);
-        modal.setConfig({
-          type: 'alert',
-          alertTitle: titulo,
-          contentType: 'error',
-          action: 'error',
-          showCancelBtn: false,
-          error: <Text>{mensaje}</Text>,
-        });
-      }
-    } catch ({message}) {
-      if (
-        message == 'DEVICE_NOT_LINKED' ||
-        message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
-        message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
-      ) {
-        logout();
-        return;
-      }
-      modal.setConfig({
-        type: 'alert',
-        alertTitle: 'Mensaje',
-        contentType: 'error',
-        action: 'error',
-        showCancelBtn: false,
-        error: <Text>{message}</Text>,
+        error: <Text>{error.message}</Text>,
       });
     }
   };
@@ -273,25 +184,6 @@ export default function Campos({route}) {
     } catch ({message}) {
       throw new Error(message);
     }
-  };
-
-  const textoRespuesta = res => {
-    let titulo = '';
-    let mensaje = '';
-    // SI LA TRANSACCION FUE EXITOSA
-    if (res === 'success') {
-      titulo = 'Mensaje';
-      mensaje = 'Transacción Exitosa';
-    }
-    // SI OCURRIO ALGUN ERROR
-    if (res === 'error') {
-      titulo = 'Error';
-      mensaje = 'Ocurrio un error inesperado';
-    }
-    return {
-      titulo,
-      mensaje,
-    };
   };
 
   const handleTextInputChange = (text, inputName) => {

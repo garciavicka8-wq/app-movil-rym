@@ -1,23 +1,20 @@
 import React from 'react';
-import {StatusBar} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {APP_NAVIGATION} from '../../constants';
-import {useCustomNavigation} from '../../hooks';
 import {Colors} from '../../utils';
 import MainScreen from './Main';
 import VentasScreen from './Ventas';
 import ResultadosScreen from './Resultados';
 import EstadoDeCuenta from './Ventas/EstadoDeCuenta';
 import {IconButton} from 'react-native-paper';
+import CustomStatusBar from '../../components/CustomStatusBar';
 // NAVIGATION
 const Stack = createStackNavigator();
 
 export default function ReportesTab() {
-  const {isFocused} = useCustomNavigation();
-
   return (
     <>
-      {isFocused && <StatusBar backgroundColor={Colors.purple} />}
+      <CustomStatusBar color={'purple'} />
       <Stack.Navigator
         initialRouteName={APP_NAVIGATION.SCREENS.REPORTES_MENU}
         screenOptions={{

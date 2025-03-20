@@ -1,7 +1,5 @@
-import axios from 'axios';
-import ENV from 'react-native-config';
 import Decimal from 'decimal.js';
-import {Helpers, Moment, Money, Storage, Utils, uuid} from '../../utils';
+import {Helpers, Moment, Money, Storage, uuid} from '../../utils';
 import {obtenerUsuarioDb} from '../auth';
 import Database from '../../database';
 import {DATABASE_TABLES, TRANSACTION_STRUCTURE} from '../constants';
@@ -9,276 +7,165 @@ import {actualizarCredito} from '../credito';
 import {getPeriodFromMonday, getServerTimestamp} from '../common';
 import {TRANSACTION_STATES, TXN} from '../../constants';
 import {logError} from '../logger';
-const qs = require('qs');
+import {requestRymAPI, requestTaecelAPI} from '../http';
 const bcrypt = require('react-native-bcrypt');
 const TXN_STATUS_SUCCESS = 'SUCCESS';
+
 // GET TAECEL PRODUCTS
 export const getProducts = async () => {
   try {
-    const url = ENV.TAECEL_BASE_URL + '/getProducts';
-    const tokens = Utils.getTokens();
-    const data = qs.stringify({
-      key: tokens.key,
-      nip: tokens.nip,
-    });
-    const res = await axios.post(url, data);
-    return res.data;
+    const taecelResponse = await requestTaecelAPI('getProducts');
+    return taecelResponse;
   } catch (error) {
     logError('getProducts', error.message);
     throw Error('Error al obtener productos');
   }
 };
-// MAKE RECHARGE
-export const makeRecharge = async (
-  categoriaID,
-  code,
-  phoneNumber,
-  total,
-  descripcionProducto,
-) => {
-  try {
-    // VERIFICAR ESTADO DEL USUARIO
-    const usuarioDB = await obtenerUsuarioDb();
-    let data = {
-      status: 'error',
-      transaccion: null,
-    };
-    let seconds = 0;
-    // SIRVE PARA IDENTIFICAR LA TRANSACCION GUARDADA INICIALMENTE PARA POSTERIORMENTE PODER ACTUALIZARLA
-    const tempId = uuid();
-    //  VERIFICAR HAY SUFICIENTE CREDITO PARA REALIZAR LA TRANSACCION
-    const canTransactionProceed = await checkBalance(total, 'airtime');
-    if (!canTransactionProceed)
-      throw new Error('No cuentas con saldo suficiente');
-    // HACIENDO LA TRANSACCION
-    const transID = await makeRequest(code, phoneNumber);
-    if (transID === 'empty' || transID === '')
-      throw new Error('Transacción fallida, ' + transID);
-    // GUARDAR TRANSACCION
-    await saveTransaction({
-      transID,
-      tempId: tempId,
-      usuario: usuarioDB.usuario,
-      referencia: phoneNumber,
-      monto: total,
-      categoriaID,
-      descripcionProducto,
-      comisionRecargas: usuarioDB.comisionRecargas,
-      comisionRecargasFecha: usuarioDB.comisionRecargasFecha,
-    });
-    // OBTENER STATUS DE LA TRANSACCION Y REINTENTAR DESPUES DE 60 SEGUNDOS
-    const start = new Date();
-    do {
-      data = await getStatusRequest(transID);
-      const end = new Date();
-      seconds = Math.floor((end.getTime() - start.getTime()) / 1000);
-    } while (data.status === TXN.STATES.PROCESSING && seconds < 60);
-    // VERIFICAR SI LA TRANSACCION FALLO
-    if (
-      [TXN.STATES.ERROR, TXN.STATES.FAILED, TXN.STATES.PROCESSING].includes(
-        data.status,
-      )
-    ) {
-      // UPDATE TRANSACTION
-      await updateTransaction({
-        tempId,
-        transaccion: data.transaccion,
-        categoriaID,
-        descripcionProducto,
-        usuario: usuarioDB.usuario,
-        comisionRecargas: usuarioDB.comisionRecargas,
-        comisionRecargasFecha: usuarioDB.comisionRecargasFecha,
-      });
-      throw new Error(`${data.transaccion.Nota}`);
-    }
-    // VERIFICA SI LA TRANSACCION TUVO EXITO
-    if (data.status === TXN_STATUS_SUCCESS) data.status = 'success';
-    // UPDATE TRANSACTION
-    await updateTransaction({
-      tempId,
-      transaccion: data.transaccion,
-      categoriaID,
-      descripcionProducto,
-      usuario: usuarioDB.usuario,
-      comisionRecargas: usuarioDB.comisionRecargas,
-      comisionRecargasFecha: usuarioDB.comisionRecargasFecha,
-    });
-    // RETORNAR DATA
-    return data;
-  } catch ({message}) {
-    console.log('[Error]: ' + message, '[Func]: makeRecharge');
-    throw new Error(message);
-  }
-};
-// PAY SERVICE
-export const payService = async (
+// MAKE TRANSACTION
+export const makeTransaction = async (
   categoriaID,
   code,
   reference,
   total,
   descripcionProducto,
+  transactionType = 'makeRecharge', // 'makeRecharge' | 'payService'
 ) => {
   try {
-    // VERIFICAR ESTADO DEL USUARIO
     const usuarioDB = await obtenerUsuarioDb();
-    let data = {
-      status: 'error',
-      transaccion: null,
-    };
-    let seconds = 0;
-    // SIRVE PARA IDENTIFICAR LA TRANSACCION GUARDADA INICIALMENTE PARA POSTERIORMENTE PODER ACTUALIZARLA
     const tempId = uuid();
-    //  VERIFICAR HAY SUFICIENTE CREDITO PARA REALIZAR LA TRANSACCION
-    const canTransactionProceed = await checkBalance(total, 'service');
-    if (!canTransactionProceed)
+    const isRecharge = transactionType === 'makeRecharge';
+
+    // Verificar saldo suficiente
+    if (!(await checkBalance(total, isRecharge ? 'airtime' : 'service'))) {
       throw new Error('No cuentas con saldo suficiente');
-    // HACIENDO LA TRANSACCION
-    const transID = await makeServiceRequest(code, reference, total);
-    if (transID === 'empty' || transID === '')
-      throw new Error('Transacción fallida');
-    // GUARDAR TRANSACCION
-    await saveTransaction({
+    }
+
+    // Realizar transacción
+    const transID = await makeRequest(
+      code,
+      reference,
+      isRecharge ? null : total,
+    );
+    if (!transID || transID === 'empty') {
+      throw new Error(`Transacción fallida, ${transID}`);
+    }
+
+    // Construcción de datos de transacción
+    const transactionData = {
       transID,
-      tempId: tempId,
+      tempId,
       usuario: usuarioDB.usuario,
       referencia: reference,
       monto: total,
       categoriaID,
       descripcionProducto,
-    });
-    // OBTENER STATUS DE LA TRANSACCION Y REINTENTAR DESPUES DE 60 SEGUNDOS
-    const start = new Date();
-    // console.log(transID);
+      ...(isRecharge && {
+        comisionRecargas: usuarioDB.comisionRecargas,
+        comisionRecargasFecha: usuarioDB.comisionRecargasFecha,
+      }),
+    };
+
+    // Guardar transacción
+    await saveTransaction(transactionData);
+
+    // Intentar obtener el estado de la transacción por hasta 60 segundos
+    const startTime = Date.now();
+    let data;
     do {
       data = await getStatusRequest(transID);
-      const end = new Date();
-      seconds = Math.floor((end.getTime() - start.getTime()) / 1000);
-    } while (data.status === TRANSACTION_STATES.PROCESSING && seconds < 60);
-    // VERIFICAR SI LA TRANSACCION FALLO
-    if (
-      [TXN.STATES.ERROR, TXN.STATES.FAILED, TXN.STATES.PROCESSING].includes(
-        data.status,
-      )
-    ) {
-      // UPDATE TRANSACTION
+      if (data.status !== TRANSACTION_STATES.PROCESSING) break;
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } while ((Date.now() - startTime) / 1000 < 60);
+
+    // Manejar transacción fallida
+    if (transactionFailed(data.status)) {
       await updateTransaction({
-        tempId,
+        ...transactionData,
         transaccion: data.transaccion,
-        categoriaID,
-        descripcionProducto,
-        usuario: usuarioDB.usuario,
       });
-      throw new Error(`${data.transaccion.Nota}`);
+      throw new Error(data.transaccion?.Nota || 'Error en la transacción');
     }
-    // VERIFICA SI LA TRANSACCION TUVO EXITO
-    if (data.status === TXN_STATUS_SUCCESS) data.status = 'success';
-    // UPDATE TRANSACTION
+
+    // Actualizar y retornar transacción exitosa
+    data.status = data.status === TXN_STATUS_SUCCESS ? 'success' : data.status;
     await updateTransaction({
-      tempId,
+      ...transactionData,
       transaccion: data.transaccion,
-      categoriaID,
-      descripcionProducto,
-      usuario: usuarioDB.usuario,
     });
-    // RETORNAR DATA
+
     return data;
-  } catch ({message}) {
-    console.log('[Error]: ' + message, '[Func]: payService');
-    throw Error(message);
+  } catch (error) {
+    console.error(`[Error]: ${error.message} | [Func]: makeTransaction`);
+    throw new Error(error.message);
   }
 };
 // CHECK BALANCE
 export const checkBalance = async (total, type) => {
   try {
-    let balance = '0.00';
-    const res = await getBalance();
-    if (res.data.success) {
-      if (type === 'airtime') {
-        balance = res.data.data[0].Saldo;
-      }
-      if (type === 'service') {
-        balance = res.data.data[1].Saldo;
-      }
+    const taecelResponse = await getBalance();
+
+    if (!taecelResponse?.success || !Array.isArray(taecelResponse.data)) {
+      throw new Error('No se pudo obtener el saldo.');
     }
-    balance = parseFloat(balance.replace(/[ ,]/g, ''));
-    const balanceDecimal = new Decimal(balance);
-    return balanceDecimal.greaterThanOrEqualTo(total);
-  } catch ({message}) {
-    console.log('[Error]: ' + message, '[Func]: checkBalance');
-    throw Error('Error al obtener el saldo');
+
+    // Determinar índice según el tipo
+    const index = type === 'airtime' ? 0 : type === 'service' ? 1 : -1;
+    if (index === -1 || !taecelResponse.data[index]?.Saldo) {
+      throw new Error(`Tipo de saldo inválido: ${type}`);
+    }
+
+    // Obtener y limpiar el saldo
+    const balanceStr = taecelResponse.data[index].Saldo.replace(/[ ,]/g, '');
+    const balance = new Decimal(parseFloat(balanceStr));
+
+    return balance.greaterThanOrEqualTo(total);
+  } catch (error) {
+    console.error(`[Error]: ${error.message} | [Func]: checkBalance`);
+    throw new Error('Error al obtener el saldo');
   }
 };
 // GET BALANCE
 export const getBalance = async () => {
   try {
-    const url = ENV.TAECEL_BASE_URL + '/getBalance';
-    const tokens = Utils.getTokens();
-    const data = qs.stringify({
-      key: tokens.key,
-      nip: tokens.nip,
-    });
-    // console.time('request');
-    const res = await axios.post(url, data);
-    // console.log(res.data);
-    return res;
-    // console.timeEnd('request');
+    const taecelResponse = await requestTaecelAPI('getBalance');
+    return taecelResponse;
   } catch ({message}) {
     console.log('[Error]: ' + message, '[Func]: getBalance');
     throw Error('Error al obtener el balance');
   }
 };
-// REQUEST PARA TIEMPO AIRE Y GIFTCARDS
-export const makeRequest = async (code, phoneNumber) => {
+// MAKE REQUEST
+export const makeRequest = async (code, reference, amount = null) => {
   try {
-    let transID = 'empty';
-    const res = await requestTXN(code, phoneNumber);
-    // SI EXISTE ALGUN ERROR
-    if (!res.data.success) throw Error(res.data.message);
-    // SI LA PETICION TUVO EXITO
-    if (res.data.success) transID = res.data.data.transID;
-    // RETORNAMOS EL TRANSID
-    return transID;
-  } catch ({message}) {
-    const _message = message ? message : 'Transacción Exitosa';
-    console.log('[Error]: ' + _message, '[Func]: makeRquest');
-    throw new Error(_message);
-  }
-};
-// REQUEST PARA SERVICIOS
-export const makeServiceRequest = async (code, reference, amount) => {
-  try {
-    let transID = 'empty';
-    let auxAmount = amount;
-    if (typeof amount !== 'number') {
-      auxAmount = parseFloat(amount);
+    // Determinar si se necesita el monto (para servicios) o no (para recargas/giftcards)
+    const params =
+      amount !== null
+        ? [code, reference, parseFloat(amount)]
+        : [code, reference];
+
+    const response = await requestTXN(...params);
+
+    if (!response?.success) {
+      throw new Error(response?.message ?? 'Error desconocido');
     }
-    const res = await requestTXN(code, reference, auxAmount);
-    // SI EXISTE ALGUN ERROR
-    if (!res.data.success) throw Error(res.data.message);
-    // console.log(res);
-    if (res.data.success) transID = res.data.data.transID;
-    return transID;
-  } catch ({message}) {
-    console.log('[Error]: ' + message, '[Func]: makeServiceRequest');
-    throw Error('Error al solicitar pago de servicio, ' + message);
+
+    return response.data?.transID ?? 'empty';
+  } catch (error) {
+    console.error(`[Error]: ${error.message} | [Func]: makeRequest`);
+    throw new Error(`Error al procesar la transacción: ${error.message}`);
   }
 };
 // REQUEST TXN
 export const requestTXN = async (product, reference, amount) => {
   try {
-    const tokens = Utils.getTokens();
-    const data = {
-      key: tokens.key,
-      nip: tokens.nip,
+    // HACEMOS LA PETICION
+    const taecelResponse = await requestTaecelAPI('RequestTXN', {
       producto: product,
       referencia: reference,
-    };
-    // SOLO SI EXISTE EL PARAMETRO AMOUNT
-    if (amount) data.monto = amount;
-    // HACEMOS LA PETICION
-    const url = ENV.TAECEL_BASE_URL + '/RequestTXN';
-    const res = await axios.post(url, qs.stringify(data));
-    return res;
+      // SOLO SI EXISTE EL PARAMETRO AMOUNT
+      ...(amount ? {monto: amount} : {}),
+    });
+    return taecelResponse;
   } catch ({message}) {
     console.log('[Error]: ' + message, '[Func]: requestTXN');
     throw Error('Error al hacer la petición, ' + message);
@@ -297,89 +184,90 @@ async function saveTransaction({
   comisionRecargasFecha = '',
 }) {
   try {
+    // Obtener la fecha del servidor
     const timestamp = await Database.getServerDate();
-    // EL ABONO SOLO APLICA A LAS GIFTCARDS = 4
-    const _abono =
-      categoriaID == TXN.CODES.GIFTCARD ? parseFloat(monto) * 0.02 : 0;
-    // EL CARGO SOLO APLICA A LOS SERVICIOS = 3
-    const _cargo = categoriaID == TXN.CODES.SERVICIO ? 5 : 0;
-    // LA COMISION SOLO LA APLICAN RECARGAS Y SERVICIOS = [1,2,3]
-    let _comision = 0;
-    // COMISION RECARGAS
-    if ([TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(categoriaID)) {
-      _comision = comisionRecargas;
-    }
-    // COMISION SERVICIOS
-    if ([TXN.CODES.SERVICIO].includes(categoriaID)) {
-      _comision = 7;
-    }
-    const tempTransaction = {
+    if (!timestamp) throw new Error('No se pudo obtener la fecha del servidor');
+    const formatDate = format => Moment(timestamp).format(format);
+    const isRecarga = [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
+      categoriaID,
+    );
+
+    // Definir comisiones y ajustes según categoría
+    const abono =
+      categoriaID === TXN.CODES.GIFTCARD ? parseFloat(monto) * 0.02 : 0;
+    const cargo = categoriaID === TXN.CODES.SERVICIO ? 5 : 0;
+    const comision = isRecarga
+      ? comisionRecargas
+      : categoriaID === TXN.CODES.SERVICIO
+      ? 7
+      : 0;
+    // Guardar transacción en la base de datos
+    await Database.save(DATABASE_TABLES.TRANSACTIONS, {
       ...TRANSACTION_STRUCTURE,
       TransID: transID,
       CategoriaID: categoriaID,
-      // AJUSTAR DEPENDIENDO DEL TIPO DE TRANSACCION
-      Abono: Money(_abono),
-      Cargo: Money(_cargo),
-      Comision: Money(_comision),
+      Abono: Money(abono),
+      Cargo: Money(cargo),
+      Comision: Money(comision),
       Telefono: referencia,
       Monto: Money(monto),
       tempId,
-      _comisionRecargas: [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
-        categoriaID,
-      )
-        ? Money(_comision)
-        : Money(0),
-      _comisionRecargasFecha: [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
-        categoriaID,
-      )
-        ? comisionRecargasFecha
-        : '',
+      _comisionRecargas: Money(isRecarga ? comision : 0),
+      _comisionRecargasFecha: isRecarga ? comisionRecargasFecha : '',
       _usuario: usuario,
-      _fecha: Moment(timestamp).format('YYYY-MM-DD'),
-      _hora: Moment(timestamp).format('HH:mm:ss'),
+      _fecha: formatDate('YYYY-MM-DD'),
+      _hora: formatDate('HH:mm:ss'),
       descripcionProducto,
-    };
-    await Database.save(DATABASE_TABLES.TRANSACTIONS, tempTransaction);
-  } catch ({message}) {
-    throw new Error('saveTransaction ' + message);
+    });
+  } catch (error) {
+    console.error('[saveTransaction] Error:', error.message);
+    throw new Error('Error en saveTransaction: ' + error.message);
   }
 }
-// GET TXN STATUS
+/**
+ * @typedef {Object} TransactionStatusResponse
+ * @property {'SUCCESS' | 'PROCESSING' | 'FAILED'} status - Estado de la transacción.
+ * @property {Object | null} transaccion - Datos de la transacción si están disponibles.
+ */
+/**
+ * Obtiene el estado de una transacción basada en su transID.
+ * @param {string} transID - ID de la transacción a consultar.
+ * @returns {Promise<TransactionStatusResponse>} Objeto con el estado y detalles de la transacción.
+ */
 export const getStatusRequest = async transID => {
   try {
-    const {data: response} = await statusTXN(transID);
-    const {success, data} = response;
+    const taecelResponse = await statusTXN(transID);
 
-    // Determinar el estado basándonos en las condiciones
-    const status =
-      !success || data.Status === 'Fracasada'
-        ? 'FAILED'
-        : data.Status === ''
-        ? 'PROCESSING'
-        : data.Status === 'Exitosa'
-        ? 'SUCCESS'
-        : 'FAILED';
+    const {Status} = taecelResponse.data;
 
-    return {status, transaccion: data};
+    // Evaluar estado con un switch para mayor claridad
+    const status = (() => {
+      switch (Status) {
+        case 'Exitosa':
+          return 'SUCCESS';
+        case '':
+          return 'PROCESSING';
+        case 'Fracasada':
+        case undefined:
+          return 'FAILED';
+        default:
+          return 'FAILED';
+      }
+    })();
+
+    return {status, transaccion: taecelResponse.data ?? null};
   } catch (error) {
-    const errorMessage = error.message || 'Transacción Exitosa';
+    const errorMessage =
+      error?.message ?? 'Error desconocido en la transacción';
     logError('getStatusRequest', errorMessage);
     throw new Error(errorMessage);
   }
 };
-
 // TXN STATUS
 export const statusTXN = async transID => {
   try {
-    const url = ENV.TAECEL_BASE_URL + '/StatusTXN';
-    const tokens = Utils.getTokens();
-    const data = qs.stringify({
-      key: tokens.key,
-      nip: tokens.nip,
-      transID,
-    });
-    const res = await axios.post(url, data);
-    return res;
+    const taecelResponse = await requestTaecelAPI('StatusTXN', {transID});
+    return taecelResponse;
   } catch (error) {
     console.log('[Error]: ' + message, '[Func]: statusTXN');
     throw Error('Error al solicitar el status');
@@ -404,24 +292,21 @@ async function updateTransaction({
     );
     // SI EXISTE LA TRANSACCION PREVIA
     if (prevTransaccion) {
+      const formatDate = format => Moment(transaccion.Fecha).format(format);
+      const isRecarga = [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
+        categoriaID,
+      );
+
       let newTransaccion = {
         ...transaccion,
         CategoriaID: categoriaID,
         _usuario: usuario,
-        _fecha: Moment(transaccion.Fecha).format('YYYY-MM-DD'),
-        _hora: Moment(transaccion.Fecha).format('HH:mm:ss'),
+        _fecha: formatDate('YYYY-MM-DD'),
+        _hora: formatDate('HH:mm:ss'),
         descripcionProducto,
         // SE APLICA SOLO PARA RECARGAS
-        _comisionRecargas: [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
-          categoriaID,
-        )
-          ? Money(comisionRecargas)
-          : Money(0),
-        _comisionRecargasFecha: [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
-          categoriaID,
-        )
-          ? comisionRecargasFecha
-          : '',
+        _comisionRecargas: isRecarga ? Money(comisionRecargas) : Money(0),
+        _comisionRecargasFecha: isRecarga ? comisionRecargasFecha : '',
       };
       // SI ES UNA RECARGA
       await Database.save(
@@ -448,9 +333,9 @@ async function updateTransaction({
         await actualizarCredito(saldoNuevo, credito.key);
       }
     }
-  } catch ({message}) {
-    console.log('[Error]: ' + message, '[Func]: updateTransaction');
-    throw new Error(message);
+  } catch (error) {
+    console.log('[Error]: ' + error.message, '[Func]: updateTransaction');
+    throw new Error(error.message);
   }
 }
 // GET TRANSACIONS
@@ -470,6 +355,7 @@ export const getTransactions = async periodo => {
     throw new Error(message);
   }
 };
+// SAVE RECHAGE COMISSION
 export async function saveRechargeCommission(comision, password, callback) {
   try {
     const userStorage = Storage.getUser();
@@ -504,70 +390,72 @@ export async function saveRechargeCommission(comision, password, callback) {
   }
 }
 // ENVIO DE COMPROBANTE DE TRANSACCION
-export const sendTransactionReceipt = async ({
-  correo,
-  status,
-  monto,
-  referencia,
-  carrier,
-  bolsa,
-  folio,
-  transID,
-  tienda,
-  comision,
-  total,
-  fecha,
-}) => {
+export const sendTransactionReceipt = async transactionData => {
   try {
-    // VERIFICAR ESTADO DEL USUARIO
+    // VERIFICAR ESTADO DEL USUARIO ANTES DE PROCESAR
     await obtenerUsuarioDb();
-    const transaccion = qs.stringify({
-      emailRecipient: correo,
-      status,
-      monto,
-      referencia,
-      carrier,
-      bolsa,
-      folio,
-      transID,
-      tienda,
-      comision,
-      total,
-      fecha,
+    // Validar datos requeridos
+    const requiredFields = [
+      'correo',
+      'status',
+      'monto',
+      'referencia',
+      'carrier',
+      'bolsa',
+      'folio',
+      'transID',
+      'tienda',
+      'comision',
+      'total',
+      'fecha',
+    ];
+    for (const field of requiredFields) {
+      if (!transactionData[field]) {
+        throw new Error(`Falta el campo requerido: ${field}`);
+      }
+    }
+    const rymResponse = await requestRymAPI('emails/enviarComprobante', {
+      correo: transactionData.correo,
+      transaccion: transactionData,
     });
-    const res = await axios.post(
-      ENV.RYM_API_URL + '/enviarComprobante',
-      transaccion,
-    );
-    return res;
-  } catch ({message}) {
-    console.log('[Error]: ' + message, '[Func]: sendTransactionReceipt');
-    throw new Error(message);
+
+    return rymResponse;
+  } catch (error) {
+    console.error('[Error]:', error.message, '[Func]: sendTransactionReceipt');
+    throw new Error('Error al enviar el comprobante de la transacción.');
   }
 };
-
+/**
+ * Obtiene las últimas transacciones de un usuario en un rango de fechas determinado.
+ * @param {number} [numTransLimit=100] - Número máximo de transacciones a devolver.
+ * @returns {Promise<Object[]>} Lista de transacciones filtradas y limitadas.
+ */
 export async function getLastTransactions(numTransLimit = 100) {
   try {
     const userDB = await obtenerUsuarioDb();
     const timestamp = await Database.getServerDate();
-    const periodo = getPeriodFromMonday(timestamp);
-    let lastTransactions = [];
-    const transactions = await Database.getItemsInRange(
-      DATABASE_TABLES.TRANSACTIONS,
-      '_fecha',
-      periodo.start,
-      periodo.end,
-      txn => txn._usuario == userDB.usuario,
+    const {start, end} = getPeriodFromMonday(timestamp);
+
+    // Obtener transacciones dentro del rango de fechas y filtrar por usuario
+    const transactions = (
+      await Database.getItemsInRange(
+        DATABASE_TABLES.TRANSACTIONS,
+        '_fecha',
+        start,
+        end,
+        txn => txn._usuario === userDB.usuario,
+      )
+    ).reverse();
+
+    // Retornar directamente si la cantidad de transacciones es menor o igual al límite
+    return transactions.slice(0, numTransLimit);
+  } catch (error) {
+    throw new Error(
+      `getLastTransactions: ${error.message || 'Error desconocido'}`,
     );
-    transactions.reverse();
-    // IF THERE ARE LESS THAN 5 TRANS THEN RETURN TRANSACTIONS
-    if (transactions.length <= numTransLimit) return transactions;
-    // IF THERE ARE MORE THAN 5 TRANS THEN DO THE NEXT STEP
-    for (let i = 0; i < numTransLimit; i++) {
-      lastTransactions.push(transactions[i]);
-    }
-    return lastTransactions;
-  } catch ({message}) {
-    throw new Error('getLastTransactions ' + message);
   }
+}
+// TRANSACTION FALIED
+function transactionFailed(status) {
+  return ['ERROR', 'FAILED', 'PROCESSING'].includes(status);
 }

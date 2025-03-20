@@ -1,7 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useSelector} from 'react-redux';
-import {uuid} from '../../../../utils';
 
 export default function ListaNumeros() {
   const {cargandoSorteosJugados, cargandoPublicacion, publicacion} =
@@ -18,13 +17,10 @@ export default function ListaNumeros() {
             <View style={styles.numeroBox}></View>
           </>
         )}
-        {!loadingContent && publicacion && (
-          <>
-            {publicacion.numeros.map((n, index) => (
-              <NumeroGanador key={uuid()} numero={n} posicion={index + 1} />
-            ))}
-          </>
-        )}
+        {!loadingContent &&
+          publicacion?.numeros?.map((n, index) => (
+            <NumeroGanador key={index} numero={n} posicion={index + 1} />
+          ))}
       </View>
     </>
   );

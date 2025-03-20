@@ -2,7 +2,7 @@ import React from 'react';
 import {Platform, View} from 'react-native';
 import {WebView} from 'react-native-webview';
 
-const PagoConTarjeta = ({onTokenReceived}) => {
+const PagoConTarjeta = () => {
   const htmlUri = Platform.select({
     android: 'file:///android_asset/openpay.html',
   });
@@ -12,8 +12,15 @@ const PagoConTarjeta = ({onTokenReceived}) => {
       <WebView
         source={{uri: htmlUri}}
         onMessage={event => {
-          const tokenData = JSON.parse(event.nativeEvent.data);
-          console.log(tokenData);
+          const response = JSON.parse(event.nativeEvent.data);
+          // ERROR CREATING TOKEN
+          if (response.data.description !== undefined) {
+            console.log('error', response.data.description);
+            return;
+          }
+          // TOKEN SUCCEFULLY CREATED
+          const token_id = response.data.id;
+          console.log('token successfully created: ', token_id);
         }}
       />
     </View>

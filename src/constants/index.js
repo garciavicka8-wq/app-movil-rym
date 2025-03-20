@@ -8,7 +8,6 @@ import {
   TXN,
 } from './TaecelConfig';
 import {PRINT_TABLE_HEADER, PRINT_TABLE} from './PrintingConfig';
-import {LOGOS_URL, TKP_LOGO_URL} from './Urls';
 import {
   LOGO_MAGICO_BASE64,
   LOGO_BASE64,
@@ -17,12 +16,20 @@ import {
   CHISPAZO_LOGO,
 } from './LogosBase64';
 
-const RYM_API_URL = 'https://rym.recargasymas.com.mx/api/v1';
+const RYM_BASE_URL = `${
+  __DEV__ ? 'https://staging.' : 'https://'
+}rym.recargasymas.com.mx`;
+const RYM_API_URL = `${RYM_BASE_URL}/api/v1`;
+const RYM_LOGOS_URL = `${RYM_BASE_URL}/storage/logos/`;
+
 const MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE = 998;
 const TICKET_TYPE = {
   PLUS: 'ticket plus',
   MAGICO: 'ticket magico',
 };
+
+const TKP_LOGO_URL =
+  'https://recargasymas.com.mx/wp-content/uploads/2023/10/logo-ticket-100.jpg';
 
 export {
   DATABASE_TABLES,
@@ -33,7 +40,6 @@ export {
   PRINT_TABLE,
   TRANSACTION_STATES,
   TXN_CODES,
-  LOGOS_URL,
   LOGO_MAGICO_BASE64,
   LOGO_BASE64,
   MELATERR_LOGO,
@@ -42,6 +48,7 @@ export {
   TKP_LOGO_URL,
   TXN,
   RYM_API_URL,
+  RYM_LOGOS_URL,
   MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE,
   TICKET_TYPE,
 };

@@ -10,10 +10,10 @@ import {
 import {CustomInput, CustomModal} from '../../../../components';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {enviarComprobanteTransaccion} from '../../../../services/taecel';
+import {sendTransactionReceipt} from '../../../../services/taecel';
 import {useSelector} from 'react-redux';
 import {Helpers, Print, Storage} from '../../../../utils';
-import {APP_NAVIGATION} from '../../../../constants';
+import {APP_NAVIGATION, TXN} from '../../../../constants';
 import {ERROR_NAMES} from '../../../../errors';
 
 export default function Acciones({shareWhatsappBtn = null}) {
@@ -31,63 +31,84 @@ export default function Acciones({shareWhatsappBtn = null}) {
     }),
     onSubmit: async data => {
       try {
+        // Mostrar modal de progreso
         modal.setConfig({
           open: true,
           type: 'progress',
           progressTitle: 'Enviando',
         });
-        const usuario = await Storage.get('usuario', true);
-        let comision = Helpers.sumWithDecimals(
-          transaccionStore.Cargo,
-          transaccionStore.Comision,
+
+        const usuario = Storage.getUser();
+        const {
+          CategoriaID,
+          Cargo,
+          Comision,
+          _comisionRecargas,
+          Monto,
+          Telefono,
+          Carrier,
+          Bolsa,
+          Folio,
+          TransID,
+          Status,
+          Fecha,
+        } = transaccionStore;
+        const isRecarga = [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
+          CategoriaID,
         );
-        // SI ES RECARGA
-        if (['1', '2'].includes(transaccionStore.CategoriaID)) {
-          comision =
-            transaccionStore._comisionRecargas !== undefined
-              ? transaccionStore._comisionRecargas
-              : Money(2);
-        }
-        const mensajeEnviado = await enviarComprobanteTransaccion({
+        // Determinar comisión
+        const comision =
+          isRecarga && _comisionRecargas !== undefined
+            ? _comisionRecargas
+            : Helpers.sumWithDecimals(Cargo, Comision) || Money(2);
+        // Enviar comprobante
+        const rymResponse = await sendTransactionReceipt({
           correo: data.correo,
-          status: transaccionStore.Status,
-          monto: transaccionStore.Monto,
-          referencia: transaccionStore.Telefono,
-          carrier: transaccionStore.Carrier,
-          bolsa: transaccionStore.Bolsa,
-          folio: transaccionStore.Folio,
-          transID: transaccionStore.TransID,
-          tienda: usuario.nomComercial,
-          comision: comision,
-          total: Helpers.sumArrayWithDecimals([
-            transaccionStore.Monto,
-            transaccionStore.Cargo,
-            comision,
-          ]),
-          fecha: transaccionStore.Fecha,
+          status: Status,
+          monto: Monto,
+          referencia: Telefono,
+          carrier: Carrier,
+          bolsa: Bolsa,
+          folio: Folio,
+          transID: TransID,
+          tienda: usuario?.nomComercial || 'Tienda',
+          comision,
+          total: Helpers.sumArrayWithDecimals([Monto, Cargo, comision]),
+          fecha: Fecha,
         });
-        // SI EL CORREO SE ENVIO CORRECTAMENTE
-        if (mensajeEnviado)
-          modal.setConfig({
-            type: 'alert',
-            alertTitle: 'Mensaje',
-            contentType: 'mensaje',
-            action: 'mensaje',
-            showCancelBtn: false,
-            content: <Text>Comprobante enviado a {data.correo}</Text>,
-            confirmBtnText: 'Entendido',
-          });
+
+        // Manejo de respuesta
+        modal.setConfig({
+          type: 'alert',
+          alertTitle: 'Mensaje',
+          contentType: rymResponse.success ? 'mensaje' : 'error',
+          action: rymResponse.success ? 'mensaje' : 'error',
+          showCancelBtn: false,
+          content: (
+            <Text>
+              {rymResponse.success
+                ? `Comprobante enviado a ${data.correo}`
+                : 'Error al enviar el comprobante'}
+            </Text>
+          ),
+          confirmBtnText: 'Entendido',
+        });
+
         formik.handleReset();
-      } catch ({message}) {
+      } catch (error) {
+        console.error('[onSubmit] Error:', error.message);
+        console.log(error);
+
         modal.setConfig({
           type: 'alert',
           alertTitle: 'Mensaje',
           contentType: 'error',
           action: 'error',
           showCancelBtn: false,
-          error: <Text>{message}</Text>,
+          content: <Text>{error.message}</Text>,
           confirmBtnText: 'Entendido',
         });
+
         formik.handleReset();
       }
     },
@@ -119,7 +140,6 @@ export default function Acciones({shareWhatsappBtn = null}) {
       showCancelBtn: true,
     });
   };
-  //   IMPRIMIR COMPROBANTE
   //   IMPRIMIR COMPROBANTE
   const imprimir = async () => {
     try {
@@ -214,7 +234,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
           />
         )}
         {modal.config.contentType === 'mensaje' && modal.config.content}
-        {modal.config.contentType === 'error' && modal.config.error}
+        {modal.config.contentType === 'error' && modal.config.content}
       </CustomModal>
     </>
   );

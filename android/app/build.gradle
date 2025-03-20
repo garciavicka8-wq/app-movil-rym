@@ -1,6 +1,8 @@
 apply plugin: "com.android.application"
 apply plugin: "com.facebook.react"
 apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+apply plugin: 'com.google.gms.google-services'
+
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -79,8 +81,8 @@ android {
         applicationId "com.rymapp2"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 83
-        versionName "4.6.1"
+        versionCode 84
+        versionName "4.6.2"
         missingDimensionStrategy 'react-native-camera', 'general'
     }
     signingConfigs {
@@ -103,12 +105,18 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+
+    buildFeatures {
+        buildConfig true  // Habilita BuildConfig personalizado
+    }
 }
 
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation('com.facebook.fresco:animated-gif:2.5.0')
+    implementation platform('com.google.firebase:firebase-bom:32.1.0') // Usa la última versión disponible
+    implementation 'com.google.firebase:firebase-messaging'
 
     debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}")
     debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
@@ -121,8 +129,15 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
 }
+
+afterEvaluate {
+    tasks.findByName("mapDebugSourceSetPaths")?.dependsOn("processDebugGoogleServices")
+}
+
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle");
+

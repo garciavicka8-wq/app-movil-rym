@@ -18,6 +18,7 @@ export const DATABASE_TABLES = {
   WEEK_INFORMS: 'weekInforms',
   WINNER_NUMBERS: 'ajustes/numerosGanadores',
   VOUCHERS: 'vouchers',
+  NOTIFICATIONS_TOKENS: 'notifications/tokens',
   // FOR TESTS PURPOSES
   TEST: 'test',
 };

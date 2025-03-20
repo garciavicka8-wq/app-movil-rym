@@ -1,17 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import {StatusBar} from 'react-native';
-import {useCustomNavigation} from '../../../hooks';
-import {Colors} from '../../../utils';
 import ListaSorteosPendientes from './components/ListaSorteosPendientes';
 import TablaApuestas from './components/TablaApuestas';
 import FooterContent from './components/FooterContent';
 import {Container, Footer} from '../../../components/Layout';
 import {useNetInfo} from '@react-native-community/netinfo';
 import {NoConnectionSnackbar} from '../../../components';
+import CustomStatusBar from '../../../components/CustomStatusBar';
 
 export default function JugarTickets() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  const {isFocused} = useCustomNavigation();
   const netInfo = useNetInfo();
 
   useEffect(() => {
@@ -25,7 +22,7 @@ export default function JugarTickets() {
 
   return (
     <Container bgColor="white">
-      {isFocused && <StatusBar backgroundColor={Colors.primary} />}
+      <CustomStatusBar />
       <ListaSorteosPendientes />
       <TablaApuestas />
       <Footer>

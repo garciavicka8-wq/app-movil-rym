@@ -1,20 +1,18 @@
 import React, {useEffect, useState} from 'react';
-import {StatusBar} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {APP_NAVIGATION} from '../../constants';
-import {useCustomNavigation} from '../../hooks';
 import {Colors, Storage} from '../../utils';
 import MainScreen from './Main';
 // REPORTES SUBPANTALLAS
 import Pagos from './Pagos';
 import Cancelados from './Cancelados';
 import {IconButton} from 'react-native-paper';
+import CustomStatusBar from '../../components/CustomStatusBar';
 
 const Stack = createStackNavigator();
 
 export default function TicketsTab() {
   const [appTitle, setAppTitle] = useState('');
-  const {isFocused} = useCustomNavigation();
 
   useEffect(() => {
     const obtenerUsuario = () => {
@@ -28,7 +26,7 @@ export default function TicketsTab() {
 
   return (
     <>
-      {isFocused && <StatusBar backgroundColor={Colors.primary} />}
+      <CustomStatusBar />
       <Stack.Navigator
         initialRouteName={APP_NAVIGATION.SCREENS.TICKETS_MENU}
         screenOptions={{

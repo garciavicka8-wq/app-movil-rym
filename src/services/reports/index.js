@@ -1,6 +1,6 @@
 import Database from '../../database';
 import {ERROR_CODE_NAMES} from '../../errors';
-import {Moment, Utils, Storage} from '../../utils';
+import {Moment, Utils, Storage, uuid} from '../../utils';
 import {obtenerUsuarioDb} from '../auth';
 import {
   getPaidPrizesByRange,

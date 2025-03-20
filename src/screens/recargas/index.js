@@ -1,8 +1,7 @@
 import React, {useEffect, useState} from 'react';
-import {StatusBar} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {APP_NAVIGATION} from '../../constants';
-import {useCustomNavigation, useLogout} from '../../hooks';
+import {useLogout} from '../../hooks';
 import Colors from '../../utils/Colors';
 import MainScreen from './Main';
 import SeleccionarComp from './SeleccionarComp';
@@ -11,16 +10,16 @@ import Transacciones from './Transacciones';
 import {IconButton} from 'react-native-paper';
 import DetalleTransaccion from './DetalleTransaccion';
 import Vender from './Vender';
+import CustomStatusBar from '../../components/CustomStatusBar';
 // NAVIGATION
 const Stack = createStackNavigator();
 
 export default function Recargas() {
   const [appTitle, setAppTitle] = useState('Bienvenido');
-  const {isFocused} = useCustomNavigation();
   const {logout} = useLogout();
 
   useEffect(() => {
-    const comprobarUsuario = () => {
+    const comprobarUsuario = async () => {
       const usuarioStorage = Storage.getItem('usuario', true);
       if (usuarioStorage) {
         setAppTitle(usuarioStorage.nomComercial);
@@ -33,7 +32,7 @@ export default function Recargas() {
 
   return (
     <>
-      {isFocused && <StatusBar backgroundColor={Colors.blue} />}
+      <CustomStatusBar color={'blue'} />
       <Stack.Navigator
         initialRouteName={APP_NAVIGATION.SCREENS.RECARGAS_MENU}
         screenOptions={{

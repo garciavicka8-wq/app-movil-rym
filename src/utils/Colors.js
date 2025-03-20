@@ -12,6 +12,7 @@ const Colors = {
   lightBlue: 'rgba(17, 106, 239, 0.15)',
   darkBlue: '#0054D3',
   green: '#00B13C',
+  dev: 'orange',
 };
 
 export default Colors;

@@ -20,6 +20,7 @@ import EstablecerComision from './src/screens/configuracion/EstablecerComision';
 import Seguridad from './src/screens/configuracion/Seguridad';
 import {useAuthContext} from './src/context/AuthContext';
 import PagoConTarjeta from './src/screens/PagoConTarjeta';
+import TestComponent from './src/screens/TestComponent';
 
 const Stack = createStackNavigator();
 
@@ -28,7 +29,8 @@ export default function App() {
   //   SplashScreen.hide();
   // }, []);
 
-  // return <PagoConTarjeta />;
+  // return <TestComponent />;
+
   const {isAuthenticated} = useAuthContext();
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import {Moment, Money} from '.';
-import {LOGOS_URL, TXN} from '../constants';
+import {RYM_LOGOS_URL, TXN} from '../constants';
 
 const Helpers = {
   // DECRIPCION PRODUCTO TRANSACCIONES
@@ -92,7 +92,8 @@ const Helpers = {
   // CREAR URL PARA LOGOS
   urlImage: imageName => {
     const src = imageName === 'GN' ? 'SGOR' : imageName;
-    return LOGOS_URL + src + '.png';
+    const url = RYM_LOGOS_URL + src + '.png';
+    return url;
   },
 };
 

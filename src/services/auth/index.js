@@ -16,72 +16,73 @@ const bcrypt = require('react-native-bcrypt');
 export const iniciarSesion = async (numeroUsuario, password, callback) => {
   try {
     const usuarioDB = await getDbUser(numeroUsuario);
-    // SI EL USUARIO NO EXISTE
-    if (!usuarioDB)
-      throw new Error(
-        'La cuenta que ingresaste no se encuentra en el sistema.',
-      );
-    // console.log(usuarioDB);
-    // SI EL USUARIO ESTA DESACTIVADO
-    if (usuarioDB.activo !== undefined && !usuarioDB.activo)
-      throw new Error(usuarioDB.disableAccountReason);
-    // SI EL NUMERO DE INTENTOS DE INICIO DE SESION LLEGO AL LIMITE
-    if (usuarioDB.loginAttempts == 3)
-      throw new Error(
-        'Ha llegado al limite permitido de intentos de inicio de sesión.',
-      );
-    bcrypt.compare(password, usuarioDB.bpassword, async (err, res) => {
-      // VERIFICAMOS SI LA CONTRASEÑA COINCIDE O NO
-      if (!res) {
+
+    if (!usuarioDB) {
+      return callback(null, null, {
+        message: 'La cuenta no existe en el sistema.',
+      });
+    }
+
+    if (usuarioDB.activo !== undefined && !usuarioDB.activo) {
+      return callback(null, null, {message: usuarioDB.disableAccountReason});
+    }
+
+    if (usuarioDB.loginAttempts >= 3) {
+      return callback(null, null, {
+        message: 'Has alcanzado el límite de intentos de inicio de sesión.',
+      });
+    }
+
+    // Comparar contraseñas sin async/await
+    bcrypt.compare(password, usuarioDB.bpassword, async (err, isMatch) => {
+      if (err || !isMatch) {
         await updateDbUser(usuarioDB.key, {
-          loginAttempts: parseInt(usuarioDB.loginAttempts) + 1,
+          loginAttempts: usuarioDB.loginAttempts + 1,
         });
-        return callback(null, null, {
-          message: 'La contraseña es incorrecta',
-        });
+        return callback(null, null, {message: 'La contraseña es incorrecta'});
       }
-      // VERIFICACION Y VINCULACION DE DISPOSITIVO
+
+      // Verificación del dispositivo
       const verificacionMessage = await verifyDeviceRegistration(usuarioDB);
-      // SI EL DISPOSITIVO NO ESTA REGISTRADO NI VINCULADO
       if (verificacionMessage === 'DEVICE_NOT_LINKED') {
         return callback(null, null, {
-          message:
-            'La cuenta y el dispositivo desde donde intentas acceder no estan vinculados.',
+          message: 'La cuenta y el dispositivo no están vinculados.',
         });
       }
-      // OBTENER VERSION DE LA APP
+
+      // Obtener versiones de la app
       const versiones = await Database.getObject(DATABASE_TABLES.VERSIONS);
       const currentAppVersion = VersionCheck.getCurrentVersion();
-      // SI EL USUARIO Y PASSWORD SON CORRECTOS
-      await updateDbUser(
-        usuarioDB.key,
-        __DEV__
-          ? {
-              loginAttempts: 0,
-              versionAppActualizada: true,
-            }
-          : {
-              loginAttempts: 0,
-              versionAppActualizada: true,
-              versionAppInstalada: currentAppVersion,
-            },
-      );
-      // SI VERSIONES EXISTE EN EL DISPOSITIVO
+
+      // Actualizar usuario en la base de datos
+      const updateData = {
+        loginAttempts: 0,
+        versionAppActualizada: true,
+        ...(!__DEV__ && {
+          versionAppInstalada: currentAppVersion,
+        }),
+      };
+
+      await updateDbUser(usuarioDB.key, updateData);
+
+      // Verificar si la versión instalada está actualizada
       if (!Utils.hasLastVersion(currentAppVersion, versiones.app)) {
         return callback(null, null, {
           message:
-            'Tienes una version desactualizada de la app, favor de actualizar.',
+            'Tienes una versión desactualizada de la app, favor de actualizar.',
           update: true,
         });
       }
-      // RETORNAMOS EL USUARIO Y VERSION APP
-      let newUsuario = {...usuarioDB};
-      delete newUsuario.bpassword;
-      delete newUsuario.password;
+
+      // Retornar usuario sin datos sensibles
+      const {bpassword, password, ...newUsuario} = usuarioDB;
       callback(newUsuario, versiones.app, null);
     });
-  } catch ({message}) {
-    throw new Error(message);
+  } catch (error) {
+    console.error('Error en iniciarSesion:', error.message);
+    callback(null, null, {
+      message: 'Ocurrió un error al iniciar sesión. Intenta nuevamente.',
+    });
   }
 };
 // VERIFICAR REGISTRO DE DISPOSITIVO

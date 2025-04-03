@@ -24,6 +24,7 @@ import UltimosMovimientos from '../UltimosMovimientos';
 import {useNavigation} from '@react-navigation/native';
 import {useAuthContext} from '../../../context/AuthContext';
 import {getProducts} from '../../../services/taecel';
+import {Button, IconButton} from 'react-native-paper';
 
 export default function RecargasMenu() {
   const {isAuthenticated} = useAuthContext();
@@ -31,6 +32,47 @@ export default function RecargasMenu() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const netInfo = useNetInfo();
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      if (isAuthenticated && mainProducts.length === 0) {
+        dispatch(setLoadingProducts(true));
+        const taecelResponse = await getProducts();
+        let _categories = [];
+        let _carriers = [];
+        let _products = [];
+        if (taecelResponse.success) {
+          _categories = [...taecelResponse.data.categorias];
+          _carriers = [...taecelResponse.data.carriers];
+          _products = [...taecelResponse.data.productos];
+        }
+        let _mainProducts = [];
+        _categories.forEach((item, index) => {
+          _mainProducts[index] = {
+            id: index,
+            text: item.Nombre,
+            empty: false,
+            categoria: item,
+          };
+        });
+        dispatch(setMainProducts(_mainProducts));
+        dispatch(setCarriers(_carriers));
+        dispatch(setProducts(_products));
+        dispatch(setLoadingProducts(false));
+      }
+    } catch (error) {
+      console.log(error.message);
+      dispatch(setMainProducts([]));
+      dispatch(setCarriers([]));
+      dispatch(setProducts([]));
+    } finally {
+      dispatch(setLoadingProducts(false));
+    }
+  };
 
   const handleNavigate = categoria => {
     // VERIFICAR CODIGO PIN
@@ -60,38 +102,6 @@ export default function RecargasMenu() {
     });
   };
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    if (isAuthenticated && mainProducts.length === 0) {
-      dispatch(setLoadingProducts(true));
-      const taecelResponse = await getProducts();
-      let _categories = [];
-      let _carriers = [];
-      let _products = [];
-      if (taecelResponse.success) {
-        _categories = [...taecelResponse.data.categorias];
-        _carriers = [...taecelResponse.data.carriers];
-        _products = [...taecelResponse.data.productos];
-      }
-      let _mainProducts = [];
-      _categories.forEach((item, index) => {
-        _mainProducts[index] = {
-          id: index,
-          text: item.Nombre,
-          empty: false,
-          categoria: item,
-        };
-      });
-      dispatch(setMainProducts(_mainProducts));
-      dispatch(setCarriers(_carriers));
-      dispatch(setProducts(_products));
-      dispatch(setLoadingProducts(false));
-    }
-  };
-
   if (!netInfo?.isConnected) return <NoConnection />;
 
   return (
@@ -113,7 +123,12 @@ export default function RecargasMenu() {
           </MainMenuSectionButtons>
         </>
       )}
-      {!loadingProducts && (
+      {!loadingProducts && mainProducts.length == 0 && (
+        <Button icon={'reload'} onPress={() => loadProducts()}>
+          Recargar productos
+        </Button>
+      )}
+      {!loadingProducts && mainProducts.length > 0 && (
         <ScrollView>
           <UltimosMovimientos />
           <MainMenuSectionButtons title="Opciones" titleColor={Colors.darkBlue}>

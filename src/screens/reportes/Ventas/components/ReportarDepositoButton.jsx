@@ -6,16 +6,19 @@ import {Alert} from 'react-native';
 import {saveDepositReceipt} from '../../../../services/reports';
 import {useSelector} from 'react-redux';
 
-export default function ReportarDepositoButton() {
+export default function ReportarDepositoButton({onSaved}) {
   const [showModal, setShowModal] = useState(false);
   const {cargandoPeriodos} = useSelector(state => state.reportes);
 
   const handleCaptureUploaded = async imageUrl => {
     try {
       // console.log(imageUrl);
-      await saveDepositReceipt(imageUrl);
+      const savedCapture = await saveDepositReceipt(imageUrl);
       setShowModal(false);
       Alert.alert('Mensaje', 'Comprobante subido correctamente');
+      if (onSaved) {
+        onSaved(savedCapture);
+      }
     } catch ({message}) {
       Alert.alert('Error', message);
       setShowModal(false);

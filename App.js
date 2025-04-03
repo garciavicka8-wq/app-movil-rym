@@ -21,6 +21,8 @@ import Seguridad from './src/screens/configuracion/Seguridad';
 import {useAuthContext} from './src/context/AuthContext';
 import PagoConTarjeta from './src/screens/PagoConTarjeta';
 import TestComponent from './src/screens/TestComponent';
+import Ventas from './src/screens/reportes/Ventas';
+import Liquidacion from './src/screens/liquidacion';
 
 const Stack = createStackNavigator();
 
@@ -57,13 +59,19 @@ export default function App() {
           headerTintColor: 'white',
         }}>
         {!isAuthenticated && (
-          <Stack.Screen
-            name={APP_NAVIGATION.SCREENS.LOGIN}
-            component={Login}
-            options={{
-              headerShown: false,
-            }}
-          />
+          <>
+            <Stack.Screen
+              name={APP_NAVIGATION.SCREENS.LOGIN}
+              component={Login}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name={APP_NAVIGATION.SCREENS.LIQUIDACION}
+              component={Liquidacion}
+            />
+          </>
         )}
         {isAuthenticated && (
           <>

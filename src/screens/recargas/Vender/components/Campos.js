@@ -9,7 +9,7 @@ import {setTransaccionStore} from '../../../../features/taecel/taecelSlice';
 import {Helpers, Storage} from '../../../../utils';
 import {useCustomNavigation, useLogout, useModal} from '../../../../hooks';
 import {APP_NAVIGATION, TXN} from '../../../../constants';
-import {makeTransaction} from '../../../../services/taecel';
+import {makeTransaction, makeTransactionAPI} from '../../../../services/taecel';
 import {restarCredito} from '../../../../features/credito/creditoSlice';
 import CustomNumericField from '../../../../components/CustomNumericField';
 import Descripcion from './Descripcion';
@@ -112,7 +112,58 @@ export default function Campos({route}) {
       progressTitle: `Transacción En Proceso${'\n'}No Interrumpas La Conexión`,
     });
     // REALIZAR TRANSACCION
-    hacerTransaccion(data);
+    hacerTransaccionAPI(data);
+  };
+  // HACER TRANSACCION API
+  const hacerTransaccionAPI = async data => {
+    const descripcionProducto =
+      Helpers.descripcionProductoTransaccion(selectedProduct);
+    try {
+      const res = await makeTransactionAPI(
+        selectedProduct.CategoriaID,
+        selectedProduct.Codigo,
+        data.referencia,
+        data.monto,
+        descripcionProducto,
+        carrier.CategoriaID == TXN.CODES.SERVICIO
+          ? 'payService'
+          : 'makeRecharge',
+      );
+      // MOSTRAR PANTALLA DE DETALLE EN CASO DE SER EXITOSA
+      // RESTAMOS EL MONTO DE LA TRANSACCION AL CREDITO DISPONIBLE
+      const montoTransaccion = Helpers.calcularTotalTransaccion(
+        res.transaccion,
+        selectedProduct.CategoriaID,
+      );
+      dispatch(restarCredito(montoTransaccion));
+      dispatch(setTransaccionStore({...res.transaccion, descripcionProducto}));
+      // RESET LOGIN TIME
+      // await Utils.setLoginTime();
+      navigation.changeStack(1, [
+        {name: APP_NAVIGATION.SCREENS.RECARGAS_MENU},
+        {
+          name: APP_NAVIGATION.SCREENS.DETALLE_TRANSACCION,
+        },
+      ]);
+    } catch (error) {
+      console.log(error.message);
+      if (
+        error.message == 'DEVICE_NOT_LINKED' ||
+        error.message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
+        error.message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
+      ) {
+        logout();
+        return;
+      }
+      modal.setConfig({
+        type: 'alert',
+        alertTitle: 'Mensaje',
+        contentType: 'error',
+        action: 'error',
+        showCancelBtn: false,
+        error: <Text>{error.message}</Text>,
+      });
+    }
   };
   // HACER TRANSACCION
   const hacerTransaccion = async data => {

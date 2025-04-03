@@ -16,6 +16,8 @@ import {useLogout} from '../../../hooks';
 import {useNetInfo} from '@react-native-community/netinfo';
 import NoConnectionSnackbar from '../../../components/NoConnectionSnackbar';
 import ReportarDepositoButton from './components/ReportarDepositoButton';
+import {Alert} from 'react-native';
+import Comprobantes from './components/Comprobantes';
 
 export default function Ventas() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -31,13 +33,11 @@ export default function Ventas() {
     if (netInfo?.isConnected === false) {
       setOpenSnackbar(true);
     }
-  }, [netInfo.isConnected]);
 
-  useEffect(() => {
     return () => {
       dispatch(resetBotonesReporte());
     };
-  }, []);
+  }, [netInfo.isConnected]);
 
   const cargarBotones = async () => {
     try {
@@ -121,8 +121,7 @@ export default function Ventas() {
       <Content marginBottom={0} style={globalStyles.content}>
         <ReporteDiario />
         <ReporteSemanal />
-        {/* REPORTAR DESPOSITO BUTTON */}
-        <ReportarDepositoButton />
+        <Comprobantes />
       </Content>
       <NoConnectionSnackbar
         open={openSnackbar}

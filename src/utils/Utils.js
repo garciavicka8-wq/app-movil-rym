@@ -239,11 +239,12 @@ const Utils = {
     return total;
   },
   // REMOVE DOLLAR SIGN AND CONVER VALUE TO FLOAT NUMBER
-  dollarToFloatNumber: function (valueWithDollarSign = '') {
-    // IF DOLLAR SIGN IS NOT FOUND
-    if (valueWithDollarSign.indexOf('$') === -1) return valueWithDollarSign;
-    // IF DOLLAR SIGN IS FOUND
-    return parseFloat(valueWithDollarSign.replace('$', ''));
+  dollarToFloatNumber: function (value) {
+    if (typeof value === 'number') return value; // Si ya es número, retornarlo directamente
+    if (typeof value !== 'string') return 0; // Si no es string ni número, retornar 0
+
+    const cleanValue = value.replace(/[$,]/g, ''); // Remueve $ y comas
+    return parseFloat(cleanValue) || 0; // Convierte a número o retorna 0 si es inválido
   },
   // REDUCE OBJECT LIST
   sumObjListByProp: function (list, propName) {
@@ -459,6 +460,13 @@ const Utils = {
     }
 
     return [...combinations];
+  },
+
+  extractNumber(text) {
+    if (typeof text !== 'string') return 0; // Si no es string, retornar null
+
+    const match = text.match(/-?\d+(\.\d+)?/); // Buscar número con signo opcional y decimales
+    return match ? parseFloat(match[0]) : 0; // Convertir a número o retornar null si no hay coincidencia
   },
 };
 

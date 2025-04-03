@@ -99,6 +99,37 @@ export const makeTransaction = async (
     throw new Error(error.message);
   }
 };
+// MAKE TRANSACTION API RYM
+export async function makeTransactionAPI(
+  categoriaID,
+  code,
+  reference,
+  total,
+  descripcionProducto,
+  transactionType = 'makeRecharge', // 'makeRecharge' | 'payService'
+) {
+  try {
+    const usuarioDB = await obtenerUsuarioDb();
+    const res = await requestRymAPI('taecel/hacerTransaccion', {
+      categoria_id: categoriaID,
+      code,
+      reference,
+      total,
+      descripcion_producto: descripcionProducto,
+      transaction_type: transactionType,
+      numero_usuario: usuarioDB.usuario,
+    });
+
+    if (res.error) {
+      throw new Error(res.error_message);
+    }
+
+    return res.data;
+  } catch (error) {
+    // console.error(`[Error]: ${error.message} | [Func]: makeTransactionAPI`);
+    throw new Error(error.message);
+  }
+}
 // CHECK BALANCE
 export const checkBalance = async (total, type) => {
   try {
@@ -446,7 +477,6 @@ export async function getLastTransactions(numTransLimit = 100) {
         txn => txn._usuario === userDB.usuario,
       )
     ).reverse();
-
     // Retornar directamente si la cantidad de transacciones es menor o igual al límite
     return transactions.slice(0, numTransLimit);
   } catch (error) {

@@ -16,15 +16,12 @@ const bcrypt = require('react-native-bcrypt');
 export const iniciarSesion = async (numeroUsuario, password, callback) => {
   try {
     const usuarioDB = await getDbUser(numeroUsuario);
+    Storage.removeItem('tempUser');
 
     if (!usuarioDB) {
       return callback(null, null, {
         message: 'La cuenta no existe en el sistema.',
       });
-    }
-
-    if (usuarioDB.activo !== undefined && !usuarioDB.activo) {
-      return callback(null, null, {message: usuarioDB.disableAccountReason});
     }
 
     if (usuarioDB.loginAttempts >= 3) {
@@ -40,6 +37,21 @@ export const iniciarSesion = async (numeroUsuario, password, callback) => {
           loginAttempts: usuarioDB.loginAttempts + 1,
         });
         return callback(null, null, {message: 'La contraseña es incorrecta'});
+      }
+      // SI EL USUARIO ESTA DESACTIVADO
+      if (usuarioDB.activo !== undefined && !usuarioDB.activo) {
+        Storage.setItem(
+          'tempUser',
+          {
+            usuario: usuarioDB.usuario,
+            key: usuarioDB.key,
+            id: usuarioDB.id,
+            nomComercial: usuarioDB.nomComercial,
+            disableAccountReason: usuarioDB.disableAccountReason,
+          },
+          true,
+        );
+        return callback(null, null, {message: usuarioDB.disableAccountReason});
       }
 
       // Verificación del dispositivo

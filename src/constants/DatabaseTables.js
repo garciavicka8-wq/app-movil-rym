@@ -20,6 +20,7 @@ const DATABASE_TABLES = {
   DEPOSITOS: 'depositos',
   DISPOSITIVOS_REGISTRADOS: 'dispositivosRegistrados',
   CREDITOS: 'creditos',
+  VOUCHERS: 'vouchers',
 };
 
 export default DATABASE_TABLES;

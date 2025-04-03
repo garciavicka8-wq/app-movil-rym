@@ -465,8 +465,7 @@ export async function verifyUserAccountStatus() {
       console.log('verifyUserAccountStatus line: 464');
       await updateDbUser(userDB.key, {
         activo: false,
-        disableAccountReason:
-          'Su cuenta ha sido desactivada debido a que no ha cubierto en su totalidad el pago de liquidación semanal.',
+        disableAccountReason: `Su cuenta ha sido desactivada debido a que no ha cubierto en su totalidad el pago de liquidación semanal de ${prevInform.amount}`,
       });
       throw new Error(ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT);
     }
@@ -494,7 +493,9 @@ export async function uploadDepositReceipt(formData) {
 // SAVE DEPOPSIT RECEIPT
 export async function saveDepositReceipt(imageUrl) {
   try {
-    const user = Storage.getUser();
+    const user = Storage.getUser()
+      ? Storage.getUser()
+      : Storage.getItem('tempUser', true);
     const timestamp = await getServerTimestamp();
 
     await Database.save(DATABASE_TABLES.VOUCHERS, {
@@ -503,7 +504,13 @@ export async function saveDepositReceipt(imageUrl) {
       fecha: Moment(timestamp).format('YYYY-MM-DD HH:mm:ss'),
     });
 
-    return true;
+    const savedCapture = await Database.getItem(
+      DATABASE_TABLES.VOUCHERS,
+      'capturaUrl',
+      imageUrl,
+    );
+
+    return savedCapture;
   } catch (error) {
     throw new Error(error.message);
   }

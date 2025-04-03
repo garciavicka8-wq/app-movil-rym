@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {
+  Alert,
   Animated,
   Easing,
   Keyboard,
@@ -16,7 +17,8 @@ import * as Keychain from 'react-native-keychain';
 import Ribbon from './Ribbon';
 import {useAuthContext} from '../../../context/AuthContext';
 import {iniciarSesion} from '../../../services/auth';
-import {useDispatch} from 'react-redux';
+import {useNavigation} from '@react-navigation/native';
+import {APP_NAVIGATION} from '../../../constants';
 const BALL = require('../../../assets/ball.png');
 
 export default function LoginForm() {
@@ -32,7 +34,7 @@ export default function LoginForm() {
   const [userName, setUserName] = useState('');
   const [touchCounter, setTouchCounter] = useState(0);
   const {setIsAuthenticated} = useAuthContext();
-  const dispatch = useDispatch();
+  const navigation = useNavigation();
 
   useEffect(() => {
     const getUserNumber = async () => {
@@ -99,21 +101,34 @@ export default function LoginForm() {
           // SI LA APP ESTA DESACTUALIZADA
           if (error !== null && error.update) {
             setStartAnimation(false);
-            alert(error.message);
+            Alert.alert('Mensaje', error.message);
             return;
           }
           // SI HAY ALGUN ERROR
           if (error !== null) {
-            console.log(error, ' line 107');
+            // console.log(error.message, ' line 107');
             setStartAnimation(false);
-            alert(error.message);
+            const tempUser = Storage.getItem('tempUser', true);
+            if (tempUser) {
+              Alert.alert('Mensaje', error.message, [
+                {text: 'Cerrar'},
+                {
+                  text: 'Revisar liquidación',
+                  onPress: () => {
+                    navigation.navigate(APP_NAVIGATION.SCREENS.LIQUIDACION);
+                  },
+                },
+              ]);
+              return;
+            }
+            Alert.alert('Mensaje', error.message);
           }
         },
       );
     } catch ({message}) {
       console.log(message, ' line 114');
       setStartAnimation(false);
-      alert(message);
+      Alert.alert('Error', message);
     }
   };
 

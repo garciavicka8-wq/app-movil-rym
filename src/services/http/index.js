@@ -119,7 +119,6 @@ export async function requestRymAPI(endpoint, data = {}, useJson = true) {
         ? 'application/json'
         : 'application/x-www-form-urlencoded',
     };
-
     // Enviar la solicitud con Axios
     const response = await axios.post(url, useJson ? data : requestData, {
       headers,

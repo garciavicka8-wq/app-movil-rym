@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {Image, StyleSheet, Text, View} from 'react-native';
+import {Alert, Image, StyleSheet, Text, View} from 'react-native';
 import {RNCamera} from 'react-native-camera';
 import {
   ActivityIndicator,
@@ -73,7 +73,7 @@ export default function UploadImageModal({onUploaded, onClose, type}) {
 
       onUploaded(imageUrl);
     } catch (error) {
-      console.log(error.message);
+      Alert.alert('Error', error.message);
       setUploading(false);
     }
   };

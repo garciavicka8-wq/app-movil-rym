@@ -14,11 +14,12 @@ import {
   registrarMagico,
   registrarTicket,
 } from '../../../../../services/tickets';
-import {Colors, Print, Utils} from '../../../../../utils';
+import {Colors, Print, Storage, Utils} from '../../../../../utils';
 import {agregarRegistroAlMomento} from '../../../../../features/tickets/cliente/clienteSlice';
 import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../../errors';
 import {useNetInfo} from '@react-native-community/netinfo';
 import {TICKET_TYPE} from '../../../../../constants';
+import {setJugadas} from '../../../../../features/tickets/jugarTickets/jugarTicketsSlice';
 
 export default function CompartirButton() {
   const {jugadas, sorteoSeleccionado} = useSelector(
@@ -41,20 +42,38 @@ export default function CompartirButton() {
     if (modal.config.action === 'error' || modal.config.action === 'mensaje') {
       handleModalCancel();
     }
+    if (modal.config.action === 'numeros-saturados') {
+      handleNumerosSaturados();
+    }
+  };
+
+  const handleNumerosSaturados = () => {
+    const jugadasActualizadas =
+      Utils.actualizarJugadasNumerosSaturados(jugadas);
+    dispatch(setJugadas(jugadasActualizadas));
+    if (jugadasActualizadas.length === 0) {
+      modal.setConfig({open: false});
+      return;
+    }
+    handleGuardarBoleto(jugadasActualizadas);
   };
   //   HANDLE GUARDAR BOLETO
-  const handleGuardarBoleto = () => {
-    if (sorteoSeleccionado && jugadas.length > 0) {
-      const esAutomatico = jugadas.some(item => item.numero.includes('X'));
+  const handleGuardarBoleto = async newJugadas => {
+    const _jugadas = newJugadas ?? [...jugadas];
+    // LIMPIAR SATURADOS DE MEMORIA EN CASO DE EXISTIR
+    Storage.removeItem('saturados');
+
+    if (sorteoSeleccionado && _jugadas.length > 0) {
+      const esAutomatico = _jugadas.some(item => item.numero.includes('X'));
       if (esAutomatico) {
-        handleRegistrarAutomatico();
+        handleRegistrarAutomatico(_jugadas);
       } else {
-        handleGuardar();
+        handleGuardar(_jugadas);
       }
     }
   };
   // GUARDAR JUGADA E IMPRIMIR TICKET
-  const handleGuardar = async () => {
+  const handleGuardar = async newJugadas => {
     try {
       modal.setConfig({
         open: true,
@@ -73,7 +92,7 @@ export default function CompartirButton() {
       if (await thermalPrinter.isPrintingPossible()) {
         const boletoRegistrado = await registrarTicket(
           sorteoSeleccionado,
-          jugadas,
+          newJugadas,
           creditoDisponible,
         );
 
@@ -192,12 +211,17 @@ export default function CompartirButton() {
         ? 'verifica que la impresora esté encendida'
         : message;
 
+    const saturados = Storage.getItem('saturados', true);
+    const alertTitle = saturados ? 'Números saturados' : 'Mensaje';
+
     modal.setConfig({
       type: 'alert',
-      alertTitle: 'Mensaje',
+      alertTitle: alertTitle,
       contentType: 'error',
-      action: 'error',
-      showCancelBtn: false,
+      action: saturados ? 'numeros-saturados' : 'error',
+      showCancelBtn: saturados !== null,
+      cancelBtnText: saturados !== null ? 'Cerrar' : 'Cancelar',
+      confirmBtnText: saturados !== null ? 'Continuar' : 'Aceptar',
       error: <Text>{errorContent}</Text>,
     });
   };
@@ -211,7 +235,7 @@ export default function CompartirButton() {
         icon="printer"
         iconColor={Colors.dark}
         size={30}
-        onPress={handleGuardarBoleto}
+        onPress={() => handleGuardarBoleto()}
       />
       <CustomModal
         open={modal.config.open}
@@ -226,6 +250,12 @@ export default function CompartirButton() {
         onAccept={handleModalAccept}>
         {modal.config.contentType === 'mensaje' && modal.config.content}
         {modal.config.contentType === 'error' && modal.config.error}
+        {modal.config.action === 'numeros-saturados' && (
+          <Text>
+            Si continuas las jugadas ajustaran sus cantidades automaticamente y
+            las que esten completamente agotadas serán eliminadas.
+          </Text>
+        )}
       </CustomModal>
     </>
   );

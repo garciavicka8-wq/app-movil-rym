@@ -1,14 +1,7 @@
 import React from 'react';
 import {Surface} from 'react-native-paper';
-import {
-  Dimensions,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
+import {Dimensions, Pressable, StyleSheet, Text, View} from 'react-native';
+import FastImage from '@d11/react-native-fast-image';
 
 export default function CarrierCard({text, imageURL, onPress, empty}) {
   if (empty) {
@@ -22,10 +15,10 @@ export default function CarrierCard({text, imageURL, onPress, empty}) {
     <View style={styles.listItem}>
       <Pressable onPress={onPress}>
         <Surface style={styles.listItemSurfce}>
-          <Image
-            source={{uri: imageURL}}
+          <FastImage
+            source={{uri: imageURL, priority: FastImage.priority.normal}}
             style={styles.listItemLogo}
-            resizeMode="contain"
+            resizeMode={FastImage.resizeMode.contain}
           />
           <Text style={{fontSize: 12}}>{text}</Text>
         </Surface>

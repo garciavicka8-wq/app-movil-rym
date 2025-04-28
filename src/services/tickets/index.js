@@ -1,5 +1,5 @@
 import Database from '../../database';
-import {Helpers, Moment, Money, Utils, uuid} from '../../utils';
+import {Helpers, Moment, Money, Storage, Utils, uuid} from '../../utils';
 import {obtenerUsuarioDb} from '../auth';
 import {DATABASE_TABLES} from '../constants';
 import {actualizarCredito} from '../credito';
@@ -162,24 +162,22 @@ export const registrarTicket = async (
       boletosRegistrados,
       limiteApuestas,
     );
-    let message = 'Números saturados: \n\n';
+    let message = '';
     numerosSaturados.saturados.forEach(saturado => {
-      const _keys = Object.keys(saturado);
-      const values = Object.values(saturado);
-      const numero = _keys[0];
-      let text_values = '';
-      values.forEach(item => {
-        const positions = Object.keys(item);
-        const cantidades = Object.values(item);
-        positions.forEach((position, i) => {
-          const cantidad = cantidades[i] == '0' ? 'agotado' : cantidades[i];
-          text_values += position + '°(' + cantidad + ') ';
-        });
-      });
-      message += '[' + numero + ']' + ': ' + text_values + '\n';
+      const [numero, item] = Object.entries(saturado)[0]; // Extrae número y valores en una sola operación
+      const text_values = Object.entries(item)
+        .map(([position, cantidad]) => {
+          return `${position}°(${cantidad == '0' ? 'agotado' : cantidad})`; // Genera texto por cada posición
+        })
+        .join(' '); // Unir todos los textos de posiciones con espacio
+
+      message += `${numero}: ${text_values}\n`; // Añadir al mensaje
     });
     // SI HAY NUMEROS SATURADOS
-    if (numerosSaturados.saturados.length > 0) throw new Error(message);
+    if (numerosSaturados.saturados.length > 0) {
+      Storage.setItem('saturados', numerosSaturados.saturados, true);
+      throw new Error(message);
+    }
     // SI LLEGO AL LIMITE DE VENTA PERMITIDO
     if (parseInt(creditoDisponible) <= 0)
       throw new Error('Limite de venta alcanzado.');
@@ -216,6 +214,7 @@ export const registrarTicket = async (
     throw new Error(message);
   }
 };
+
 export async function registrarMagico({
   sorteo,
   numeroJugadas,
@@ -223,26 +222,22 @@ export async function registrarMagico({
   numeroLugares,
   monto,
   creditoDisponible,
+  viaWhatsapp = false,
+  numeroTelefono = '',
 }) {
   try {
-    // VERIFY IF USER ACCOUNT IS UP TO DATE
     await verifyUserAccountStatus();
-    // VERIFICAR VERSION DE APP
     const usuarioDb = await obtenerUsuarioDb();
-    // SI EL USUARIO EXISTE Y ESTA ACTIVO
     const sorteoDb = await Database.getItem(
       DATABASE_TABLES.DRAWS,
       'id',
       sorteo.id,
     );
-    // SI EL SORTEO NO EXISTE
     if (!sorteoDb) throw new Error('El sorteo que intentas jugar no existe');
-    // SI EL SORTEO ESTA INACTIVO
     if (sorteoDb.activo !== undefined && !sorteoDb.activo)
       throw new Error('El sorteo que intentas jugar fue desactivado');
-    // OBTENEMOS LA HORA DE CIERRE DEL SORTEO
+
     const horaCierre = await Database.getObject(DATABASE_TABLES.CLOSING_TIME);
-    // OBTENEMOS LA FECHA DEL SERVIDOR
     const timestamp = await Database.getServerDate();
     const fecha = {
       servidor: timestamp,
@@ -253,32 +248,43 @@ export async function registrarMagico({
       cierre: horaCierre.hora,
       actual: Moment(timestamp).format('HH:mm'),
     };
-    // SI EL SORTEO SE CELEBRA HOY Y YA CERRO
+
     if (
       Moment(fecha.sorteo).isSame(fecha.actual) &&
       Moment(hora.actual, 'HH:mm').isSameOrAfter(Moment(hora.cierre, 'HH:mm'))
     ) {
       throw new Error('Lo sentimos, el sorteo ha cerrado');
     }
-    // SI EL SORTEO YA SE CELEBRO
     if (Moment(fecha.actual).isAfter(fecha.sorteo)) {
       throw new Error('Lo sentimos, el sorteo seleccionado ya fue celebrado');
     }
-    // OBTENER LOS BOLETOS DEL SORTEO SELECCIONADO
+
     const boletos = await Database.getItemsByProp(
       DATABASE_TABLES.TICKETS,
       'fechaSorteo',
       sorteoDb.fecha,
     );
-    // OBTENER LIMITE DE APUESTAS
     const limiteApuestas = await Database.getObject(DATABASE_TABLES.BET_LIMIT);
-    // EXTRAER Y COMBINAR JUGADAS
+
+    // VALIDAR MONTO ANTES DE PROCESAR JUGADAS
+    const CIFRAS = {
+      1: 'unaCifra',
+      2: 'dosCifras',
+      3: 'tresCifras',
+    };
+    const limite = limiteApuestas[CIFRAS[cifras]];
+
+    if (parseInt(monto) > limite) {
+      throw new Error(
+        `El monto por lugar supera el límite de apuesta permitido (${limite}).`,
+      );
+    }
+
     let jugadas = boletos.reduce((acc, item) => acc.concat(item.jugadas), []);
-    // EXTAER LAS JUGADAS SEGUN LA CIFRAS SLECCIONADAS
+
     let numeros = {};
     jugadas.forEach(jugada => {
       if (jugada.numero.length === parseInt(cifras)) {
-        // EXTRAER NUMEROS UNICOS Y SUMAR SUS LUGARES
         if (numeros[jugada.numero] === undefined) {
           numeros[jugada.numero] = jugada.lugares;
         } else {
@@ -289,32 +295,26 @@ export async function registrarMagico({
         }
       }
     });
-    // EXTRAER SOLO AQUELLOS NUMEROS QUE NO PASEN EL LIMITE DE APUESTA
+
     let numerosInJugables = [];
-    const CIFRAS = {
-      1: 'unaCifra',
-      2: 'dosCifras',
-      3: 'tresCifras',
-    };
-    const limite = limiteApuestas[CIFRAS[cifras]];
-    for (const key in numeros) {
-      if (Object.hasOwnProperty.call(numeros, key)) {
-        const lugares = numeros[key];
-        // COMPROBAR SI NO PASEN EL LIMITE DE APUESTA
-        let sobrepasaLimite = false;
-        lugares.forEach(cantidad => {
-          const resultado = parseInt(cantidad) + parseInt(monto);
-          if (resultado > limite) {
-            sobrepasaLimite = true;
+    for (const [numero, lugares] of Object.entries(numeros)) {
+      let excedeLimite = false;
+      for (let i = 0; i < lugares.length; i++) {
+        const lugar = (i + 1).toString();
+        if (numeroLugares.includes(lugar)) {
+          const cantidadActual = parseInt(lugares[i]);
+          const total = cantidadActual + parseInt(monto);
+          if (total > limite) {
+            excedeLimite = true;
+            break;
           }
-        });
-        // SI SOBREPASA EL LIMITE LO AGREGAMOS A LA LISTA DE INJUGABLES
-        if (sobrepasaLimite) {
-          numerosInJugables.push(key);
         }
       }
+      if (excedeLimite) {
+        numerosInJugables.push(numero);
+      }
     }
-    // ENCONTRAR NUMEROS DISPONIBNLES
+
     const TOTAL_NUMEROS = {
       1: 10,
       2: 100,
@@ -323,43 +323,37 @@ export async function registrarMagico({
     let numerosJugables = [];
     for (let i = 0; i < TOTAL_NUMEROS[cifras]; i++) {
       let numero = i;
-      if (cifras == '2' && i < 10) {
-        numero = '0' + i;
-      }
-      if (cifras == '3' && i < 10) {
-        numero = '00' + i;
-      }
-      if (cifras == '3' && i >= 10 && i < 100) {
-        numero = '0' + i;
-      }
+      if (cifras == '2' && i < 10) numero = '0' + i;
+      if (cifras == '3' && i < 10) numero = '00' + i;
+      if (cifras == '3' && i >= 10 && i < 100) numero = '0' + i;
+
       if (!numerosInJugables.includes(numero.toString())) {
         numerosJugables.push(numero.toString());
       }
     }
-    // SI NO HAY NUMEROS JUGABLES
+
     if (numerosJugables.length === 0)
       throw new Error(
         'Lo sentimos los números de ' +
           cifras +
           ' cifras se han agotado, intenta con otra cifra.',
       );
+
     let jugadasAleatorias = [];
-    // GENERAR BOLETO MAGICO CON NUMEROS ALEATORIOS APARTIR DE LOS NUMEROS JUGABLES
     for (let i = 0; i < parseInt(numeroJugadas); i++) {
       const randomIndex = Math.floor(Math.random() * numerosJugables.length);
       const numeroAleatorio = numerosJugables[randomIndex];
-      // SI YA NO SE ENCUENTRA NINGUN NUMERO SALIMOS DEL CICLO
       if (numeroAleatorio === undefined) break;
-      // // QUITAMOS EL NUMERO ALEATORIO PARA NO USARLO MAS DE UNA VEZ
+
       numerosJugables.splice(randomIndex, 1);
-      // JUGADAS ALEATORIAS
+
       let jugadaAleatoria = {
         id: uuid(),
         lugares: [],
         numero: numeroAleatorio,
         totalApostado: 0,
       };
-      // ASIGNAMOS LA CANTIDAD A CADA LUGAR
+
       for (let j = 0; j < parseInt(sorteo.numLugares); j++) {
         const currentItem = j + 1;
         jugadaAleatoria.lugares[j] = numeroLugares.includes(
@@ -368,14 +362,15 @@ export async function registrarMagico({
           ? monto.toString()
           : '0';
       }
-      // CALCULAMOS EL TOTAL DE LA JUGADA
+
       jugadaAleatoria.totalApostado = jugadaAleatoria.lugares.reduce(
         (acc, cantidad) => acc + parseInt(cantidad),
         0,
       );
+
       jugadasAleatorias.push(jugadaAleatoria);
     }
-    // GENERAMOS BOLETO MAGICO
+
     const boletoMagico = {
       agenteId: usuarioDb.id,
       codigoSorteo: sorteoDb.codigoSorteo,
@@ -391,39 +386,42 @@ export async function registrarMagico({
         (acc, el) => acc + parseInt(el.totalApostado),
         0,
       ),
+      via: viaWhatsapp ? 'whatsapp' : 'impresion',
+      telefono: numeroTelefono,
     };
-    // SI LLEGO AL LIMITE DE VENTA PERMITIDO
+
     if (parseInt(creditoDisponible) <= 0)
       throw new Error('Limite de venta alcanzado.');
-    // SI LLEGA AL LIMITE DE VENTA PERMITIDO AGREGANDO EL TOTAL DEL NUEVO BOLETO
+
     if (parseInt(creditoDisponible) - parseInt(boletoMagico.totalApostado) < 0)
       throw new Error(
         `Con el total de este boleto se supera el limite semanal, por favor ajusta el total de puntos e intenta nuevamente.\n\nTotal boleto ${
           boletoMagico.totalApostado
         }\nPuntos restantes ${Money(creditoDisponible, false)}`,
       );
-    // SI NO HAY ERRORES GUARDAMOS EL BOLETO
+
     await Database.save(DATABASE_TABLES.TICKETS, boletoMagico);
-    // ACTUALIZAR CREDITO DISPONIBLE
+
     const credito = await Database.getItem(
       DATABASE_TABLES.CREDITS,
       'usuario',
       usuarioDb.usuario,
     );
-    // VERIFICAMOS SI EXISTE EL CREDITO
+
     if (credito) {
-      // RESTAMOS LA VENTA DEL BOLETO AL CREDITO DISPONIBLE
       const totalVentaBoleto = Utils.totalWithoutCommissionTicket(
         boletoMagico.totalApostado,
       );
       const saldoNuevo = credito.saldo - totalVentaBoleto;
       await actualizarCredito(saldoNuevo, credito.key);
     }
+
     return boletoMagico;
   } catch ({message}) {
     throw new Error(message);
   }
 }
+
 // OBTENER GANDORES
 export const obtenerPublicacionNumerosGanadores = async fechaSorteo => {
   try {
@@ -439,54 +437,55 @@ export const obtenerPublicacionNumerosGanadores = async fechaSorteo => {
 };
 // FUNCIONES PARA NUMEROS SATURADOS
 function getSaturatedNumbers(newBoleto, boletos, limiteApuestas) {
-  let todasLasJugadas = [];
-  let jugadasDb = [];
   let obj = {numeros: [], jugadas: [], saturados: []};
-  //OBTENER TODAS LAS JUGADAS DE CADA BOLETO
-  boletos.forEach(b => {
-    // console.log(b.jugadas);
-    b.jugadas.forEach(jugada => {
-      todasLasJugadas.push(jugada);
-      jugadasDb.push(jugada);
-    });
-  });
-  // VERIFICAMOS LAS JUGADAS
+
+  // Obtener todas las jugadas de los boletos existentes
+  const todasLasJugadas = boletos.flatMap(b => b.jugadas);
+
+  // Obtener todas las jugadas de los boletos existentes y del nuevo boleto
+  const todasLasJugadasCompletas = [...todasLasJugadas, ...newBoleto.jugadas];
+
+  // Función para obtener el límite por apuesta
+  const obtenerLimitePorApuesta = numero => getLimit(limiteApuestas, numero);
+
+  // Función para agregar o actualizar la información de los números saturados
+  const agregarSaturado = (numero, posicion, resto) => {
+    const idx = obj.numeros.indexOf(numero);
+
+    if (idx === -1) {
+      obj.numeros.push(numero);
+      obj.jugadas.push({numero, lugares: posicion});
+      obj.saturados.push({[numero]: {[posicion]: resto}});
+    } else {
+      let jugadaLugares = obj.jugadas[idx].lugares;
+      if (!jugadaLugares.includes(posicion)) {
+        obj.jugadas[idx].lugares += `, ${posicion}`;
+        obj.saturados[idx][numero][posicion] = resto;
+      }
+    }
+  };
+
+  // Verificar cada jugada del nuevo boleto
   newBoleto.jugadas.forEach(newJugada => {
-    // AGREGAMOS LAS JUGADAS DEL NUEVO BOLETO
-    todasLasJugadas.push(newJugada);
-    let todasLasJugadasResults = getResults(newJugada, todasLasJugadas);
-    let jugadasDbResults = getResults(newJugada, jugadasDb);
-    let limitePorApuesta = getLimit(limiteApuestas, newJugada.numero);
-    let posiciones = ['1', '2', '3'];
-    //VERIFICAMOS CADA RESULTADO Y CHECAR SI EXCEDE EL LIMITE POR APUESTA
+    const posiciones = ['1', '2', '3'];
+
+    // Obtener los resultados de las jugadas
+    const todasLasJugadasResults = getResults(
+      newJugada,
+      todasLasJugadasCompletas,
+    );
+    const jugadasDbResults = getResults(newJugada, todasLasJugadas);
+
+    // Obtener el límite por apuesta
+    const limitePorApuesta = obtenerLimitePorApuesta(newJugada.numero);
+
+    // Verificar cada resultado y si excede el límite
     todasLasJugadasResults.forEach((result, index) => {
-      let resultadoDb = jugadasDbResults[index] ? jugadasDbResults[index] : 0;
-      let resto = limitePorApuesta - resultadoDb;
-      //SI EL RESULTADO ES MAYOR AL LIMITE PERMITIDO
-      //GUARDAR LOS NUMEROS QUE SOBREPASAN EL LIMITE
-      //LAS JUGADAS Y LOS SATURADOS
+      const resultadoDb = jugadasDbResults[index] || 0;
+      const resto = limitePorApuesta - resultadoDb;
+
       if (result > limitePorApuesta) {
-        //SI EL NUMERO NO ESTA EN LA LISTA , GUARDARLO
-        if (obj.numeros.indexOf(newJugada.numero) === -1) {
-          obj.numeros.push(newJugada.numero);
-          obj.jugadas.push({
-            numero: newJugada.numero,
-            lugares: posiciones[index],
-          });
-          obj.saturados.push({
-            [newJugada.numero]: {[posiciones[index]]: resto},
-          });
-        }
-        //SI YA ESTA EL NUMERO , AÑADIR LA INFORMACION PARA LOS DEMAS LUGARES
-        if (obj.numeros.indexOf(newJugada.numero) !== -1) {
-          let posicionNumero = obj.numeros.indexOf(newJugada.numero);
-          let jugadaLugares = obj.jugadas[posicionNumero].lugares;
-          if (jugadaLugares.indexOf(posiciones[index]) === -1) {
-            let jugadaActual = obj.saturados[posicionNumero][newJugada.numero];
-            obj.jugadas[posicionNumero].lugares += ', ' + posiciones[index];
-            jugadaActual[posiciones[index]] = resto;
-          }
-        }
+        agregarSaturado(newJugada.numero, posiciones[index], resto);
       }
     });
   });
@@ -495,34 +494,25 @@ function getSaturatedNumbers(newBoleto, boletos, limiteApuestas) {
 }
 // GET RESULTS
 function getResults(jugada, jugadas) {
-  //OBTENER JUGADAS QUE COINCIDAN CON EL MISMO NUMERO
-  let matched = jugadas.filter(j => jugada.numero === j.numero);
-  //OBTENER LOS LUGARES DE CADA JUGADA
-  let lugares = matched.map(m => m.lugares);
-  //console.log(jugadas, matched)
-  //SUMAR ELEMENTOS DEL MISMO INDICE Y RETORNARLOS
-  return lugares.reduce((r, a) => {
-    return a.map((b, i) => (parseInt(r[i]) || 0) + parseInt(b));
+  return jugadas.reduce((acc, j) => {
+    if (j.numero !== jugada.numero) return acc;
+
+    j.lugares.forEach((valor, i) => {
+      acc[i] = (acc[i] || 0) + Number(valor);
+    });
+
+    return acc;
   }, []);
 }
 // GET LIMIT
 function getLimit(data, apuesta) {
-  let limit = 0;
-  switch (apuesta.length) {
-    case 1:
-      limit = data.unaCifra;
-      break;
-    case 2:
-      limit = data.dosCifras;
-      break;
-    case 3:
-      limit = data.tresCifras;
-      break;
-    default:
-      limit = 0;
-      break;
-  }
-  return parseInt(limit);
+  const limits = {
+    1: data.unaCifra,
+    2: data.dosCifras,
+    3: data.tresCifras,
+  };
+
+  return parseInt(limits[apuesta.length] || 0);
 }
 // GET PAID PRIZES
 export async function getPaidPrizes() {
@@ -804,8 +794,8 @@ export async function uploadTicketCapture(formData) {
       formData,
       false,
     );
-    if (response.data.error) {
-      throw new Error(response.data.error_message);
+    if (response.data.data.error) {
+      throw new Error(response.data.data.error_message);
     }
 
     return response.data.data.url || '';

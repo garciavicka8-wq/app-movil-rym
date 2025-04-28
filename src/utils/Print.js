@@ -48,33 +48,9 @@ const Print = (() => {
       // if (transaccion.descripcionProducto !== undefined) {
       //   await BEP.printText(`${transaccion.descripcionProducto}\n\r`, {});
       // }
-      const wrapText = (text, maxLineWidth) => {
-        const words = text.split(' ');
-        let lines = [];
-        let currentLine = '';
-
-        words.forEach(word => {
-          if ((currentLine + word).length <= maxLineWidth) {
-            currentLine += (currentLine ? ' ' : '') + word;
-          } else {
-            lines.push(currentLine);
-            currentLine = word;
-          }
-        });
-
-        if (currentLine) lines.push(currentLine);
-        return lines;
-      };
-      const removeAccents = text => {
-        return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      };
-      const text = `Por favor, tenga en cuenta que solo podemos procesar pagos de recibos vigentes. Si intenta pagar un recibo vencido, el sistema no lo reconocera y podrian generarse cargos adicionales, como reconexion o multas, de los cuales no nos hacemos responsables. El pago puede tardar entre 24 y 48 horas habiles en reflejarse.Si realiza su pago durante fin de semana y dias festivos,  este proceso podria demorar un poco mas. En caso de que el importe no se refleje despues de este tiempo,  tendra un maximo de 48 horas adicionales para reportarlo y solicitar una aclaracion. Pasado ese plazo, no podremos realizar ajustes. Esto es para garantizar que su pago se procese correctamente y evitar inconvenientes`;
-
-      const maxLineWidth = 32; // Ancho estándar de impresión para una impresora térmica de 58 mm
-      const wrappedLines = wrapText(removeAccents(text), maxLineWidth);
-
-      for (const line of wrappedLines) {
-        await printLine(line); // Imprime cada línea ajustada al ancho
+      // IMPRIMIR MENSAJE PARA PAGO DE SERVICIOS
+      if (transaccion.CategoriaID == '3') {
+        await printServiceAdvice();
       }
 
       await alignText('center');
@@ -84,6 +60,37 @@ const Print = (() => {
     } catch (error) {
       // console.log('error al imprimir', error);
       ToastAndroid.show('Error: impresora no conectada', ToastAndroid.LONG);
+    }
+  };
+  // MENSAJE PARA PAGO DE SERVICIOS
+  const printServiceAdvice = async () => {
+    const wrapText = (text, maxLineWidth) => {
+      const words = text.split(' ');
+      let lines = [];
+      let currentLine = '';
+
+      words.forEach(word => {
+        if ((currentLine + word).length <= maxLineWidth) {
+          currentLine += (currentLine ? ' ' : '') + word;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      });
+
+      if (currentLine) lines.push(currentLine);
+      return lines;
+    };
+    const removeAccents = text => {
+      return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    };
+    const text = `Por favor, tenga en cuenta que solo podemos procesar pagos de recibos vigentes. Si intenta pagar un recibo vencido, el sistema no lo reconocera y podrian generarse cargos adicionales, como reconexion o multas, de los cuales no nos hacemos responsables. El pago puede tardar entre 24 y 48 horas habiles en reflejarse.Si realiza su pago durante fin de semana y dias festivos,  este proceso podria demorar un poco mas. En caso de que el importe no se refleje despues de este tiempo,  tendra un maximo de 48 horas adicionales para reportarlo y solicitar una aclaracion. Pasado ese plazo, no podremos realizar ajustes. Esto es para garantizar que su pago se procese correctamente y evitar inconvenientes`;
+
+    const maxLineWidth = 32; // Ancho estándar de impresión para una impresora térmica de 58 mm
+    const wrappedLines = wrapText(removeAccents(text), maxLineWidth);
+
+    for (const line of wrappedLines) {
+      await printLine(line); // Imprime cada línea ajustada al ancho
     }
   };
   //  CREATE MODEL FOR TICKET TO BE PRINTED
@@ -283,7 +290,7 @@ const Print = (() => {
         {},
       );
       await BEP.printerAlign(ALIGN.CENTER);
-      await BEP.printQRCode('123456789', 120, ERROR_CORRECTION.L, 0);
+      await BEP.printQRCode('123456789', 220, ERROR_CORRECTION.L, 0);
       await BEP.printText('\n\n\n', {});
     } catch ({message}) {
       throw new Error(message);
@@ -502,7 +509,7 @@ const Print = (() => {
     await printLine(`COS ${Utils.generateRandomNumber(8)}`);
 
     await alignText('center');
-    await BEP.printQRCode(boleto.numeroBoleto, 120, ERROR_CORRECTION.L, 0);
+    await BEP.printQRCode(boleto.numeroBoleto, 220, ERROR_CORRECTION.L, 0);
     await BEP.printText(`\n\r\n\r`, {});
   }
 

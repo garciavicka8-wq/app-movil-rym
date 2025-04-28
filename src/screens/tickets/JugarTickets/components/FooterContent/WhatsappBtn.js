@@ -1,13 +1,15 @@
 import React from 'react';
 import {IconButton, TextInput} from 'react-native-paper';
-import {Colors, Helpers, Utils} from '../../../../../utils';
+import {Colors, Storage, Utils} from '../../../../../utils';
 import {CustomModal} from '../../../../../components';
 import {useCustomNavigation, useLogout, useModal} from '../../../../../hooks';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import axios from 'axios';
-import {Linking} from 'react-native';
-import {registrarTicket} from '../../../../../services/tickets';
+import {Alert, Linking} from 'react-native';
+import {
+  registrarMagico,
+  registrarTicket,
+} from '../../../../../services/tickets';
 import {useDispatch, useSelector} from 'react-redux';
 import {Text} from 'react-native';
 import {ERROR_CODE_NAMES} from '../../../../../errors';
@@ -17,7 +19,7 @@ import {
 } from '../../../../../features/credito/creditoSlice';
 import {agregarRegistroAlMomento} from '../../../../../features/tickets/cliente/clienteSlice';
 import {useNetInfo} from '@react-native-community/netinfo';
-const qs = require('qs');
+import {setJugadas} from '../../../../../features/tickets/jugarTickets/jugarTicketsSlice';
 
 export default function WhatsappBtn() {
   const {jugadas, sorteoSeleccionado} = useSelector(
@@ -28,7 +30,6 @@ export default function WhatsappBtn() {
   const {logout} = useLogout();
   const dispatch = useDispatch();
   const navigation = useCustomNavigation();
-  const netInfo = useNetInfo();
   const formik = useFormik({
     initialValues: {
       numero: '',
@@ -53,6 +54,20 @@ export default function WhatsappBtn() {
       // enviarInformacionBoleto();
       sendMessage();
     }
+    if (modal.config.action === 'numeros-saturados') {
+      handleNumerosSaturados();
+    }
+  };
+
+  const handleNumerosSaturados = () => {
+    const jugadasActualizadas =
+      Utils.actualizarJugadasNumerosSaturados(jugadas);
+    dispatch(setJugadas(jugadasActualizadas));
+    if (jugadasActualizadas.length === 0) {
+      modal.setConfig({open: false});
+      return;
+    }
+    sendMessage(jugadasActualizadas);
   };
 
   const handleCompartir = async () => {
@@ -89,118 +104,138 @@ export default function WhatsappBtn() {
     formik.setFieldValue('numero', text.replace(/[^0-9]/g, ''));
   };
 
-  const enviarInformacionBoleto = async () => {
+  const sendMessage = async newJugadas => {
     try {
-      const url = 'https://graph.facebook.com/v17.0/152796834592379/messages';
-      const token =
-        'EAAL6U6f2f0IBO0KNKypmpihe3ZAqbDSS4Q2SP7l6sBeggDgUZC8SvWVUXptmn5aL3Bmp1igrAgS02skFQTRGRnvGa5XnlluKLgROh8X8F5Is7bzuXZCZBcZANSFUzOxDYscPE4cbzHFZAL8G1FSjUVSInypbROeZCTowo9OCvmjEbc3pAOZBXxDzgCxEQ1LEJvL9';
-      // const data = qs.stringify();
-      axios
-        .post(
-          url,
-          {
-            messaging_product: 'whatsapp',
-            recipient_type: 'individual',
-            to: '524772526180',
-            type: 'text',
-            text: {
-              preview_url: false,
-              body: 'Hola desde RYM, este es un msg de produccion. ',
-            },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        )
-        .then(response => {
-          console.log(response.data);
-        })
-        .catch(console.log);
-    } catch ({message}) {
-      console.log(message);
-    }
-  };
+      // LIMPIAR SATURADOS DE MEMORIA EN CASO DE EXISTIR
+      Storage.removeItem('saturados');
+      const _jugadas = newJugadas ?? [...jugadas];
+      const numeroValido = formik.values.numero.length === 10;
+      const sorteoValido = !!sorteoSeleccionado;
+      const hayJugadas = _jugadas.length > 0;
 
-  const sendMessage = async () => {
-    try {
-      if (
-        formik.values.numero.length === 10 &&
-        sorteoSeleccionado &&
-        jugadas.length > 0
-      ) {
-        modal.setConfig({
-          type: 'progress',
-          progressTitle: 'Registrando ticket',
-        });
-        const boletoRegistrado = await registrarTicket(
-          sorteoSeleccionado,
-          jugadas,
-          creditoDisponible,
-          true, // VIAWHASAPP
-          formik.values.numero, // NUMERO AL QUE SE ENVIARA EL ENLACE
-        );
-        // console.log('Ticket ID: ', boletoRegistrado.id);
-        let text = `https://tickets.recargasymas.com.mx/${boletoRegistrado.id}\n\n`;
-        const phoneNumber = `+52${formik.values.numero}`;
-        const canOpenUrl = await Linking.canOpenURL(
-          `whatsapp://send?text=${text}&phone=${phoneNumber}`,
-        );
-        if (canOpenUrl) {
-          // RESET LOGIN TIME
-          // await Utils.setLoginTime();
-          Linking.openURL(
-            `whatsapp://send?text=${text}&phone=${phoneNumber}`,
-          ).then(response => {
-            // RESTAMOS LA VENTA DEL BOLETO AL CREDITO DISPONIBLE
-            const totalVentaBoleto = Utils.totalWithoutCommissionTicket(
-              boletoRegistrado.totalApostado,
-            );
-            dispatch(setMostrarCredito(true));
-            dispatch(restarCredito(totalVentaBoleto));
-            dispatch(
-              agregarRegistroAlMomento({
-                id: boletoRegistrado.id,
-                fecha: boletoRegistrado.fechaExp,
-                numeroBoleto: boletoRegistrado.numeroBoleto,
-                hora: boletoRegistrado.horaImpresion,
-                total: boletoRegistrado.totalApostado,
-                tipo: 'boleto',
-                via: boletoRegistrado.via,
-              }),
-            );
-            setTimeout(() => {
-              dispatch(setMostrarCredito(false));
-            }, 5000);
-            modal.setConfig({open: false});
-            navigation.goBack();
-          });
-        } else {
-          alert(
-            'Parece que no tienes Whatsapp instalado, por favor instalalo y vuelve a intentar.',
-          );
-        }
+      if (!numeroValido || !sorteoValido || !hayJugadas) return;
+
+      modal.setConfig({
+        type: 'progress',
+        progressTitle: 'Registrando ticket',
+      });
+
+      const primeraJugada = _jugadas[0];
+      const esMagico = primeraJugada.numero.includes('X');
+      let boletoRegistrado = null;
+
+      if (esMagico) {
+        // console.log('es magico');
+        boletoRegistrado = await registrarTicketMagico(_jugadas);
+      } else {
+        // console.log('es normal');
+        boletoRegistrado = await registrarTicketNormal(_jugadas);
       }
+
+      await enviarPorWhatsapp(boletoRegistrado);
     } catch ({message}) {
       if (
         message === 'DEVICE_NOT_LINKED' ||
-        message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
-        message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
+        message === ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
+        message === ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
       ) {
         logout();
         return;
       }
+
+      const saturados = Storage.getItem('saturados', true);
+      const alertTitle = saturados ? 'Números saturados' : 'Mensaje';
+
       modal.setConfig({
         type: 'alert',
-        alertTitle: 'Mensaje',
+        alertTitle: alertTitle,
         contentType: 'error',
-        action: 'error',
-        showCancelBtn: false,
+        action: saturados ? 'numeros-saturados' : 'error',
+        showCancelBtn: saturados !== null,
+        cancelBtnText: saturados !== null ? 'Cerrar' : 'Cancelar',
+        confirmBtnText: saturados !== null ? 'Continuar' : 'Aceptar',
         error: <Text>{message}</Text>,
       });
     }
+  };
+
+  const registrarTicketMagico = async newJugadas => {
+    const cifras = jugadas[0].numero.length;
+    const numeroJugadas = newJugadas.length;
+
+    const numeroLugares = [];
+    let monto = '0';
+
+    newJugadas[0].lugares.forEach((item, index) => {
+      if (item > 0) {
+        numeroLugares.push((index + 1).toString());
+        monto = item;
+      }
+    });
+
+    return await registrarMagico({
+      sorteo: sorteoSeleccionado,
+      numeroJugadas,
+      cifras,
+      numeroLugares,
+      monto,
+      creditoDisponible,
+      viaWhatsapp: true,
+      numeroTelefono: formik.values.numero,
+    });
+  };
+
+  const registrarTicketNormal = async newJugadas => {
+    return await registrarTicket(
+      sorteoSeleccionado,
+      newJugadas,
+      creditoDisponible,
+      true, // viaWhatsapp
+      formik.values.numero,
+    );
+  };
+
+  const enviarPorWhatsapp = async boletoRegistrado => {
+    const link = `https://tickets.recargasymas.com.mx/${boletoRegistrado.id}\n\n`;
+    const numero = `+52${formik.values.numero}`;
+    const url = `whatsapp://send?text=${link}&phone=${numero}`;
+
+    const puedeAbrir = await Linking.canOpenURL(url);
+
+    if (!puedeAbrir) {
+      Alert.alert(
+        'Mensaje',
+        `Parece que no tienes Whatsapp instalado, por favor instálalo y anota el número de boleto ${boletoRegistrado.numeroBoleto}`,
+      );
+      return;
+    }
+
+    await Linking.openURL(url);
+
+    const totalVenta = Utils.totalWithoutCommissionTicket(
+      boletoRegistrado.totalApostado,
+    );
+
+    dispatch(setMostrarCredito(true));
+    dispatch(restarCredito(totalVenta));
+    dispatch(
+      agregarRegistroAlMomento({
+        id: boletoRegistrado.id,
+        fecha: boletoRegistrado.fechaExp,
+        numeroBoleto: boletoRegistrado.numeroBoleto,
+        hora: boletoRegistrado.horaImpresion,
+        total: boletoRegistrado.totalApostado,
+        tipo: 'boleto',
+        via: boletoRegistrado.via,
+      }),
+    );
+
+    setTimeout(() => {
+      dispatch(setMostrarCredito(false));
+    }, 5000);
+
+    modal.setConfig({open: false});
+    navigation.goBack();
   };
 
   return (
@@ -238,6 +273,12 @@ export default function WhatsappBtn() {
         )}
         {modal.config.contentType === 'mensaje' && modal.config.content}
         {modal.config.contentType === 'error' && modal.config.error}
+        {modal.config.action === 'numeros-saturados' && (
+          <Text>
+            Si continuas las jugadas ajustaran sus cantidades automaticamente y
+            las que esten completamente agotadas serán eliminadas.
+          </Text>
+        )}
       </CustomModal>
     </>
   );

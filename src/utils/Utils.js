@@ -468,6 +468,54 @@ const Utils = {
     const match = text.match(/-?\d+(\.\d+)?/); // Buscar número con signo opcional y decimales
     return match ? parseFloat(match[0]) : 0; // Convertir a número o retornar null si no hay coincidencia
   },
+
+  actualizarJugadasNumerosSaturados(jugadas) {
+    const saturados = Storage.getItem('saturados', true);
+    let _jugadas = [...jugadas];
+    if (Array.isArray(saturados)) {
+      saturados.forEach(el => {
+        const [numero, item] = Object.entries(el)[0];
+
+        _jugadas = _jugadas.reduce((acc, jugada) => {
+          if (jugada.numero !== numero) {
+            acc.push(jugada);
+            return acc;
+          }
+
+          const cantidades = Object.values(item);
+          const todasCero = cantidades.every(c => c === '0');
+
+          if (todasCero) {
+            return acc; // eliminamos esta jugada
+          }
+
+          // Copiamos la jugada para no modificar directamente
+          const jugadaActualizada = {
+            ...jugada,
+            lugares: [...jugada.lugares],
+          };
+
+          Object.entries(item).forEach(([posicion, cantidad]) => {
+            jugadaActualizada.lugares[parseInt(posicion) - 1] = cantidad + ''; // se concatena para convertirlo a cadena
+          });
+
+          jugadaActualizada.totalApostado = jugadaActualizada.lugares.reduce(
+            (sum, c) => {
+              const numero = parseInt(c);
+              return sum + (isNaN(numero) ? 0 : numero);
+            },
+            0,
+          );
+
+          if (jugadaActualizada.totalApostado === 0) return acc;
+          acc.push(jugadaActualizada);
+          return acc;
+        }, []);
+      });
+    }
+    Storage.removeItem('saturados');
+    return _jugadas;
+  },
 };
 
 export default Utils;

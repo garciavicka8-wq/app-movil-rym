@@ -31,7 +31,7 @@ export default function Liquidacion() {
         'numeroUsuario',
         usuario.usuario,
       );
-      console.log(data);
+      // console.log(data);
       const ordered = data
         .slice()
         .sort((a, b) => new Date(b['fecha']) - new Date(a['fecha']))

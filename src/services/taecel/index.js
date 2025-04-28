@@ -14,8 +14,8 @@ const TXN_STATUS_SUCCESS = 'SUCCESS';
 // GET TAECEL PRODUCTS
 export const getProducts = async () => {
   try {
-    const taecelResponse = await requestTaecelAPI('getProducts');
-    return taecelResponse;
+    const response = await requestRymAPI('taecel/productos');
+    return response;
   } catch (error) {
     logError('getProducts', error.message);
     throw Error('Error al obtener productos');

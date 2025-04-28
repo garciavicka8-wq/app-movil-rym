@@ -24,7 +24,7 @@ import UltimosMovimientos from '../UltimosMovimientos';
 import {useNavigation} from '@react-navigation/native';
 import {useAuthContext} from '../../../context/AuthContext';
 import {getProducts} from '../../../services/taecel';
-import {Button, IconButton} from 'react-native-paper';
+import {Button} from 'react-native-paper';
 
 export default function RecargasMenu() {
   const {isAuthenticated} = useAuthContext();
@@ -41,14 +41,14 @@ export default function RecargasMenu() {
     try {
       if (isAuthenticated && mainProducts.length === 0) {
         dispatch(setLoadingProducts(true));
-        const taecelResponse = await getProducts();
+        const rymResponse = await getProducts();
         let _categories = [];
         let _carriers = [];
         let _products = [];
-        if (taecelResponse.success) {
-          _categories = [...taecelResponse.data.categorias];
-          _carriers = [...taecelResponse.data.carriers];
-          _products = [...taecelResponse.data.productos];
+        if (rymResponse.success) {
+          _categories = [...rymResponse.data.categorias];
+          _carriers = [...rymResponse.data.carriers];
+          _products = [...rymResponse.data.productos];
         }
         let _mainProducts = [];
         _categories.forEach((item, index) => {

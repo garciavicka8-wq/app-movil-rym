@@ -9,18 +9,16 @@ import {setTransaccionStore} from '../../../../features/taecel/taecelSlice';
 import {Helpers, Storage} from '../../../../utils';
 import {useCustomNavigation, useLogout, useModal} from '../../../../hooks';
 import {APP_NAVIGATION, TXN} from '../../../../constants';
-import {makeTransaction, makeTransactionAPI} from '../../../../services/taecel';
+import {makeTransactionAPI} from '../../../../services/taecel';
 import {restarCredito} from '../../../../features/credito/creditoSlice';
 import CustomNumericField from '../../../../components/CustomNumericField';
 import Descripcion from './Descripcion';
 import {ERROR_CODE_NAMES} from '../../../../errors';
-import {verifyUserAccountStatus} from '../../../../services/reports';
 import {useNetInfo} from '@react-native-community/netinfo';
 
 export default function Campos({route}) {
   const {carrier, products} = route.params;
   const {filtrandoProductos} = useSelector(state => state.taecel);
-  const {creditoDisponible} = useSelector(state => state.credito);
   const [codigoPinStorage] = useState(Storage.getItem('codigoPin'));
   const [selectedProduct, setSelectedProduct] = useState(
     carrier.CategoriaID == TXN.CODES.SERVICIO ? products[0] : null,
@@ -163,77 +161,6 @@ export default function Campos({route}) {
         showCancelBtn: false,
         error: <Text>{error.message}</Text>,
       });
-    }
-  };
-  // HACER TRANSACCION
-  const hacerTransaccion = async data => {
-    try {
-      await verifyUserAccountStatus();
-      const _esPosibleLaTransaccion = await esPosibleLaTransaccion(data.monto);
-      const descripcionProducto =
-        Helpers.descripcionProductoTransaccion(selectedProduct);
-      // SI NO HAY CREDITO SUFICIENTE
-      if (!_esPosibleLaTransaccion)
-        throw new Error(
-          'No hay credito suficiente para realizar la transacción',
-        );
-      const res = await makeTransaction(
-        selectedProduct.CategoriaID,
-        selectedProduct.Codigo,
-        data.referencia,
-        data.monto,
-        descripcionProducto,
-        carrier.CategoriaID == TXN.CODES.SERVICIO
-          ? 'payService'
-          : 'makeRecharge',
-      );
-      // MOSTRAR PANTALLA DE DETALLE EN CASO DE SER EXITOSA
-      if (res.status == 'success') {
-        // RESTAMOS EL MONTO DE LA TRANSACCION AL CREDITO DISPONIBLE
-        const montoTransaccion = Helpers.calcularTotalTransaccion(
-          res.transaccion,
-          selectedProduct.CategoriaID,
-        );
-        dispatch(restarCredito(montoTransaccion));
-        dispatch(
-          setTransaccionStore({...res.transaccion, descripcionProducto}),
-        );
-        // RESET LOGIN TIME
-        // await Utils.setLoginTime();
-        navigation.changeStack(1, [
-          {name: APP_NAVIGATION.SCREENS.RECARGAS_MENU},
-          {
-            name: APP_NAVIGATION.SCREENS.DETALLE_TRANSACCION,
-          },
-        ]);
-      }
-    } catch (error) {
-      console.log(error.message);
-      if (
-        error.message == 'DEVICE_NOT_LINKED' ||
-        error.message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
-        error.message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
-      ) {
-        logout();
-        return;
-      }
-      modal.setConfig({
-        type: 'alert',
-        alertTitle: 'Mensaje',
-        contentType: 'error',
-        action: 'error',
-        showCancelBtn: false,
-        error: <Text>{error.message}</Text>,
-      });
-    }
-  };
-  // VERIFICAR DISPONIBILIDAD DE CREDITO
-  const esPosibleLaTransaccion = async monto => {
-    try {
-      // SI EL CREDITO ES MAYOR AL LIMITE DE VENTA PERMITIR VENDER
-      return creditoDisponible >= parseFloat(monto);
-    } catch ({message}) {
-      throw new Error(message);
     }
   };
 

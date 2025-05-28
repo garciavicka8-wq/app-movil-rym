@@ -8,7 +8,7 @@ import {
 } from '../features/tickets/jugarTickets/jugarTicketsSlice';
 import {obtenerProximosSorteos} from '../services/tickets';
 
-export function useSorteos() {
+export default function useSorteos() {
   const [cargando, setCargando] = useState(true);
   const dispatch = useDispatch();
 

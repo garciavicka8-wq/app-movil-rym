@@ -1,6 +1,6 @@
 import {Storage} from '../utils';
 
-export function usePrinter() {
+export default function usePrinter() {
   const print = async (payload = '') => {
     try {
     } catch ({message}) {}

@@ -1,10 +1,16 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {Text} from 'react-native';
 import {Divider, List} from 'react-native-paper';
 import {useSelector} from 'react-redux';
+import usePago from '../hooks/usePago';
 
 export default function ListaPagos() {
   const {cargandoPagos, pagosRealizados} = useSelector(state => state.pagos);
+  const pagosHook = usePago();
+
+  useEffect(() => {
+    pagosHook.obtenerPagos();
+  }, []);
 
   if (cargandoPagos) {
     return (

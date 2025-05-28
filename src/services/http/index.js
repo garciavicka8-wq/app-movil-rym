@@ -107,34 +107,43 @@ export async function requestTaecelAPI(endpoint, data = {}) {
  * @property {Array|Object} data - Datos de la respuesta (puede ser un array o un objeto).
  * @returns {Promise<RymApiResponse>} - Promesa que resuelve con la respuesta de la API.
  */
+
 export async function requestRymAPI(endpoint, data = {}, useJson = true) {
   try {
     const url = `${RYM_API_URL}/${endpoint}`;
+    const isFormData = data instanceof FormData;
 
-    // Formatear los datos según el tipo de Content-Type
-    const requestData = useJson ? data : new URLSearchParams(data).toString();
+    const headers = {};
 
-    const headers = {
-      'Content-Type': useJson
+    // Solo definir Content-Type si no es FormData (porque Axios lo maneja automáticamente)
+    if (!isFormData) {
+      headers['Content-Type'] = useJson
         ? 'application/json'
-        : 'application/x-www-form-urlencoded',
-    };
-    // Enviar la solicitud con Axios
-    const response = await axios.post(url, useJson ? data : requestData, {
-      headers,
-    });
+        : 'application/x-www-form-urlencoded';
+    }
 
-    return response.data; // Devuelve la respuesta del servidor
+    // Preparar el cuerpo de la petición
+    let payload;
+    if (isFormData) {
+      payload = data; // No se transforma, va tal cual
+    } else if (useJson) {
+      payload = data; // Axios lo serializa a JSON
+    } else {
+      payload = new URLSearchParams(data).toString(); // Formato x-www-form-urlencoded
+    }
+
+    const response = await axios.post(url, payload, {headers});
+    return response.data;
   } catch (error) {
-    // Manejo mejorado de errores
     if (error.response) {
       console.error(
         `[requestRymAPI] Error ${error.response.status}:`,
         error.response.data,
       );
+      console.log(error.response.data.error_message);
       throw new Error(
         `Error API ${error.response.status}: ${
-          error.response.data.message || 'Error desconocido'
+          error.response.data.error_message || 'Error desconocido'
         }`,
       );
     } else {

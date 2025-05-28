@@ -1,19 +1,15 @@
 import React from 'react';
-import {StatusBar} from 'react-native';
 import {Divider} from 'react-native-paper';
 import {Container, Content} from '../../../components/Layout';
 import MenuOpciones from './components/MenuOpciones';
 import PerfilHeader from './components/PerfilHeader';
 import Version from './components/Version';
-import {useCustomNavigation} from '../../../hooks';
-import {Colors} from '../../../utils';
+import CustomStatusBar from '../../../components/CustomStatusBar';
 
 export default function ConfiguracionMenu() {
-  const {isFocused} = useCustomNavigation();
-
   return (
     <>
-      {isFocused && <StatusBar backgroundColor={Colors.dark} />}
+      <CustomStatusBar color={'dark'} />
       <Container>
         <Content>
           <PerfilHeader />

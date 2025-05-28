@@ -6,10 +6,7 @@ import {useCustomNavigation, useLogout, useModal} from '../../../../../hooks';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import {Alert, Linking} from 'react-native';
-import {
-  registrarMagico,
-  registrarTicket,
-} from '../../../../../services/tickets';
+import {registrarMagico, registrarTicket} from '../../services';
 import {useDispatch, useSelector} from 'react-redux';
 import {Text} from 'react-native';
 import {ERROR_CODE_NAMES} from '../../../../../errors';
@@ -18,7 +15,6 @@ import {
   setMostrarCredito,
 } from '../../../../../features/credito/creditoSlice';
 import {agregarRegistroAlMomento} from '../../../../../features/tickets/cliente/clienteSlice';
-import {useNetInfo} from '@react-native-community/netinfo';
 import {setJugadas} from '../../../../../features/tickets/jugarTickets/jugarTicketsSlice';
 
 export default function WhatsappBtn() {

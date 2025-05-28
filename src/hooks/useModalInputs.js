@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 
-export function useModalInputs() {
+export default function useModalInputs() {
   const [inputs, setInputs] = useState({
     apuesta: '',
     primero: '',

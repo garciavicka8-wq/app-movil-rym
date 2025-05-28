@@ -8,18 +8,13 @@ import {restarCredito} from '../../../../features/credito/creditoSlice';
 import {agregarRegistroAlMomento} from '../../../../features/tickets/cliente/clienteSlice';
 import {Print, Utils} from '../../../../utils';
 import {
-  useAlert,
-  useBluetooth,
   useCustomNavigation,
   useLogout,
   useModal,
-  usePrinter,
   useThermalPrinter,
 } from '../../../../hooks';
-import {APP_NAVIGATION} from '../../../../constants';
 import {CustomModal} from '../../../../components';
 import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../errors';
-import {verifyUserAccountStatus} from '../../../../services/reports';
 import {useNetInfo} from '@react-native-community/netinfo';
 
 export default function Registrar() {

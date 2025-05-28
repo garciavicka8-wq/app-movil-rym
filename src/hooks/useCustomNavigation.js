@@ -5,7 +5,7 @@ import {
   useIsFocused,
 } from '@react-navigation/native';
 
-export function useCustomNavigation() {
+export default function useCustomNavigation() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
 

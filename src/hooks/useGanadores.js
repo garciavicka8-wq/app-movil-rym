@@ -5,7 +5,7 @@ import {
 } from '../features/tickets/ganadores/ganadoresSlice';
 import {obtenerPublicacionNumerosGanadores} from '../services/tickets';
 
-export function useGanadores() {
+export default function useGanadores() {
   const dispatch = useDispatch();
 
   const obtenerPublicacion = async fechaSorteo => {

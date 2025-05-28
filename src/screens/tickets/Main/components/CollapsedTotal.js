@@ -183,9 +183,10 @@ function RegistroItem({registro}) {
   };
 
   const handlePress = () => {
-    if (registro.tipo === 'boleto') {
-      setCancelarTicket(true);
-    }
+    // if (registro.tipo === 'boleto') {
+    //   setCancelarTicket(true);
+    // }
+    return;
   };
 
   return (
@@ -205,7 +206,7 @@ function RegistroItem({registro}) {
                   fontSize: 12,
                   fontWeight: 'bold',
                 }}>
-                presiona 5 seg para solicitar cancelación
+                {/* presiona 5 seg para solicitar cancelación */}
               </Text>
             )}
           </View>

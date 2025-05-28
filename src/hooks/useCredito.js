@@ -8,12 +8,12 @@ import {
 import {obtenerCreditoDisponible} from '../services/tickets';
 import Database from '../database';
 import {Moment, Storage, Utils} from '../utils';
-import {useLogout} from './useLogout';
+import {useLogout} from './';
 import {ERROR_CODE_NAMES} from '../errors';
 import {verifyUserAccountStatus} from '../services/reports';
 import {DATABASE_TABLES} from '../services/constants';
 
-export function useCredito() {
+export default function useCredito() {
   const dispatch = useDispatch();
   const {logout} = useLogout();
 

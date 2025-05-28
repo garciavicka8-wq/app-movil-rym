@@ -1,27 +1,13 @@
-import {useCustomNavigation} from './useCustomNavigation';
-import {useCredito} from './useCredito';
-import {useLogout} from './useLogout';
-import {useModal} from './useModal';
-import {useModalInputs} from './useModalInputs';
-import {useTransacciones} from './useTransacciones';
-import {useBluetooth} from './useBluetooth';
-import {usePrinter} from './usePrinter';
-import {useThermalPrinter} from './useThermalPrinter';
-import {useAlert} from './useAlert';
-import {useSorteos} from './useSorteos';
-import {useGanadores} from './useGanadores';
-
-export {
-  useAlert,
-  useCustomNavigation,
-  useLogout,
-  useCredito,
-  useModal,
-  useModalInputs,
-  useTransacciones,
-  useBluetooth,
-  usePrinter,
-  useThermalPrinter,
-  useSorteos,
-  useGanadores,
-};
+export {default as useCustomNavigation} from './useCustomNavigation';
+export {default as useCredito} from './useCredito';
+export {default as useLogout} from './useLogout';
+export {default as useModal} from './useModal';
+export {default as useModalInputs} from './useModalInputs';
+export {default as useTransacciones} from './useTransacciones';
+export {default as useBluetooth} from './useBluetooth';
+export {default as usePrinter} from './usePrinter';
+export {default as useThermalPrinter} from './useThermalPrinter';
+export {default as useAlert} from './useAlert';
+export {default as useSorteos} from './useSorteos';
+export {default as useGanadores} from './useGanadores';
+export {default as useError} from './useError';

@@ -1,7 +1,7 @@
 import React from 'react';
 import {Alert} from 'react-native';
 
-export function useAlert(navigation = null) {
+export default function useAlert(navigation = null) {
   const show = (errorType, callback = undefined) => {
     const ACTIONS = {
       PRINTER_NOT_REGISTERED: () => {

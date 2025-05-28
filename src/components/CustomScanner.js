@@ -1,17 +1,31 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {Button, IconButton, Portal} from 'react-native-paper';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import {RNCamera} from 'react-native-camera';
-import {View} from 'react-native';
+import {Alert, View} from 'react-native';
 
 export default function CustomScanner({onScanned}) {
+  const cameraRef = useRef(null);
   const [openScanner, setOpenScanner] = useState(false);
   const [reactivate, setReactivate] = useState(true);
+  const [capturingPhoto, setCapturingPhoto] = useState(false);
 
-  const handleRead = ({type, data}) => {
-    onScanned(data);
-    setReactivate(false);
-    setOpenScanner(false);
+  const handleRead = async scanResult => {
+    const {data} = scanResult;
+    try {
+      if (capturingPhoto) return;
+      setCapturingPhoto(true);
+      const photo = await cameraRef?.current?.takePictureAsync({quality: 0.7});
+      onScanned(data, photo.uri);
+      setReactivate(false);
+      setOpenScanner(false);
+      setCapturingPhoto(false);
+    } catch (error) {
+      Alert.alert('Error', error.message);
+      setReactivate(false);
+      setOpenScanner(false);
+      setCapturingPhoto(false);
+    }
   };
 
   const handleOpenScanner = () => {
@@ -38,8 +52,9 @@ export default function CustomScanner({onScanned}) {
       {openScanner && (
         <Portal>
           <QRCodeScanner
+            cameraProps={{ref: cameraRef}}
             onRead={handleRead}
-            flashMode={RNCamera.Constants.FlashMode.auto}
+            flashMode={RNCamera.Constants.FlashMode.off}
             showMarker={true}
             customMarker={
               <View

@@ -1,6 +1,6 @@
 import {useAuthContext} from '../context/AuthContext';
 
-export function useLogout() {
+export default function useLogout() {
   const {signout} = useAuthContext();
 
   const logout = () => {

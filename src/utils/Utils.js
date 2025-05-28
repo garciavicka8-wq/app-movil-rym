@@ -1,5 +1,6 @@
 import ENV from 'react-native-config';
 import {Moment, Money, Storage} from '.';
+import RNFS from 'react-native-fs';
 
 const {lt} = require('semver');
 
@@ -515,6 +516,38 @@ const Utils = {
     }
     Storage.removeItem('saturados');
     return _jugadas;
+  },
+  // DELETE CAPTURED IMAGE FROM DEVICE
+  deleteCapturedImage: async function (imageUri) {
+    if (!imageUri) {
+      console.log('Ruta no proporcionada');
+      return;
+    }
+
+    const path = imageUri.startsWith('file://')
+      ? imageUri.replace('file://', '')
+      : imageUri;
+
+    try {
+      const exists = await RNFS.exists(path);
+      if (exists) {
+        await RNFS.unlink(path);
+        console.log('Archivo eliminado:', path);
+      } else {
+        console.log('El archivo no existe:', path);
+      }
+    } catch (err) {
+      console.error('Error al intentar eliminar el archivo:', err);
+    }
+  },
+
+  buildFileObj(fileUri = '') {
+    const filename = fileUri.substring(fileUri.lastIndexOf('/') + 1);
+    return {
+      uri: fileUri,
+      name: filename,
+      type: 'image/jpeg',
+    };
   },
 };
 

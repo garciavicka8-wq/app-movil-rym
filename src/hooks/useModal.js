@@ -1,6 +1,6 @@
 import {useState} from 'react';
 
-export const useModal = () => {
+export default function useModal() {
   const [modalConfig, setModalConfig] = useState({
     open: false,
     type: 'progress', // alert || progress
@@ -44,4 +44,4 @@ export const useModal = () => {
     config,
     setConfig,
   };
-};
+}

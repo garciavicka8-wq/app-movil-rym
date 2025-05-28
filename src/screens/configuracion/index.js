@@ -2,7 +2,6 @@ import React from 'react';
 import {StatusBar} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {APP_NAVIGATION} from '../../constants';
-import {useCustomNavigation} from '../../hooks';
 import {Colors} from '../../utils';
 import ConfiguracionMenu from './ConfiguracionMenu';
 import RegistrarImpresora from './RegistrarImpresora';
@@ -13,11 +12,8 @@ import Seguridad from './Seguridad';
 const Stack = createStackNavigator();
 
 export default function Configuracion() {
-  const {isFocused} = useCustomNavigation();
-
   return (
     <>
-      {isFocused && <StatusBar backgroundColor={Colors.dark} />}
       <Stack.Navigator
         initialRouteName={APP_NAVIGATION.SCREENS.CONFIG_MENU}
         screenOptions={{

@@ -28,7 +28,7 @@ export default function ListaCancelados() {
       <Divider />
       {boletosCancelados.map(item => (
         <List.Item
-          key={item.id}
+          key={item.numeroBoleto}
           title={item.fechaCancelacion + ' ' + item.horaCancelacion}
           description={item.numeroBoleto}
           left={() => <List.Icon icon="cash" color="green" />}

@@ -2,12 +2,9 @@ import {useState} from 'react';
 import {Alert} from 'react-native';
 import {APP_NAVIGATION} from '../constants';
 import {ERROR_NAMES} from '../errors';
-import {useAlert} from './useAlert';
-import {useBluetooth} from './useBluetooth';
-import {useCustomNavigation} from './useCustomNavigation';
-import {usePrinter} from './usePrinter';
+import {useAlert, useBluetooth, useCustomNavigation, usePrinter} from './';
 
-export function useThermalPrinter() {
+export default function useThermalPrinter() {
   const [isPrinting, setIsPrinting] = useState(false);
   const navigation = useCustomNavigation();
   const bluetooth = useBluetooth();

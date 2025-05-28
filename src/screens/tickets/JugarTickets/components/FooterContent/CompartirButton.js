@@ -10,10 +10,7 @@ import {
   useLogout,
   useThermalPrinter,
 } from '../../../../../hooks';
-import {
-  registrarMagico,
-  registrarTicket,
-} from '../../../../../services/tickets';
+import {registrarTicket, registrarMagico} from '../../services';
 import {Colors, Print, Storage, Utils} from '../../../../../utils';
 import {agregarRegistroAlMomento} from '../../../../../features/tickets/cliente/clienteSlice';
 import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../../errors';

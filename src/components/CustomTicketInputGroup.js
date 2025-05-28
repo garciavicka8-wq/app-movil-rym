@@ -2,9 +2,7 @@ import React, {useRef} from 'react';
 import {Alert, Keyboard, StyleSheet, Text, View} from 'react-native';
 import * as Yup from 'yup';
 import {useFormik} from 'formik';
-import {Button} from 'react-native-paper';
 import CustomScanner from './CustomScanner';
-import {Colors} from '../utils';
 import CustomNumericField from './CustomNumericField';
 
 export default function CustomTicketInputGroup({
@@ -44,11 +42,11 @@ export default function CustomTicketInputGroup({
   const terceroRef = useRef(null);
 
   //   HANDLE SUBMIT
-  const handleSubmit = data => {
-    onSubmit(formik, data);
+  const handleSubmit = (data, capturedImageUri) => {
+    onSubmit(formik, data, capturedImageUri);
   };
   // HANDLE SCANNED DATA
-  const handleScanedData = scannedData => {
+  const handleScanedData = (scannedData, capturedImageUri) => {
     // VERIFICAMOS QUE SEA UN NUNERO VALIDO
     const splitElements = scannedData.split('-');
     if (scannedData.length !== 14 || splitElements.length !== 3) {
@@ -64,7 +62,7 @@ export default function CustomTicketInputGroup({
     };
     // PROCESAMOS EL NUMERO DE BOLETO
     formik.setValues(IDBoleto);
-    handleSubmit(IDBoleto);
+    handleSubmit(IDBoleto, capturedImageUri);
   };
 
   const handleTextInputChange = (text, inputName) => {
@@ -84,7 +82,7 @@ export default function CustomTicketInputGroup({
     <>
       <View style={styles.inputGroup}>
         <CustomNumericField
-          disabled={parentComponent === 'cancelar'}
+          disabled={true}
           inputRef={primeroRef}
           value={formik.values.primero}
           error={formik.errors.primero && formik.touched.primero}
@@ -96,7 +94,7 @@ export default function CustomTicketInputGroup({
         />
         <Text style={styles.separator}>-</Text>
         <CustomNumericField
-          disabled={parentComponent === 'cancelar'}
+          disabled={true}
           inputRef={segundoRef}
           value={formik.values.segundo}
           error={formik.errors.segundo && formik.touched.segundo}
@@ -108,7 +106,7 @@ export default function CustomTicketInputGroup({
         />
         <Text style={styles.separator}>-</Text>
         <CustomNumericField
-          disabled={parentComponent === 'cancelar'}
+          disabled={true}
           inputRef={terceroRef}
           value={formik.values.tercero}
           error={formik.errors.tercero && formik.touched.tercero}
@@ -121,17 +119,6 @@ export default function CustomTicketInputGroup({
       </View>
       {/* SCANN BUTTON */}
       {!disableSubmit && <CustomScanner onScanned={handleScanedData} />}
-      {parentComponent === 'pagos' && (
-        <Button
-          disabled={disableSubmit}
-          mode="contained"
-          buttonColor={Colors.dark}
-          style={{width: '100%', marginVertical: 10}}
-          uppercase
-          onPress={() => formik.handleSubmit()}>
-          Comprobar
-        </Button>
-      )}
     </>
   );
 }

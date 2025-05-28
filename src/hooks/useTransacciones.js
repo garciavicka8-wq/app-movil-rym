@@ -4,10 +4,10 @@ import {getTransactions} from '../services/taecel';
 import Database from '../database';
 import {useDispatch} from 'react-redux';
 import {setTransacciones} from '../features/taecel/taecelSlice';
-import {useLogout} from './useLogout';
+import {useLogout} from './';
 import {ERROR_CODE_NAMES} from '../errors';
 
-export function useTransacciones() {
+export default function useTransacciones() {
   const [cargandoTransacciones, setCargandoTransacciones] = useState(true);
   const [listaTransacciones, setListaTransacciones] = useState([]);
   const [totalTransacciones, setTotalTransacciones] = useState('0.00');

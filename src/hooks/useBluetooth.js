@@ -20,7 +20,7 @@ import {Storage} from '../utils';
 import {ERROR_NAMES} from '../errors';
 const PRINTER_NAMES = 'MTP-2.58k.58K'.split('.');
 
-export function useBluetooth() {
+export default function useBluetooth() {
   const {devicesList, connectingToDevice, scanning} = useSelector(
     state => state.bluetooth,
   );

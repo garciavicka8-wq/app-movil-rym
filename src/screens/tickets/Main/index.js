@@ -7,6 +7,7 @@ import {useSelector} from 'react-redux';
 import {useCustomNavigation} from '../../../hooks';
 import {APP_NAVIGATION} from '../../../constants';
 import CollapsedTotal from './components/CollapsedTotal';
+import {MENU_ITEMS} from './components/constants';
 
 export default function Main() {
   const {registrosAlMomento} = useSelector(state => state.cliente);
@@ -26,40 +27,17 @@ export default function Main() {
         iconBgColor={Colors.brown}
       />
       <MainMenuSectionButtons title="TICKET PLUS" titleColor={Colors.primary}>
-        <MainMenuIconButton
-          text="Registrar"
-          buttonColor={Colors.lightRed}
-          icon="receipt"
-          iconColor={Colors.dark}
-          textColor={Colors.primary}
-          onPress={() => handleNavigate('JUGAR_TICKETS')}
-          fullwidth
-        />
-        {/* <MainMenuIconButton
-          text="Mágico"
-          buttonColor={Colors.lightRed}
-          icon="auto-fix"
-          iconColor={Colors.dark}
-          textColor={Colors.primary}
-          onPress={() => handleNavigate('MAGICO')}
-        /> */}
-        <MainMenuIconButton
-          text="Pagos"
-          buttonColor={Colors.lightRed}
-          icon="account-cash"
-          iconColor={Colors.green}
-          textColor={Colors.primary}
-          onPress={() => handleNavigate('PAGOS')}
-        />
-        <MainMenuIconButton
-          text="Cancelados"
-          buttonColor={Colors.lightRed}
-          icon="file-cancel"
-          iconColor={Colors.primary}
-          textColor={Colors.primary}
-          onPress={() => handleNavigate('CANCELAR')}
-        />
-        {/* <MainMenuIconButton empty /> */}
+        {MENU_ITEMS.map(item => (
+          <MainMenuIconButton
+            text={item.text}
+            buttonColor={item.buttonColor}
+            icon={item.icon}
+            iconColor={item.iconColor}
+            textColor={item.textColor}
+            onPress={() => handleNavigate(item.route)}
+            fullwidth={item.fullwidth}
+          />
+        ))}
       </MainMenuSectionButtons>
       {footerVisible && <CollapsedTotal />}
     </>

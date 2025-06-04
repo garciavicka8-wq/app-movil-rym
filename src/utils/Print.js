@@ -109,6 +109,10 @@ const Print = (() => {
       throw new Error(e);
     }
   };
+  // REPRINT TICKET (PAUSADO NO FUNCIONA POR EL MOMENTO)
+  const reprintTicket = async numeroBoleto => {
+    return;
+  };
   // CANCELED TICKET
   const canceledTicket = async ticket => {
     try {

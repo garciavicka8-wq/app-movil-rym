@@ -7,7 +7,10 @@ import {
 } from 'react-native';
 import BleManager from 'react-native-ble-manager';
 import {isLocationEnabled as isLocationOn} from 'react-native-device-info';
-import {BluetoothManager as BM} from 'tp-react-native-bluetooth-printer';
+import {
+  BluetoothManager as BM,
+  BluetoothEscposPrinter as BEP,
+} from 'tp-react-native-bluetooth-printer';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   addDevice,

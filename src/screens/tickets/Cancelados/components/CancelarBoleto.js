@@ -29,8 +29,9 @@ export default function CancelarBoleto() {
       <Text>Escanea el codígo QR</Text>
       {/* BOLETO INPUT GROUP AND SCANNER */}
       <CustomTicketInputGroup
-        onSubmit={(_formik, data, capturedImageUri) => {
-          cancelarBoletoHook.handleCancelar(_formik, data, capturedImageUri);
+        onSubmit={async (data, capturedImageUri, resetInputField) => {
+          await cancelarBoletoHook.handleCancelar(data, capturedImageUri);
+          resetInputField();
         }}
         disableSubmit={cargandoCancelados}
       />

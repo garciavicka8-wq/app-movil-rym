@@ -20,8 +20,8 @@ export default function RealizarPago() {
     }
   };
   //   COMPROBAR BOLETO
-  const _comprobarBoleto = (_formik, data, capturedImageUri) => {
-    pagoHook.comprobarBoleto(_formik, data, capturedImageUri);
+  const _comprobarBoleto = (data, capturedImageUri, resetInputField) => {
+    pagoHook.comprobarBoleto(data, capturedImageUri, resetInputField);
   };
 
   return (
@@ -29,7 +29,6 @@ export default function RealizarPago() {
       <Text>Escanea el codígo QR</Text>
       {/* BOLETO INPUT GROUP AND SCANNER */}
       <CustomTicketInputGroup
-        parentComponent="pagos"
         onSubmit={_comprobarBoleto}
         disableSubmit={cargandoPagos}
       />

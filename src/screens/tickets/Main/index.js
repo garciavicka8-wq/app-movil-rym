@@ -29,6 +29,7 @@ export default function Main() {
       <MainMenuSectionButtons title="TICKET PLUS" titleColor={Colors.primary}>
         {MENU_ITEMS.map(item => (
           <MainMenuIconButton
+            key={item.route}
             text={item.text}
             buttonColor={item.buttonColor}
             icon={item.icon}

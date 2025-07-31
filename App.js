@@ -7,7 +7,6 @@ import BleManager from 'react-native-ble-manager';
 import Login from './src/screens/login';
 import Main from './src/screens/Main';
 import JugarTickets from './src/screens/tickets/JugarTickets';
-import Magico from './src/screens/tickets/Magico';
 import {APP_NAVIGATION} from './src/constants';
 import colors from './src/utils/Colors';
 import {Colors} from './src/utils';
@@ -87,13 +86,6 @@ export default function App() {
               component={JugarTickets}
               options={{
                 headerTitle: 'Ticket Plus',
-              }}
-            />
-            <Stack.Screen
-              name={APP_NAVIGATION.SCREENS.MAGICO}
-              component={Magico}
-              options={{
-                headerTitle: 'Ticket Mágico',
               }}
             />
             {/* CONFIGURACION */}

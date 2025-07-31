@@ -10,7 +10,7 @@ import {
   useLogout,
   useThermalPrinter,
 } from '../../../../../hooks';
-import {registrarTicket, registrarMagico} from '../../services';
+import {registrarMagicoApi, registrarTicketApi} from '../../services';
 import {Colors, Print, Storage, Utils} from '../../../../../utils';
 import {agregarRegistroAlMomento} from '../../../../../features/tickets/cliente/clienteSlice';
 import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../../errors';
@@ -63,7 +63,7 @@ export default function CompartirButton() {
     if (sorteoSeleccionado && _jugadas.length > 0) {
       const esAutomatico = _jugadas.some(item => item.numero.includes('X'));
       if (esAutomatico) {
-        handleRegistrarAutomatico(_jugadas);
+        handleRegistrarAutomatico();
       } else {
         handleGuardar(_jugadas);
       }
@@ -87,10 +87,10 @@ export default function CompartirButton() {
 
       // Verificar si la impresión es posible
       if (await thermalPrinter.isPrintingPossible()) {
-        const boletoRegistrado = await registrarTicket(
-          sorteoSeleccionado,
+        const boletoRegistrado = await registrarTicketApi(
+          sorteoSeleccionado.id,
           newJugadas,
-          creditoDisponible,
+          'impresion',
         );
 
         // Si el boleto se registró correctamente
@@ -125,26 +125,16 @@ export default function CompartirButton() {
     try {
       const cifras = jugadas[0].numero.length;
       const numeroJugadas = jugadas.length;
-      let numeroLugares = [];
-      let monto = '0';
-
-      jugadas[0].lugares.forEach((item, index) => {
-        if (item > 0) {
-          numeroLugares.push(index + 1 + '');
-          monto = item;
-        }
-      });
-
+      const lugares = jugadas[0].lugares;
       // Verificar si la impresión es posible
       if (await thermalPrinter.isPrintingPossible()) {
-        const boletoAutomaticoRegistrado = await registrarMagico({
-          sorteo: sorteoSeleccionado,
+        const boletoAutomaticoRegistrado = await registrarMagicoApi(
+          sorteoSeleccionado.id,
           numeroJugadas,
+          lugares,
           cifras,
-          numeroLugares,
-          monto,
-          creditoDisponible,
-        });
+          'impresion',
+        );
 
         if (boletoAutomaticoRegistrado) {
           handleBoletoRegistrado(boletoAutomaticoRegistrado);

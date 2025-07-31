@@ -20,7 +20,7 @@ export default function usePago(modal) {
   const [numeroBoleto, setNumeroBoleto] = useState(null);
   const [photoUri, setPhotoUri] = useState(null);
   const thermalPrinter = useThermalPrinter();
-  const [formik, setFormik] = useState(null);
+  const [limpiarInput, setLimpiarInput] = useState(null);
   const dispatch = useDispatch();
   const {logout} = useLogout();
 
@@ -50,7 +50,11 @@ export default function usePago(modal) {
     }
   };
 
-  const comprobarBoleto = async (_formik, data, capturedImageUri) => {
+  const comprobarBoleto = async (
+    numeroTicket,
+    capturedImageUri,
+    resetInputField,
+  ) => {
     if (comprobandoTicket) return;
     setComprobandoTicket(true);
     modal.setConfig({
@@ -60,10 +64,8 @@ export default function usePago(modal) {
     });
 
     try {
-      const _numeroBoleto =
-        data.primero + '-' + data.segundo + '-' + data.tercero;
-      setNumeroBoleto(_numeroBoleto);
-      const res = await verifyTicket(_numeroBoleto);
+      setNumeroBoleto(numeroTicket);
+      const res = await verifyTicket(numeroTicket);
       //   SI EL BOLETO NO ES GANADOR
       if (!res.esGanador) {
         modal.setConfig({
@@ -79,7 +81,7 @@ export default function usePago(modal) {
       }
       //   SI EL BOLETO ES GANADOR
       if (res.esGanador) {
-        setFormik(_formik);
+        setLimpiarInput(() => resetInputField);
         setPhotoUri(capturedImageUri);
         setPremio(res.premio);
         modal.setConfig({
@@ -114,6 +116,7 @@ export default function usePago(modal) {
       setComprobandoTicket(false);
       setNumeroBoleto(null);
       Utils.deleteCapturedImage(capturedImageUri);
+      setLimpiarInput(null);
       setComprobandoTicket(false);
     }
   };
@@ -128,8 +131,7 @@ export default function usePago(modal) {
     });
     try {
       // Verifica si la impresión es posible y si no se está registrando un pago
-      const isPrintingPossible = await thermalPrinter.isPrintingPossible();
-      if (!isPrintingPossible) return;
+      if (!(await thermalPrinter.isPrintingPossible())) return;
 
       const usuarioLocalStorage = Storage.getUser();
       const {pago_registrado, saldo_nuevo} = await registrarPago(
@@ -165,15 +167,17 @@ export default function usePago(modal) {
 
       dispatch(agregarPagoRegistrado(pago_registrado));
       dispatch(establecerCredito(saldo_nuevo));
-
-      formik.handleReset();
     } catch (error) {
       handlePaymentError(error);
     } finally {
+      if (limpiarInput) {
+        limpiarInput();
+      }
       setRegistrando(false);
       setPremio(0);
       setPhotoUri(null);
       setNumeroBoleto(null);
+      setLimpiarInput(null);
     }
   };
 
@@ -211,8 +215,10 @@ export default function usePago(modal) {
   //   HANDLE MODAL CANCEL
   const handleModalCancel = () => {
     modal.setConfig({open: false});
-    formik.handleReset();
     Utils.deleteCapturedImage(photoUri);
+    if (limpiarInput) {
+      limpiarInput();
+    }
   };
 
   return {obtenerPagos, comprobarBoleto, registrar, handleModalCancel};

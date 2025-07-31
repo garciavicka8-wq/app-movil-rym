@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {useDispatch} from 'react-redux';
 import {useThermalPrinter, useError} from '../../../../hooks';
 import {Text} from 'react-native';
-import {Money, Print, uuid} from '../../../../utils';
+import {Money, Print, Timer, uuid} from '../../../../utils';
 import {establecerCredito} from '../../../../features/credito/creditoSlice';
 import {agregarRegistroAlMomento} from '../../../../features/tickets/cliente/clienteSlice';
 import {
@@ -24,7 +24,7 @@ export default function useCancelarBoleto(modal) {
     };
   }, []);
 
-  const handleCancelar = async (_formik, data, capturedImageUri) => {
+  const handleCancelar = async (numeroBoleto, capturedImageUri) => {
     if (cancelandoTicket) return;
     setCancelandoTicket(true);
     modal.setConfig({
@@ -35,25 +35,23 @@ export default function useCancelarBoleto(modal) {
 
     try {
       // CHECK IF BLUETOOTH IS ENABLED AND PRINTER IS REGISTERED AND CONNECTED
-      const isPrintingPossible = await printerHook.isPrintingPossible();
-
-      if (!isPrintingPossible) {
+      if (!(await printerHook.isPrintingPossible())) {
         setCancelandoTicket(false);
         return;
       }
 
-      const numeroBoleto =
-        data.primero + '-' + data.segundo + '-' + data.tercero;
       const {boleto_cancelado, saldo_nuevo} = await cancelTicket(
         numeroBoleto,
         capturedImageUri,
       );
+
       // SI SE CANCELO CORRECTAMENTE
       if (boleto_cancelado) {
         // IMPRIMIR COMPROBANTE CANCELACION
         await printerHook.print(async function () {
           await Print.canceledTicket(boleto_cancelado);
         });
+
         modal.setConfig({
           type: 'alert',
           alertTitle: 'Boleto cancelado',
@@ -78,7 +76,6 @@ export default function useCancelarBoleto(modal) {
     } catch ({message}) {
       errorHook.handleErrorWithModal(message, modal);
     } finally {
-      _formik.handleReset();
       setCancelandoTicket(false);
     }
   };

@@ -5,7 +5,7 @@ import Database from '../../../../database';
 import {DATABASE_TABLES} from '../../../../services/constants';
 
 const {requestRymAPI} = Request;
-const {buildFileObj, getWeekPeriod} = Utils;
+const {buildFileObj, getWeekPeriod, compressImage, deleteCapturedImage} = Utils;
 const {getServerDate, getItemsInRange} = Database;
 const {PAID_PRIZES} = DATABASE_TABLES;
 
@@ -26,16 +26,22 @@ export async function registrarPago(
   capturaUri,
 ) {
   const formData = new FormData();
+  const compressedUri = await compressImage(capturaUri);
   formData.append('numero_usuario', numeroUsuario);
   formData.append('numero_boleto', numeroBoleto);
   formData.append('premio', premio);
-  formData.append('captura', buildFileObj(capturaUri));
+  formData.append('captura', buildFileObj(compressedUri));
 
   const response = await requestRymAPI('tickets/pagarPremio', formData, false);
+
   if (response.error) {
     // console.log(response);
     throw new Error(response.error_message);
   }
+
+  // Delete the captured image from storage
+  await deleteCapturedImage(compressedUri);
+  await deleteCapturedImage(capturaUri);
 
   return response.data;
 }

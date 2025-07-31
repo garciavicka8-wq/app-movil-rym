@@ -1,6 +1,7 @@
 import ENV from 'react-native-config';
 import {Moment, Money, Storage} from '.';
 import RNFS from 'react-native-fs';
+import ImageResizer from 'react-native-image-resizer';
 
 const {lt} = require('semver');
 
@@ -548,6 +549,23 @@ const Utils = {
       name: filename,
       type: 'image/jpeg',
     };
+  },
+
+  compressImage: async function (uri) {
+    try {
+      const compressed = await ImageResizer.createResizedImage(
+        uri, // URI de la imagen original
+        800, // Ancho (puedes ajustar)
+        800, // Alto (ajustado para mantener proporción)
+        'JPEG', // Formato
+        60, // Calidad (0 a 100)
+      );
+
+      return compressed.uri; // Nuevo URI comprimido
+    } catch (error) {
+      console.warn('Error al comprimir imagen:', error);
+      return uri; // Si falla, usar imagen original
+    }
   },
 };
 

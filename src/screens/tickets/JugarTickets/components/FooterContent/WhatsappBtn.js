@@ -6,7 +6,7 @@ import {useCustomNavigation, useLogout, useModal} from '../../../../../hooks';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import {Alert, Linking} from 'react-native';
-import {registrarMagico, registrarTicket} from '../../services';
+import {registrarMagicoApi, registrarTicketApi} from '../../services';
 import {useDispatch, useSelector} from 'react-redux';
 import {Text} from 'react-native';
 import {ERROR_CODE_NAMES} from '../../../../../errors';
@@ -21,7 +21,6 @@ export default function WhatsappBtn() {
   const {jugadas, sorteoSeleccionado} = useSelector(
     state => state.jugarTickets,
   );
-  const {creditoDisponible} = useSelector(state => state.credito);
   const modal = useModal();
   const {logout} = useLogout();
   const dispatch = useDispatch();
@@ -102,6 +101,7 @@ export default function WhatsappBtn() {
 
   const sendMessage = async newJugadas => {
     try {
+      console.log('105 -> sendMessage');
       // LIMPIAR SATURADOS DE MEMORIA EN CASO DE EXISTIR
       Storage.removeItem('saturados');
       const _jugadas = newJugadas ?? [...jugadas];
@@ -124,9 +124,10 @@ export default function WhatsappBtn() {
         // console.log('es magico');
         boletoRegistrado = await registrarTicketMagico(_jugadas);
       } else {
-        // console.log('es normal');
+        console.log('es normal');
         boletoRegistrado = await registrarTicketNormal(_jugadas);
       }
+      console.log('130 -> boletoRegistrado', boletoRegistrado);
 
       await enviarPorWhatsapp(boletoRegistrado);
     } catch ({message}) {
@@ -156,37 +157,25 @@ export default function WhatsappBtn() {
   };
 
   const registrarTicketMagico = async newJugadas => {
-    const cifras = jugadas[0].numero.length;
     const numeroJugadas = newJugadas.length;
+    const cifras = newJugadas[0].numero.length;
+    const lugares = newJugadas[0].lugares;
 
-    const numeroLugares = [];
-    let monto = '0';
-
-    newJugadas[0].lugares.forEach((item, index) => {
-      if (item > 0) {
-        numeroLugares.push((index + 1).toString());
-        monto = item;
-      }
-    });
-
-    return await registrarMagico({
-      sorteo: sorteoSeleccionado,
+    return await registrarMagicoApi(
+      sorteoSeleccionado.id,
       numeroJugadas,
+      lugares,
       cifras,
-      numeroLugares,
-      monto,
-      creditoDisponible,
-      viaWhatsapp: true,
-      numeroTelefono: formik.values.numero,
-    });
+      'whatsapp',
+      formik.values.numero,
+    );
   };
 
   const registrarTicketNormal = async newJugadas => {
-    return await registrarTicket(
-      sorteoSeleccionado,
+    return await registrarTicketApi(
+      sorteoSeleccionado.id,
       newJugadas,
-      creditoDisponible,
-      true, // viaWhatsapp
+      'whatsapp',
       formik.values.numero,
     );
   };

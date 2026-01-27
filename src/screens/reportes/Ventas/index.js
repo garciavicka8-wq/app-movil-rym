@@ -15,7 +15,6 @@ import {ERROR_CODE_NAMES} from '../../../errors';
 import {useLogout} from '../../../hooks';
 import {useNetInfo} from '@react-native-community/netinfo';
 import NoConnectionSnackbar from '../../../components/NoConnectionSnackbar';
-import ReportarDepositoButton from './components/ReportarDepositoButton';
 import {Alert} from 'react-native';
 import Comprobantes from './components/Comprobantes';
 

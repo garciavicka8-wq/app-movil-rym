@@ -14,7 +14,6 @@ import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../../errors';
 
 export default function EstadoSemanal() {
   const {estadoDeCuenta: accountStatus} = useSelector(state => state.reportes);
-  const {lastInform, lastInformPeriod} = accountStatus;
   const thermalPrinter = useThermalPrinter();
   const modal = useModal();
   const reactNavigation = useNavigation();
@@ -108,10 +107,10 @@ export default function EstadoSemanal() {
         <TicketSection title={Utils.periodToLongText(accountStatus.period)}>
           <CustomRow
             cols={[
-              `SALDO ANTERIOR AL ${Moment(lastInformPeriod.end)
+              `SALDO ANTERIOR AL ${Moment(accountStatus.lastInformPeriodEnd)
                 .format('dddd DD MMMM YYYY')
                 .toUpperCase()}`,
-              Money(lastInform.amount),
+              Money(accountStatus.lastInformAmount),
             ]}
           />
           <CustomRow
@@ -120,7 +119,9 @@ export default function EstadoSemanal() {
               Money(accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total),
             ]}
           />
-          <CustomRow cols={['SU PAGO', Money(lastInform.totalDeposits)]} />
+          <CustomRow
+            cols={['SU PAGO', Money(accountStatus.lastInformTotalDeposits)]}
+          />
           <CustomRow
             cols={['SALDO VENCIDO', Money(accountStatus.dueBalance)]}
           />
@@ -176,11 +177,8 @@ export default function EstadoSemanal() {
           <CustomRow
             cols={[
               'PREMIOS PAGADOS LUNES A MIERCOLES ACTUAL',
-              accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay
-                .recordsFound,
-              Money(
-                accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay.total,
-              ),
+              accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDayRecordsFound,
+              Money(accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDayTotal),
             ]}
           />
           <CustomRow

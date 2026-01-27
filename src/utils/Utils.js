@@ -567,6 +567,18 @@ const Utils = {
       return uri; // Si falla, usar imagen original
     }
   },
+  // UTILITY FUNCTIONS FOR FILTERING
+  byFieldEquals: function (field, value) {
+    return function (item) {
+      return item[field] === value;
+    };
+  },
+
+  byTwoFields: function (field1, value1, field2, value2) {
+    return function (item) {
+      return item[field1] === value1 && item[field2] === value2;
+    };
+  },
 };
 
 export default Utils;

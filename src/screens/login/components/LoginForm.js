@@ -39,15 +39,15 @@ export default function LoginForm() {
   useEffect(() => {
     const getUserNumber = async () => {
       setVerifyingUserNumber(true);
-      const userNumber = Storage.getItem('userNumber');
-      const _userName = Storage.getItem('userName');
-      if (userNumber !== null && _userName !== null) {
+      const loginData = Storage.getItem('loginData', true);
+
+      if (loginData !== null) {
         setHasUserLoggedInBefore(true);
         setInputs(state => ({
           ...state,
-          usuario: userNumber,
+          usuario: loginData.userNumber,
         }));
-        setUserName(_userName);
+        setUserName(loginData.userName);
       }
       await isFingerPrintSensorAvailable();
       setVerifyingUserNumber(false);
@@ -87,13 +87,19 @@ export default function LoginForm() {
         usuario,
         password,
         async (newUsuario, versionApp, error) => {
-          // SI SE COMPLETO EL INICIO DE SESION
           // ALMACENAMOS EL USUARO Y LA VERSION EN EL STORAGE
           if (newUsuario && versionApp && error === null) {
             Storage.setItem('usuario', newUsuario, true);
             Storage.setItem('versionApp', versionApp);
-            Storage.setItem('userNumber', newUsuario.usuario);
-            Storage.setItem('userName', newUsuario.nomComercial);
+            // Esta informacion la usamos en el login para mostrar el usuario
+            Storage.setItem(
+              'loginData',
+              {
+                userNumber: newUsuario.usuario,
+                userName: newUsuario.nomComercial,
+              },
+              true,
+            );
             Utils.setLoginTime();
             await Keychain.setGenericPassword(usuario, password);
             setIsAuthenticated(true);
@@ -126,7 +132,6 @@ export default function LoginForm() {
         },
       );
     } catch ({message}) {
-      console.log(message, ' line 114');
       setStartAnimation(false);
       Alert.alert('Error', message);
     }

@@ -9,10 +9,10 @@ import LoadingIndicator from '../../../../components/LoadingIndicator';
 import NoConnection from '../../../../components/NoConnection';
 import EstadoDiario from './components/EstadoDiario';
 import EstadoSemanal from './components/EstadoSemanal';
-import {getUserAccountStatus} from '../../../../services/reports';
 import {obtenerUsuarioDb} from '../../../../services/auth';
 import {definePeriod} from '../../../../services/estado_de_cuenta';
 import {useNetInfo} from '@react-native-community/netinfo';
+import {getUserAccountStatus} from '../services';
 
 export default function EstadoDeCuenta() {
   const {cargandoEstadoDeCuenta, periodoSeleccionado, tipoEstadoDeCuenta} =

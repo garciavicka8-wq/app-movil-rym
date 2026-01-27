@@ -79,3 +79,77 @@ export async function getTimestamp() {
   const timestamp = await getServerDate();
   return timestamp;
 }
+
+export async function getTicketsFromRange(start, end) {
+  const tickets = await Database.getItemsInRange(
+    DATABASE_TABLES.TICKETS,
+    'fechaExp',
+    start,
+    end,
+  );
+
+  return tickets;
+}
+
+export async function getTransactionsFromRange(start, end) {
+  const transactions = await Database.getItemsInRange(
+    DATABASE_TABLES.TRANSACTIONS,
+    '_fecha',
+    start,
+    end,
+    txn => txn.Status === 'Exitosa' || txn.Status === 'PROCESSING',
+  );
+
+  return transactions;
+}
+
+export async function getPaidPrizesFromRange(start, end) {
+  const paidPrizes = await Database.getItemsInRange(
+    DATABASE_TABLES.PAID_PRIZES,
+    'fechaPago',
+    start,
+    end,
+  );
+
+  return paidPrizes;
+}
+
+export async function getPaidPayoutsFromRange(start, end) {
+  const payouts = await Database.getItemsInRange(
+    DATABASE_TABLES.PAYOUTS,
+    'fechaAbono',
+    start,
+    end,
+  );
+
+  return payouts;
+}
+
+export async function getDepositsByReference(reference) {
+  const deposits = await Database.getItemsByProp(
+    DATABASE_TABLES.DEPOSITS,
+    'periodo',
+    reference,
+  );
+
+  return deposits;
+}
+
+export async function getCanceledTicketsFromRange(start, end) {
+  const canceledTickets = await Database.getItemsInRange(
+    DATABASE_TABLES.CANCELED_TICKETS,
+    'fechaCancelacion',
+    start,
+    end,
+  );
+
+  return canceledTickets;
+}
+
+export async function getPastDueBalances() {
+  const pastDueBalances = await Database.getItems(
+    DATABASE_TABLES.PAST_DUE_BALANCES,
+  );
+
+  return pastDueBalances;
+}

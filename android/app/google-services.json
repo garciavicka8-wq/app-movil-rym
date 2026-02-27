@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "221256415331",
+    "firebase_url": "https://sorteolabolita-75.firebaseio.com",
+    "project_id": "sorteolabolita-75",
+    "storage_bucket": "sorteolabolita-75.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:221256415331:android:53cd18870545b1c4522056",
+        "android_client_info": {
+          "package_name": "com.rymapp2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_y1VvWnqFrJW3CMyQE_wpyP2EPiGyG-c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

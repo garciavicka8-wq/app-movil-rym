@@ -16,9 +16,14 @@ import {
   CHISPAZO_LOGO,
 } from './LogosBase64';
 
-const RYM_BASE_URL = `${
-  __DEV__ ? 'https://staging.' : 'https://'
-}rym.recargasymas.com.mx`;
+// const RYM_BASE_URL = `${
+//   __DEV__ ? 'https://staging.' : 'https://'
+// }rym.recargasymas.com.mx`;
+
+// API LOCAL (artisan serve)
+const RYM_BASE_URL = __DEV__ 
+  ? 'http://192.168.3.10:8000' 
+  : 'https://rym.recargasymas.com.mx';
 const RYM_API_URL = `${RYM_BASE_URL}/api/v1`;
 const RYM_LOGOS_URL = `${RYM_BASE_URL}/storage/logos/`;
 

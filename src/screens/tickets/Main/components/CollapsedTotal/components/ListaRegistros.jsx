@@ -8,8 +8,9 @@ import {
 } from 'react-native';
 import {Colors, Moment, Utils} from '../../../../../../utils';
 import {useState} from 'react';
-import CancelarTicketDialog from '../../CancelarTicketDialog';
 import ModalReimpresion from './ModalReimpresion';
+import {useNavigation} from '@react-navigation/native';
+import {APP_NAVIGATION} from '../../../../../../constants';
 
 const {useSelector} = require('react-redux');
 
@@ -33,6 +34,7 @@ export default function ListaRegistros() {
 }
 
 function RegistroItem({registro}) {
+  const navigation = useNavigation();
   const [mostrarModalReimpresion, setMostrarModalReimpresion] = useState(false);
   const TEXTO_HORA = {
     boleto: 'registrado a las ',
@@ -41,9 +43,8 @@ function RegistroItem({registro}) {
   };
 
   const handleLongPress = () => {
-    return;
     if (registro.tipo === 'boleto') {
-      setMostrarModalReimpresion(true);
+      navigation.navigate(APP_NAVIGATION.SCREENS.CANCELACION_SOLICITUD, {registro});
     }
   };
 
@@ -64,7 +65,7 @@ function RegistroItem({registro}) {
                   fontSize: 12,
                   fontWeight: 'bold',
                 }}>
-                manten presionado para reimpresión
+                manten presionado para cancelar
               </Text>
             )}
           </View>

@@ -10,94 +10,74 @@ import {Utils, Moment, Storage} from '../../utils';
 import VersionCheck from 'react-native-version-check';
 import {ERROR_CODE_NAMES} from '../../errors';
 import {getDbUser, updateDbUser} from '../common';
-const bcrypt = require('react-native-bcrypt');
-// SI EL EQUIPO ES DE ADMINISTRADOR PUEDE ACCEDER A CUALQUIER CUENTA
-// DISPOSITIVOS REGISTRADOS : ID unico del dispositivo, Nombre dispositivo,
-export const iniciarSesion = async (numeroUsuario, password, callback) => {
+import axios from 'axios';
+import { RYM_API_URL } from '../../constants';
+
+export const iniciarSesionApi = async (numeroUsuario, password, callback) => {
   try {
-    const usuarioDB = await getDbUser(numeroUsuario);
     Storage.removeItem('tempUser');
+    
+    const device = {
+      uniqueId: await getUniqueId(),
+      name: await getDeviceName(),
+      systemVersion: getSystemVersion(), // e.g. "10.0"
+      systemName: getSystemName(),       // e.g. "iOS"
+    };
+    const appVersion = VersionCheck.getCurrentVersion();
+    
+    const url = `${RYM_API_URL}/authentication/login-app`;
+    const response = await axios.post(url, {
+      usuario: numeroUsuario,
+      password,
+      device,
+      appVersion
+    }, { timeout: 15000 });
 
-    if (!usuarioDB) {
-      return callback(null, null, {
-        message: 'La cuenta no existe en el sistema.',
-      });
-    }
-
-    if (usuarioDB.loginAttempts >= 3) {
-      return callback(null, null, {
-        message: 'Has alcanzado el límite de intentos de inicio de sesión.',
-      });
-    }
-
-    // Comparar contraseñas sin async/await
-    bcrypt.compare(password, usuarioDB.bpassword, async (err, isMatch) => {
-      if (err || !isMatch) {
-        await updateDbUser(usuarioDB.key, {
-          loginAttempts: usuarioDB.loginAttempts + 1,
-        });
-        return callback(null, null, {message: 'La contraseña es incorrecta'});
-      }
-      // SI EL USUARIO ESTA DESACTIVADO
-      if (usuarioDB.activo !== undefined && !usuarioDB.activo) {
-        Storage.setItem(
-          'tempUser',
-          {
-            usuario: usuarioDB.usuario,
-            key: usuarioDB.key,
-            id: usuarioDB.id,
-            nomComercial: usuarioDB.nomComercial,
-            disableAccountReason: usuarioDB.disableAccountReason,
-          },
-          true,
-        );
-        return callback(null, null, {message: usuarioDB.disableAccountReason});
-      }
-
-      // Verificación del dispositivo
-      const verificacionMessage = await verifyDeviceRegistration(usuarioDB);
-      if (verificacionMessage === 'DEVICE_NOT_LINKED') {
-        return callback(null, null, {
-          message: 'La cuenta y el dispositivo no están vinculados.',
-        });
-      }
-
-      // Obtener versiones de la app
-      const versiones = await Database.getObject(DATABASE_TABLES.VERSIONS);
-      const currentAppVersion = VersionCheck.getCurrentVersion();
-
-      // Actualizar usuario en la base de datos
-      const updateData = {
-        loginAttempts: 0,
-        versionAppActualizada: true,
-        ...(!__DEV__ && {
-          versionAppInstalada: currentAppVersion,
-        }),
+    const responseData = response.data;
+    
+    // Si la API dice que hubo error a pesar de ser status 200
+    if (responseData.error) {
+      // Lanzamos un error artificial para que el bloque catch lo recoja
+      const customError = new Error(responseData.error_message || 'Error en inicio de sesión');
+      customError.response = {
+        status: response.status,
+        data: responseData
       };
+      throw customError;
+    }
 
-      await updateDbUser(usuarioDB.key, updateData);
-
-      // Verificar si la versión instalada está actualizada
-      if (!Utils.hasLastVersion(currentAppVersion, versiones.app)) {
-        return callback(null, null, {
-          message:
-            'Tienes una versión desactualizada de la app, favor de actualizar.',
-          update: true,
-        });
-      }
-
-      // Retornar usuario sin datos sensibles
-      const {bpassword, password, ...newUsuario} = usuarioDB;
-      callback(newUsuario, versiones.app, null);
-    });
+    const { user, versionApp } = responseData.data;
+    callback(user, versionApp, null);
   } catch (error) {
-    console.error('Error en iniciarSesion:', error.message);
+    
+    let errorMessage = 'Ocurrió un error al iniciar sesión. Intenta nuevamente.';
+    let isUpdateRequired = false;
+
+    if (error.response && error.response.data) {
+      const errorData = error.response.data;
+      if (error.response.status === 426 || (errorData.data && errorData.data.update)) {
+        isUpdateRequired = true;
+      }
+      errorMessage = errorData.error_message || errorData.message || errorMessage;
+      
+      const tempUser = errorData.data?.tempUser || errorData.tempUser;
+      if (tempUser) {
+        Storage.setItem('tempUser', tempUser, true);
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
     callback(null, null, {
-      message: 'Ocurrió un error al iniciar sesión. Intenta nuevamente.',
+      message: errorMessage,
+      update: isUpdateRequired,
     });
   }
 };
-// VERIFICAR REGISTRO DE DISPOSITIVO
+
+// Mantenemos la firma local antigua como alias a la API para no romper implementaciones no detectadas
+export const iniciarSesion = iniciarSesionApi;
+
 async function verifyDeviceRegistration(usuarioDB) {
   try {
     // VERIFICAR DISPOSITIVO REGISTRADO
@@ -221,43 +201,14 @@ export async function obtenerUsuarioDb() {
     throw new Error(message);
   }
 }
-// AUTHENTICATE
-export const usuarioAutenticado = async (numeroUsuario, password, callback) => {
-  try {
-    const usuarioDB = await Database.getItem(
-      DATABASE_TABLES.USERS,
-      'usuario',
-      numeroUsuario,
-    );
-    // SI EL USUARIO NO EXISTE
-    if (!usuarioDB)
-      throw new Error(
-        'La cuenta que ingresaste no se encuentra en el sistema.',
-      );
-    // SI EL USUARIO ESTA DESACTIVADO
-    if (usuarioDB.activo !== undefined && !usuarioDB.activo)
-      return callback(false, {
-        message: ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT,
-      });
-    // SI EXISTE EL USUARIO
-    bcrypt.compare(password, usuarioDB.bpassword, async (err, res) => {
-      // VERIFICAMOS SI LA CONTRASEÑA COINCIDE O NO
-      if (!res) {
-        return callback(false, {
-          message: 'La contraseña es incorrecta',
-        });
-      }
-      // VERIFICACION Y VINCULACION DE DISPOSITIVO
-      const verificacionMessage = await verifyDeviceRegistration(usuarioDB);
-      if (verificacionMessage === 'DEVICE_NOT_LINKED') {
-        return callback(false, {
-          message: 'DEVICE_NOT_LINKED',
-        });
-      }
-      // SI NO HAY ERROR ENTONCES EL USUARIO ESTA AUTENTICADO
+export const usuarioAutenticadoApi = async (numeroUsuario, password, callback) => {
+  await iniciarSesionApi(numeroUsuario, password, (user, version, error) => {
+    if (error) {
+      callback(false, error);
+    } else {
       callback(true, null);
-    });
-  } catch ({message}) {
-    throw new Error(message);
-  }
+    }
+  });
 };
+
+export const usuarioAutenticado = usuarioAutenticadoApi;

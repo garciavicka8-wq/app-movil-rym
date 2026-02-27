@@ -120,3 +120,15 @@ export async function uploadTicketCapture(formData) {
     throw new Error(error.message);
   }
 }
+
+export async function requestTicketCancellation(formData) {
+  try {
+    const response = await Request.post('solicitudes/cancelar', formData, false);
+    if(response.data.error){
+      throw new Error(response.data.error_message);
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}

@@ -20,6 +20,7 @@ const APP_NAVIGATION = {
     PAGOS: 'Pagos',
     CANCELAR: 'Cancelar',
     REIMPRIMIR: 'Reimprimir',
+    CANCELACION_SOLICITUD: 'CancelacionSolicitud',
     // REPORTES
     REPORTES_MENU: 'ReportesMenu',
     // RECARGAS SCREEN

@@ -8,6 +8,7 @@ import Pagos from './Pagos';
 import Cancelados from './Cancelados';
 import {IconButton} from 'react-native-paper';
 import CustomStatusBar from '../../components/CustomStatusBar';
+import TicketCancellationRequest from './Main/components/TicketCancellationRequest';
 
 const Stack = createStackNavigator();
 
@@ -58,11 +59,18 @@ export default function TicketsTab() {
             headerTitle: 'Pagos',
           }}
         />
-        <Stack.Screen
+    <Stack.Screen
           name={APP_NAVIGATION.SCREENS.CANCELAR}
           component={Cancelados}
           options={{
             headerTitle: 'Cancelados',
+          }}
+        />
+        <Stack.Screen
+          name={APP_NAVIGATION.SCREENS.CANCELACION_SOLICITUD}
+          component={TicketCancellationRequest}
+          options={{
+            headerShown: false,
           }}
         />
       </Stack.Navigator>

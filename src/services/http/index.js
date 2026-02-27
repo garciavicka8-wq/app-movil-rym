@@ -19,7 +19,7 @@ export async function post(endpoint, data = undefined, withHeaders = true) {
     ? {
         headers: {
           Accept: 'application/json',
-          Authorization: `Bearer ${Storage.getItem('user', true).token}`,
+          Authorization: `Bearer ${Storage.getUser().token}`,
         },
       }
     : undefined;

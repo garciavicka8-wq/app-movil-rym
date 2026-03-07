@@ -10,14 +10,56 @@ import Colors from '../utils/Colors';
 import {APP_NAVIGATION} from '../constants';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {useCredito} from '../hooks';
+import {useDispatch} from 'react-redux';
+import {initEcho, disconnectEcho} from '../utils/EchoClient';
+import {Storage} from '../utils';
+import {incrementUnreadCount, setUnreadCount} from '../features/notifications/notificationsSlice';
+import axios from 'axios';
+import {RYM_API_URL} from '../constants';
 
 const Tab = createBottomTabNavigator();
 
 export default function Main() {
-  const {obtenerCredito} = useCredito();
+  const {obtenerCreditoApi} = useCredito();
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    obtenerCredito();
+    obtenerCreditoApi();
+
+    const fetchInitialUnreadCount = async (user) => {
+      try {
+        const {data} = await axios.get(`${RYM_API_URL}/notifications/unread-count`, {
+          headers: {Authorization: `Bearer ${user.token}`}
+        });
+        if (data && data.unread_count !== undefined) {
+          dispatch(setUnreadCount(data.unread_count));
+        }
+      } catch (err) {
+        console.log("Error consultando count notificaciones initial:", err);
+      }
+    };
+
+    // Inicializar Laravel Echo y conteo
+    const user = Storage.getUser();
+    let echoInstance = null;
+
+    if (user && user.id) {
+      fetchInitialUnreadCount(user);
+      echoInstance = initEcho();
+      if (echoInstance) {
+        // Escuchar al canal privado del usuario
+        // Al usar broadcastAs() en Laravel, Echo necesita un punto initial ('.') para saltarse el namespace implicito de App\\Events
+        echoInstance.private(`App.Models.User.${user.id}`)
+          .listen('.notification.received', (notification) => {
+            console.log("!!! Notificación recibida en tiempo real !!! ", notification);
+            dispatch(incrementUnreadCount());
+          });
+      }
+    }
+
+    return () => {
+      disconnectEcho(echoInstance);
+    };
   }, []);
 
   return (

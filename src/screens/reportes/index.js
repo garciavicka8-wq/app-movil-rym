@@ -8,6 +8,8 @@ import ResultadosScreen from './Resultados';
 import EstadoDeCuenta from './Ventas/EstadoDeCuenta';
 import {IconButton} from 'react-native-paper';
 import CustomStatusBar from '../../components/CustomStatusBar';
+import NotificationBell from '../../components/NotificationBell';
+import {View} from 'react-native';
 // NAVIGATION
 const Stack = createStackNavigator();
 
@@ -28,13 +30,16 @@ export default function ReportesTab() {
           component={MainScreen}
           options={({navigation}) => ({
             headerRight: () => (
-              <IconButton
-                icon="cog"
-                iconColor="white"
-                onPress={() =>
-                  navigation.navigate(APP_NAVIGATION.SCREENS.CONFIG_MENU)
-                }
-              />
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <NotificationBell />
+                <IconButton
+                  icon="cog"
+                  iconColor="white"
+                  onPress={() =>
+                    navigation.navigate(APP_NAVIGATION.SCREENS.CONFIG_MENU)
+                  }
+                />
+              </View>
             ),
           })}
         />

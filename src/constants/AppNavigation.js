@@ -9,6 +9,7 @@ const APP_NAVIGATION = {
     // MAIN APP SCREENS
     MAIN: 'Main',
     LOGIN: 'Login',
+    NOTIFICACIONES: 'Notificaciones',
     // TICKETS SCREENS
     TICKETS_MENU: 'TicketsMenu',
     JUGAR_TICKETS: 'JugarTickets',

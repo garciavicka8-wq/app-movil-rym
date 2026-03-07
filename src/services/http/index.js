@@ -108,15 +108,28 @@ export async function requestTaecelAPI(endpoint, data = {}) {
  * @returns {Promise<RymApiResponse>} - Promesa que resuelve con la respuesta de la API.
  */
 
-export async function requestRymAPI(endpoint, data = {}, useJson = true) {
+export async function requestRymAPI(
+  endpoint,
+  data = {},
+  useJson = true,
+  method = 'POST',
+) {
   try {
     const url = `${RYM_API_URL}/${endpoint}`;
     const isFormData = data instanceof FormData;
 
-    const headers = {};
+    const headers = {
+      Accept: 'application/json',
+    };
+
+    // Autorización (Sanctum)
+    const user = Storage.getUser();
+    if (user && user.token) {
+      headers['Authorization'] = `Bearer ${user.token}`;
+    }
 
     // Solo definir Content-Type si no es FormData (porque Axios lo maneja automáticamente)
-    if (!isFormData) {
+    if (!isFormData && method !== 'GET') {
       headers['Content-Type'] = useJson
         ? 'application/json'
         : 'application/x-www-form-urlencoded';
@@ -124,15 +137,26 @@ export async function requestRymAPI(endpoint, data = {}, useJson = true) {
 
     // Preparar el cuerpo de la petición
     let payload;
-    if (isFormData) {
-      payload = data; // No se transforma, va tal cual
-    } else if (useJson) {
-      payload = data; // Axios lo serializa a JSON
-    } else {
-      payload = new URLSearchParams(data).toString(); // Formato x-www-form-urlencoded
+    if (method !== 'GET') {
+      if (isFormData) {
+        payload = data; // No se transforma, va tal cual
+      } else if (useJson) {
+        payload = data; // Axios lo serializa a JSON
+      } else {
+        payload = new URLSearchParams(data).toString(); // Formato x-www-form-urlencoded
+      }
     }
 
-    const response = await axios.post(url, payload, {headers});
+    if (__DEV__) console.log(`[requestRymAPI] ${method}: ${url}`);
+    const response = await axios({
+      method,
+      url,
+      data: method !== 'GET' ? payload : undefined,
+      params: method === 'GET' ? data : undefined,
+      headers,
+      timeout: 10000, // Añadimos timeout de 10s para que no se quede colgado
+    });
+    if (__DEV__) console.log(`[requestRymAPI] Success ${method}: ${url}`);
     return response.data;
   } catch (error) {
     if (error.response) {

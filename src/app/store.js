@@ -10,6 +10,7 @@ import jugarTicketsReducer from '../features/tickets/jugarTickets/jugarTicketsSl
 import magicoReducer from '../features/tickets/magico/magicoSlice';
 import reportesReducer from '../features/tickets/reportes/reportesSlice';
 import taecelReducer from '../features/taecel/taecelSlice';
+import notificationsReducer from '../features/notifications/notificationsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,5 +25,10 @@ export const store = configureStore({
     pagos: pagosReducer,
     reportes: reportesReducer,
     taecel: taecelReducer,
+    notifications: notificationsReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
 });

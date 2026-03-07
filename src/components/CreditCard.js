@@ -13,11 +13,11 @@ export default function CreditCard({
 }) {
   const {cargandoCredito, creditoDisponible, fechaCredito, mostrarCredito} =
     useSelector(state => state.credito);
-  const {obtenerCredito} = useCredito();
+  const {obtenerCreditoApi} = useCredito();
 
   const handlePress = () => {
     if (!cargandoCredito) {
-      obtenerCredito();
+      obtenerCreditoApi();
     }
   };
 

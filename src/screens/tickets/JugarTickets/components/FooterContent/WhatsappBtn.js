@@ -181,7 +181,7 @@ export default function WhatsappBtn() {
   };
 
   const enviarPorWhatsapp = async boletoRegistrado => {
-    const link = `https://tickets.recargasymas.com.mx/${boletoRegistrado.id}\n\n`;
+    const link = `https://api-rym.mecaorg.com/tickets/${boletoRegistrado.id}\n\n`;
     const numero = `+52${formik.values.numero}`;
     const url = `whatsapp://send?text=${link}&phone=${numero}`;
 

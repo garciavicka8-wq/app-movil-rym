@@ -49,6 +49,8 @@ export default function RecargasMenu() {
           _categories = [...rymResponse.data.categorias];
           _carriers = [...rymResponse.data.carriers];
           _products = [...rymResponse.data.productos];
+        } else {
+          Alert.alert('Error', rymResponse.error_message || 'Error al obtener productos');
         }
         let _mainProducts = [];
         _categories.forEach((item, index) => {
@@ -59,6 +61,7 @@ export default function RecargasMenu() {
             categoria: item,
           };
         });
+        
         dispatch(setMainProducts(_mainProducts));
         dispatch(setCarriers(_carriers));
         dispatch(setProducts(_products));

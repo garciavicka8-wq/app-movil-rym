@@ -55,7 +55,6 @@ const Print = (() => {
 
       await alignText('center');
       await BEP.printText(`Gracias Por Su Preferencia\n\r`, {});
-      await BEP.printText(`www.recargasymas.com.mx\n\r`, {});
       await BEP.printText('\n\r\n\r\n\r', {});
     } catch (error) {
       // console.log('error al imprimir', error);

@@ -22,6 +22,7 @@ import PagoConTarjeta from './src/screens/PagoConTarjeta';
 import TestComponent from './src/screens/TestComponent';
 import Ventas from './src/screens/reportes/Ventas';
 import Liquidacion from './src/screens/liquidacion';
+import Notificaciones from './src/screens/notificaciones';
 import {NotificationUtils} from './src/utils';
 
 const Stack = createStackNavigator();
@@ -138,6 +139,17 @@ export default function App() {
                 title: 'Establecer Comisión',
                 headerStyle: {
                   backgroundColor: Colors.dark,
+                },
+              }}
+            />
+            {/* NOTIFICACIONES */}
+            <Stack.Screen
+              name={APP_NAVIGATION.SCREENS.NOTIFICACIONES}
+              component={Notificaciones}
+              options={{
+                title: 'Notificaciones',
+                headerStyle: {
+                  backgroundColor: Colors.blue,
                 },
               }}
             />

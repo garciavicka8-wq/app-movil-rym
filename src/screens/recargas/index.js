@@ -11,6 +11,8 @@ import {IconButton} from 'react-native-paper';
 import DetalleTransaccion from './DetalleTransaccion';
 import Vender from './Vender';
 import CustomStatusBar from '../../components/CustomStatusBar';
+import NotificationBell from '../../components/NotificationBell';
+import {View} from 'react-native';
 // NAVIGATION
 const Stack = createStackNavigator();
 
@@ -48,13 +50,16 @@ export default function Recargas() {
             headerTitle: appTitle,
             headerLeft: null,
             headerRight: () => (
-              <IconButton
-                icon="cog"
-                iconColor="white"
-                onPress={() =>
-                  navigation.navigate(APP_NAVIGATION.SCREENS.CONFIG_MENU)
-                }
-              />
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <NotificationBell />
+                <IconButton
+                  icon="cog"
+                  iconColor="white"
+                  onPress={() =>
+                    navigation.navigate(APP_NAVIGATION.SCREENS.CONFIG_MENU)
+                  }
+                />
+              </View>
             ),
           })}
         />

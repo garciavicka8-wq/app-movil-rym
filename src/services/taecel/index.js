@@ -485,6 +485,32 @@ export async function getLastTransactions(numTransLimit = 100) {
     );
   }
 }
+
+/**
+ * Obtiene las últimas transacciones de un usuario a través de la API.
+ * @param {number} [numTransLimit=100] - Número máximo de transacciones a devolver.
+ * @returns {Promise<Object[]>} Lista de transacciones filtradas y limitadas.
+ */
+export async function getLastTransactionsApi(numTransLimit = 100) {
+  try {
+    const response = await requestRymAPI(
+      'taecel/recent-transactions',
+      {limit: numTransLimit},
+      true,
+      'GET',
+    );
+    
+    if (response.error) {
+      throw new Error(response.error_message);
+    }
+
+    return response.data || [];
+  } catch (error) {
+    throw new Error(
+      `getLastTransactionsApi: ${error.message || 'Error desconocido'}`,
+    );
+  }
+}
 // TRANSACTION FALIED
 function transactionFailed(status) {
   return ['ERROR', 'FAILED', 'PROCESSING'].includes(status);

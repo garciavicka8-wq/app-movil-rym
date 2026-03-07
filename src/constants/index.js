@@ -16,25 +16,22 @@ import {
   CHISPAZO_LOGO,
 } from './LogosBase64';
 
-// const RYM_BASE_URL = `${
-//   __DEV__ ? 'https://staging.' : 'https://'
-// }rym.recargasymas.com.mx`;
 
 // API LOCAL (artisan serve)
 const RYM_BASE_URL = __DEV__ 
   ? 'http://192.168.3.10:8000' 
-  : 'https://rym.recargasymas.com.mx';
+  : 'https://api-rym.mecaorg.com';
 const RYM_API_URL = `${RYM_BASE_URL}/api/v1`;
 const RYM_LOGOS_URL = `${RYM_BASE_URL}/storage/logos/`;
 
+console.log('RYM_BASE_URL: ', RYM_BASE_URL);
 const MAX_AMOUNT_TO_PAY_WITHOUT_CAPTURE = 998;
 const TICKET_TYPE = {
   PLUS: 'ticket plus',
   MAGICO: 'ticket magico',
 };
 
-const TKP_LOGO_URL =
-  'https://recargasymas.com.mx/wp-content/uploads/2023/10/logo-ticket-100.jpg';
+const TKP_LOGO_URL = '';
 
 export {
   DATABASE_TABLES,

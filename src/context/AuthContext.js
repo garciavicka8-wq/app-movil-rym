@@ -7,6 +7,8 @@ import {
   setProducts,
 } from '../features/taecel/taecelSlice';
 
+import {cerrarSesionApi} from '../services/auth';
+
 export const AuthContext = createContext(null);
 
 export function AuthProvider({children}) {
@@ -17,6 +19,7 @@ export function AuthProvider({children}) {
 
   const signout = useCallback(async function () {
     try {
+      await cerrarSesionApi();
       Storage.removeItem('usuario');
       Storage.removeItem('versionApp');
       Utils.removeLoginTime();
@@ -29,15 +32,30 @@ export function AuthProvider({children}) {
       Storage.removeItem('versionApp');
       setIsAuthenticated(false);
     }
-  }, []);
+  }, [dispatch]);
+
+  const logoutApp = useCallback(async () => {
+    await signout();
+  }, [signout]);
+  
+  const checkSession = useCallback(async () => {
+    const hasExpired = Utils.hasSessionExpired();
+    if (hasExpired) {
+      await signout();
+      return true;
+    }
+    return false;
+  }, [signout]);
 
   const value = useMemo(
     () => ({
       setIsAuthenticated,
       signout,
+      logoutApp,
+      checkSession,
       isAuthenticated,
     }),
-    [setIsAuthenticated, signout, isAuthenticated],
+    [setIsAuthenticated, signout, logoutApp, checkSession, isAuthenticated],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

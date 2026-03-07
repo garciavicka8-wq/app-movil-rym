@@ -9,9 +9,7 @@ import Database from '../../database';
 import {Utils, Moment, Storage} from '../../utils';
 import VersionCheck from 'react-native-version-check';
 import {ERROR_CODE_NAMES} from '../../errors';
-import {getDbUser, updateDbUser} from '../common';
-import axios from 'axios';
-import { RYM_API_URL } from '../../constants';
+import {requestRymAPI} from '../http';
 
 export const iniciarSesionApi = async (numeroUsuario, password, callback) => {
   try {
@@ -20,31 +18,17 @@ export const iniciarSesionApi = async (numeroUsuario, password, callback) => {
     const device = {
       uniqueId: await getUniqueId(),
       name: await getDeviceName(),
-      systemVersion: getSystemVersion(), // e.g. "10.0"
-      systemName: getSystemName(),       // e.g. "iOS"
+      systemVersion: getSystemVersion(),
+      systemName: getSystemName(),
     };
     const appVersion = VersionCheck.getCurrentVersion();
     
-    const url = `${RYM_API_URL}/authentication/login-app`;
-    const response = await axios.post(url, {
+    const responseData = await requestRymAPI('authentication/login-app', {
       usuario: numeroUsuario,
       password,
       device,
       appVersion
-    }, { timeout: 15000 });
-
-    const responseData = response.data;
-    
-    // Si la API dice que hubo error a pesar de ser status 200
-    if (responseData.error) {
-      // Lanzamos un error artificial para que el bloque catch lo recoja
-      const customError = new Error(responseData.error_message || 'Error en inicio de sesión');
-      customError.response = {
-        status: response.status,
-        data: responseData
-      };
-      throw customError;
-    }
+    });
 
     const { user, versionApp } = responseData.data;
     callback(user, versionApp, null);
@@ -201,6 +185,17 @@ export async function obtenerUsuarioDb() {
     throw new Error(message);
   }
 }
+
+export const cerrarSesionApi = async () => {
+  try {
+    await requestRymAPI('authentication/logout');
+    return true;
+  } catch (error) {
+    console.error('Error al cerrar sesión en la API:', error.message);
+    return false;
+  }
+};
+
 export const usuarioAutenticadoApi = async (numeroUsuario, password, callback) => {
   await iniciarSesionApi(numeroUsuario, password, (user, version, error) => {
     if (error) {

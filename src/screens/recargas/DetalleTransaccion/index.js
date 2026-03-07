@@ -120,7 +120,9 @@ export default function DetalleTransaccion() {
         'TransID',
         transaccionStore.TransID,
       );
-      dispatch(setTransaccionStore(txn));
+      if (txn) {
+        dispatch(setTransaccionStore(txn));
+      }
       setIsTxnProcessed(true);
       setCargando(false);
     } catch ({message}) {

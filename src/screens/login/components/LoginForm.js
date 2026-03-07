@@ -19,8 +19,6 @@ import {useAuthContext} from '../../../context/AuthContext';
 import {iniciarSesionApi} from '../../../services/auth';
 import {useNavigation} from '@react-navigation/native';
 import {APP_NAVIGATION} from '../../../constants';
-import {NotificationUtils} from '../../../utils';
-import firebase from '../../../firebase';
 const BALL = require('../../../assets/ball.png');
 
 export default function LoginForm() {
@@ -104,38 +102,6 @@ export default function LoginForm() {
             );
             Utils.setLoginTime();
             await Keychain.setGenericPassword(usuario, password);
-
-            // GENERAR TOKEN FCM Y GUARDARLO (sin bloquear la UI de login)
-            (async () => {
-              try {
-                const hasPermission =
-                  await NotificationUtils.requestUserPermission();
-                if (hasPermission) {
-                  const token = await NotificationUtils.getFCMToken();
-                  console.log('Token FCM generado:', token);
-                  if (token) {
-                    // Alert.alert('DEBUG', 'Token FCM generado: ' + token.substring(0, 15) + '...');
-                    // Guardar token en /notificaciones/{numeroUsuario}/fcmToken
-                    const {ref, set} = require('firebase/database');
-                    const userRef = ref(firebase.db, `notificaciones/${newUsuario.usuario}/fcmToken`);
-                    await set(userRef, token);
-                    console.log(
-                      'Token FCM guardado para usuario:',
-                      newUsuario.usuario,
-                    );
-                    Alert.alert('DEBUG', 'Token FCM guardado en firebase (login)');
-                  } else {
-                    Alert.alert('DEBUG', 'El token FCM se generó como nulo');
-                  }
-                } else {
-                  Alert.alert('DEBUG', 'No hay permiso de notificaciones concedido');
-                }
-              } catch (err) {
-                Alert.alert('Error DEBUG Token', String(err));
-                console.log('Error guardando token FCM:', err);
-              }
-            })();
-
             setIsAuthenticated(true);
           }
           // SI LA APP ESTA DESACTUALIZADA

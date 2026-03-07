@@ -9,6 +9,8 @@ import Cancelados from './Cancelados';
 import {IconButton} from 'react-native-paper';
 import CustomStatusBar from '../../components/CustomStatusBar';
 import TicketCancellationRequest from './Main/components/TicketCancellationRequest';
+import NotificationBell from '../../components/NotificationBell';
+import {View} from 'react-native';
 
 const Stack = createStackNavigator();
 
@@ -42,13 +44,16 @@ export default function TicketsTab() {
           options={({navigation}) => ({
             headerTitle: appTitle,
             headerRight: () => (
-              <IconButton
-                icon="cog"
-                iconColor="white"
-                onPress={() =>
-                  navigation.navigate(APP_NAVIGATION.SCREENS.CONFIG_MENU)
-                }
-              />
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <NotificationBell />
+                <IconButton
+                  icon="cog"
+                  iconColor="white"
+                  onPress={() =>
+                    navigation.navigate(APP_NAVIGATION.SCREENS.CONFIG_MENU)
+                  }
+                />
+              </View>
             ),
           })}
         />

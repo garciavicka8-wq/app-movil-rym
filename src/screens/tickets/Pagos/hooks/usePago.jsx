@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {Alert, Text} from 'react-native';
 import {Money, Print, Storage, Utils} from '../../../../utils';
-import {registrarPago, verifyTicket, obtenerPremiosPagados} from '../services';
+import {registrarPago, verifyTicket, obtenerPremiosPagadosApi} from '../services';
 import {useLogout, useThermalPrinter} from '../../../../hooks';
 import {useDispatch} from 'react-redux';
 import {agregarRegistroAlMomento} from '../../../../features/tickets/cliente/clienteSlice';
@@ -33,7 +33,7 @@ export default function usePago(modal) {
   const obtenerPagos = async () => {
     try {
       dispatch(setCargandoPagos(true));
-      const data = await obtenerPremiosPagados();
+      const data = await obtenerPremiosPagadosApi();
       dispatch(setPagosRealizados(data));
       dispatch(setCargandoPagos(false));
     } catch ({message}) {

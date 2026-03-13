@@ -6,7 +6,7 @@ import {
   setProximosSorteos,
   setSorteoSeleccionado,
 } from '../features/tickets/jugarTickets/jugarTicketsSlice';
-import {obtenerProximosSorteos} from '../services/tickets';
+import {obtenerProximosSorteosApi} from '../services/tickets';
 
 export default function useSorteos() {
   const [cargando, setCargando] = useState(true);
@@ -16,7 +16,7 @@ export default function useSorteos() {
     try {
       setCargando(true);
       dispatch(setCargandoProximosSorteos(true));
-      const sorteos = await obtenerProximosSorteos();
+      const sorteos = await obtenerProximosSorteosApi();
       dispatch(setProximosSorteos(sorteos));
       if (sorteos.length > 0) {
         dispatch(setSorteoSeleccionado(sorteos[0]));

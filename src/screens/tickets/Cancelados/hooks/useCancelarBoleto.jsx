@@ -10,7 +10,7 @@ import {
   setBoletosCancelados,
   setCargandoCancelados,
 } from '../../../../features/tickets/cancelados/canceladosSlice';
-import {cancelTicket, getCanceledTickets} from '../services';
+import {cancelTicket, getCanceledTicketsApi} from '../services';
 
 export default function useCancelarBoleto(modal) {
   const [cancelandoTicket, setCancelandoTicket] = useState(false);
@@ -83,7 +83,7 @@ export default function useCancelarBoleto(modal) {
   const obtenerBoletos = async () => {
     try {
       dispatch(setCargandoCancelados(true));
-      const boletos = await getCanceledTickets();
+      const boletos = await getCanceledTicketsApi();
       dispatch(setBoletosCancelados(boletos));
       dispatch(setCargandoCancelados(false));
     } catch ({message}) {

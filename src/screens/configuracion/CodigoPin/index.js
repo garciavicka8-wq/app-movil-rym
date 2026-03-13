@@ -7,12 +7,13 @@ import {Colors, Storage} from '../../../utils';
 import {CustomModal} from '../../../components';
 import {Container, Content} from '../../../components/Layout';
 import {Button, Card} from 'react-native-paper';
-import {obtenerUsuarioDb, usuarioAutenticado} from '../../../services/auth';
+import {usuarioAutenticado} from '../../../services/auth';
 import {APP_NAVIGATION} from '../../../constants';
 import CustomNumericField from '../../../components/CustomNumericField';
 import {ERROR_CODE_NAMES} from '../../../errors';
 import {useNetInfo} from '@react-native-community/netinfo';
 import NoConnectionSnackbar from '../../../components/NoConnectionSnackbar';
+import { saveUserAppPINCodeAPi } from './services';
 
 export default function CodigoPin() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -47,7 +48,7 @@ export default function CodigoPin() {
         .max(4, 'El pin debe ser de 4 digitos'),
     }),
     onSubmit: data => {
-      guardarCodigoPin(data);
+      savePINCode(data);
     },
   });
   useEffect(() => {
@@ -64,8 +65,6 @@ export default function CodigoPin() {
   const comprobarCodigoPin = async () => {
     try {
       setVerificandoCodigoPin(true);
-      const _usuario = await obtenerUsuarioDb();
-      setUsuario(_usuario);
       const existePin = Storage.getItem('codigoPin');
       // SI EXISTE CODIGO PIN O NO
       if (existePin) {
@@ -197,6 +196,43 @@ export default function CodigoPin() {
       });
     }
   };
+
+  const savePINCode = async ({password, codigoPin}) =>{
+    // VERIFICAR CONEXION
+      if (!netInfo?.isConnected) {
+        Alert.alert('Mensaje', '¡Vaya parece que no hay internet!');
+        return;
+      }
+      modal.setConfig({
+        open: true,
+        type: 'progress',
+        progressTitle: 'Guardando pin',
+      });
+      
+      try {
+        const data = await saveUserAppPINCodeAPi(password, codigoPin);
+      Storage.setItem('codigoPin', data.codigoPin);
+      modal.setConfig({
+        type: 'alert',
+        alertTitle: 'Mensaje',
+        contentType: 'mensaje',
+        action: 'autenticado',
+        showCancelBtn: false,
+        content: <Text>Pin guardado correctamente</Text>,
+        confirmBtnText: 'Entendido',
+      });
+      } catch (error) {
+        modal.setConfig({
+          type: 'alert',
+          alertTitle: 'Mensaje',
+          contentType: 'error',
+          action: 'error',
+          showCancelBtn: false,
+          error: <Text>{error.message}</Text>,
+          confirmBtnText: 'Entendido',
+        });
+      }
+  }
 
   return (
     <Container>

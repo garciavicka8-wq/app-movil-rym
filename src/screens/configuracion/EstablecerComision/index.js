@@ -6,13 +6,12 @@ import {useFormik} from 'formik';
 import * as YUP from 'yup';
 import {useCustomNavigation, useLogout, useModal} from '../../../hooks';
 import {CustomModal} from '../../../components';
-import {saveRechargeCommission} from '../../../services/taecel';
-import {obtenerUsuarioDb} from '../../../services/auth';
-import {Colors, Money} from '../../../utils';
+import {Colors, Money, Storage} from '../../../utils';
 import {ERROR_CODE_NAMES} from '../../../errors';
 import NoConnectionSnackbar from '../../../components/NoConnectionSnackbar';
 import {useNetInfo} from '@react-native-community/netinfo';
 import MessageIconBox from '../../../components/MessageIconBox';
+import { saveRechargeCommissionApi } from './services';
 
 export default function EstablecerComision() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -51,9 +50,9 @@ export default function EstablecerComision() {
   const cargarComision = async () => {
     try {
       setCargando(true);
-      const userDB = await obtenerUsuarioDb();
-      setComisionRecargas(userDB.comisionRecargas);
-      setComisionRecargasFecha(userDB.comisionRecargasFecha);
+      const userStorage = Storage.getUser();
+      setComisionRecargas(userStorage.comisionRecargas);
+      setComisionRecargasFecha(userStorage.comisionRecargasFecha);
       setCargando(false);
     } catch ({message}) {
       if (
@@ -64,7 +63,7 @@ export default function EstablecerComision() {
         logout();
         return;
       }
-      alert(message);
+      Alert.alert('Mensaje', message);
     }
   };
   //   HANDLE MODAL CANCEL
@@ -88,38 +87,23 @@ export default function EstablecerComision() {
         type: 'progress',
         progressTitle: 'Guardando comisión',
       });
-      await saveRechargeCommission(
-        comision,
-        password,
-        function (validUser, error) {
-          if (validUser) {
-            modal.setConfig({
-              type: 'alert',
-              alertTitle: 'Mensaje',
-              contentType: 'mensaje',
-              showCancelBtn: false,
-              content: <Text>Comisión guardada correctamente</Text>,
-              confirmBtnText: 'Entendido',
-            });
-            formik.resetForm();
-            setComisionRecargas(parseFloat(comision));
-            setComisionRecargasFecha(validUser.updatedAT);
-          }
-          // SI HAY ERROR
-          if (error) {
-            modal.setConfig({
-              type: 'alert',
-              alertTitle: 'Mensaje',
-              contentType: 'error',
-              action: 'error',
-              showCancelBtn: false,
-              error: <Text>{error.message}</Text>,
-              confirmBtnText: 'Entendido',
-            });
-            return;
-          }
-        },
-      );
+      const data = await saveRechargeCommissionApi(comision, password);
+       modal.setConfig({
+        type: 'alert',
+        alertTitle: 'Mensaje',
+        contentType: 'mensaje',
+        showCancelBtn: false,
+        content: <Text>Comisión guardada correctamente</Text>,
+        confirmBtnText: 'Entendido',
+      });
+      formik.resetForm();
+      setComisionRecargas(parseFloat(data.comision));
+      setComisionRecargasFecha(data.updated_at);
+      Storage.updateUser({
+        comisionRecargas: data.comision,
+        comisionRecargasFecha: data.updated_at
+      });
+      
     } catch ({message}) {
       modal.setConfig({
         type: 'alert',

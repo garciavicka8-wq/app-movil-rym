@@ -5,6 +5,9 @@ import {RYM_API_URL} from '../../constants';
 
 export async function get(endpoint) {
   const url = `${RYM_API_URL}/${endpoint}`;
+  if (__DEV__) {
+    console.log(`[requestRymAPI->get]: ${url}`);
+  }
   return axios.get(url, {
     headers: {
       Accept: 'application/json',
@@ -175,4 +178,23 @@ export async function requestRymAPI(
       throw new Error('Error al comunicarse con la API de Recargas y Más.');
     }
   }
+}
+
+/**
+ * Versión de requestRymAPI que acepta un objeto como parámetro.
+ * 
+ * @param {Object} config - Configuración de la petición.
+ * @param {string} config.endpoint - El endpoint al que se realizará la petición.
+ * @param {Object} [config.data={}] - Datos de la petición (cuerpo o query params).
+ * @param {boolean} [config.useJson=true] - Indica si se debe enviar como JSON.
+ * @param {string} [config.method='POST'] - Método HTTP (GET, POST, etc).
+ * @returns {Promise<RymApiResponse>}
+ */
+export async function requestRymAPIConfig({
+  endpoint,
+  data = {},
+  useJson = true,
+  method = 'POST',
+}) {
+  return requestRymAPI(endpoint, data, useJson, method);
 }

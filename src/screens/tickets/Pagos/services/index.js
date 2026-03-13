@@ -4,14 +4,16 @@ import {obtenerUsuarioDb} from '../../../../services/auth';
 import Database from '../../../../database';
 import {DATABASE_TABLES} from '../../../../services/constants';
 
-const {requestRymAPI} = Request;
+const {requestRymAPI, requestRymAPIConfig} = Request;
 const {buildFileObj, getWeekPeriod, compressImage, deleteCapturedImage} = Utils;
 const {getServerDate, getItemsInRange} = Database;
 const {PAID_PRIZES} = DATABASE_TABLES;
 
 export const verifyTicket = async numeroBoleto => {
-  const response = await requestRymAPI('tickets/verificarBoletoPremiado', {
-    numero_boleto: numeroBoleto,
+  const response = await requestRymAPIConfig({
+    endpoint: 'tickets/verificarBoletoPremiado',
+    data: {numero_boleto: numeroBoleto},
+    method: 'GET',
   });
   if (response.error) {
     throw new Error(response.error_message);
@@ -32,7 +34,11 @@ export async function registrarPago(
   formData.append('premio', premio);
   formData.append('captura', buildFileObj(compressedUri));
 
-  const response = await requestRymAPI('tickets/pagarPremio', formData, false);
+  const response = await requestRymAPIConfig({
+    endpoint: 'tickets/pagarPremio',
+    data: formData,
+    useJson: false,
+  });
 
   if (response.error) {
     // console.log(response);
@@ -59,4 +65,15 @@ export async function obtenerPremiosPagados() {
     item => item.pagadoPor == usuario,
   );
   return pagosRealizados;
+}
+
+export async function obtenerPremiosPagadosApi() {
+  const response = await requestRymAPIConfig({
+    endpoint: 'tickets/pagosRealizados',
+    method: 'GET',
+  });
+  if (response.error) {
+    throw new Error(response.error_message);
+  }
+  return response.data;
 }

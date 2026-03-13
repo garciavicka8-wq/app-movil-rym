@@ -32,6 +32,13 @@ const Storage = {
     if (!item) return null;
     return JSON.parse(item);
   },
+
+  updateUser: (data) => {
+    const user = Storage.getUser();
+    Storage.setItem('usuario', {...user, ...data}, true);
+    return Storage.getUser();
+  },
+
 };
 
 export default Storage;

@@ -31,7 +31,7 @@ export async function obtenerCreditoDisponible() {
     throw new Error(message);
   }
 }
-// OBTENER PROXIMOS SORTEOS
+// OBTENER PROXIMOS SORTEOS (DEPRECATED -> USE obtenerProximosSorteosApi)
 export const obtenerProximosSorteos = async () => {
   try {
     const sorteos = await obtenerSorteos();
@@ -71,6 +71,18 @@ export const obtenerProximosSorteos = async () => {
     throw new Error(message);
   }
 };
+// OBTENER PROXIMOS SORTEOS API
+export async function obtenerProximosSorteosApi() {
+  try {
+    const response = await Request.get('sorteos/proximos');
+    if(response.data.error){
+      throw new Error(response.data.error_message);
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
 // OBTENER GANDORES
 export const obtenerPublicacionNumerosGanadores = async fechaSorteo => {
   try {

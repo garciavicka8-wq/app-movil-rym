@@ -109,7 +109,7 @@ export async function makeTransactionAPI(
   transactionType = 'makeRecharge', // 'makeRecharge' | 'payService'
 ) {
   try {
-    const usuarioDB = await obtenerUsuarioDb();
+    const userStorage = Storage.getUser();
     const res = await requestRymAPI('taecel/hacerTransaccion', {
       categoria_id: categoriaID,
       code,
@@ -117,7 +117,7 @@ export async function makeTransactionAPI(
       total,
       descripcion_producto: descripcionProducto,
       transaction_type: transactionType,
-      numero_usuario: usuarioDB.usuario,
+      numero_usuario: userStorage.usuario,
     });
 
     if (res.error) {

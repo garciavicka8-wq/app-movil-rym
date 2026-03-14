@@ -14,7 +14,7 @@ import {
   saveUserWeekInform,
 } from '../../../../services/common';
 import FinanzasService from '../../../../services/FinanzasService';
-import {Moment, Utils} from '../../../../utils';
+import {Moment, Utils, uuid} from '../../../../utils';
 // CALCULATES THE USER SELLS AND COMMISSIONS AND RETURNS AN OBJECT
 // WITH ALL THE INFORMATION
 // @param period Object = {start: 'YYYY-MM-DD', end: 'YYYY-MM-DD}

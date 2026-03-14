@@ -1,5 +1,5 @@
-import {Grid, Row} from 'react-native-easy-grid';
-import ReporteButton from './ReporteButton';
+import {} from 'react-native-easy-grid';
+import ReporteButton from '../../Ventas/components/ReporteButton';
 import UploadImageModal from '../../../../components/UploadImageModal';
 import {useState} from 'react';
 import {Alert} from 'react-native';
@@ -32,17 +32,15 @@ export default function ReportarDepositoButton({onSaved}) {
   if (cargandoPeriodos) return null;
 
   return (
-    <Grid>
-      <Row>
-        <ReporteButton
-          label="Reportar deposito"
-          icon="upload"
-          onPress={() => setShowModal(true)}
-          btnColor="purple"
-          textColor={'white'}
-          iconColor="white"
-        />
-      </Row>
+    <>
+      <ReporteButton
+        label="Reportar deposito"
+        icon="upload"
+        onPress={() => setShowModal(true)}
+        btnColor="purple"
+        textColor={'white'}
+        iconColor="white"
+      />
       {/* UPLOAD MODAL */}
       {showModal && (
         <UploadImageModal
@@ -51,6 +49,6 @@ export default function ReportarDepositoButton({onSaved}) {
           onClose={handleModalClose}
         />
       )}
-    </Grid>
+    </>
   );
 }

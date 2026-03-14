@@ -1,13 +1,14 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Text, View} from 'react-native';
 import {Container, Content} from '../../components/Layout';
-import ReportarDepositoButton from '../reportes/Ventas/components/ReportarDepositoButton';
+import ReportarDepositoButton from '../reportes/Comprobantes/components/ReportarDepositoButton';
 import {Styles as globalStyles, Money, Storage, Utils} from '../../utils';
 import {useDispatch} from 'react-redux';
 import {setCargandoPeriodos} from '../../features/tickets/reportes/reportesSlice';
 import Database from '../../database';
 import {DATABASE_TABLES} from '../../constants';
 import {List} from 'react-native-paper';
+import {Grid, Row} from 'react-native-easy-grid';
 
 export default function Liquidacion() {
   const [usuario] = useState(Storage.getItem('tempUser', true));
@@ -68,11 +69,15 @@ export default function Liquidacion() {
             />
           ))}
         {/* REPORTAR DESPOSITO BUTTON */}
-        <ReportarDepositoButton
-          onSaved={capture => {
-            setComprobantes(prevState => [capture, ...prevState]);
-          }}
-        />
+        <Grid>
+          <Row>
+            <ReportarDepositoButton
+              onSaved={capture => {
+                setComprobantes(prevState => [capture, ...prevState]);
+              }}
+            />
+          </Row>
+        </Grid>
       </Content>
     </Container>
   );

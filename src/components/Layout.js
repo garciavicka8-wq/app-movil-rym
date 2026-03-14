@@ -20,13 +20,13 @@ export function Content({children, marginBottom = 120}) {
   );
 }
 
-export function Footer({children, footerColor = '#fff'}) {
+export function Footer({children, footerColor = '#fff', height = BOTTOM_APPBAR_HEIGHT}) {
   return (
     <Appbar
       style={[
         styles.bottom,
         {
-          height: BOTTOM_APPBAR_HEIGHT,
+          height: height,
           backgroundColor: footerColor,
         },
       ]}>

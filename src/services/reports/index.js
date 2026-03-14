@@ -1,4 +1,4 @@
-import Database from '../../database';
+
 import {ERROR_CODE_NAMES} from '../../errors';
 import {Moment, Utils, Storage} from '../../utils';
 import {obtenerUsuarioDb} from '../auth';
@@ -9,7 +9,7 @@ import {
   updateDbUser,
 } from '../common';
 import * as Request from '../http';
-import {DATABASE_TABLES, DEPOSIT_DAYS} from '../constants';
+import {DEPOSIT_DAYS} from '../constants';
 const {getPreviousWeekPeriod} = Utils;
 // VERIFY USER ACCOUNT STATUS
 export async function verifyUserAccountStatus() {
@@ -88,21 +88,17 @@ export async function saveDepositReceipt(imageUrl) {
     const user = Storage.getUser()
       ? Storage.getUser()
       : Storage.getItem('tempUser', true);
-    const timestamp = await getServerTimestamp();
 
-    await Database.save(DATABASE_TABLES.VOUCHERS, {
+    const response = await Request.post('comprobantes/depositos/receipt', {
+      imageUrl,
       numeroUsuario: user.usuario,
-      capturaUrl: imageUrl,
-      fecha: Moment(timestamp).format('YYYY-MM-DD HH:mm:ss'),
     });
 
-    const savedCapture = await Database.getItem(
-      DATABASE_TABLES.VOUCHERS,
-      'capturaUrl',
-      imageUrl,
-    );
+    if (response.data.error) {
+      throw new Error(response.data.error_message);
+    }
 
-    return savedCapture;
+    return response.data.data;
   } catch (error) {
     throw new Error(error.message);
   }

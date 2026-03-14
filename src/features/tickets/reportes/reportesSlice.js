@@ -129,7 +129,6 @@ const reportesSlice = createSlice({
         {nombre: 'semanal', active: false},
       ];
       state.periodos = [];
-      console.log('resetBotonesReporte ejecutada');
     },
     // ESTADO DE CUENTA STARTS
     setCargandoEstadoDeCuenta: (state, {payload}) => {

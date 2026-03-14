@@ -5,6 +5,7 @@ import {Colors} from '../../utils';
 import MainScreen from './Main';
 import VentasScreen from './Ventas';
 import ResultadosScreen from './Resultados';
+import ComprobantesScreen from './Comprobantes';
 import EstadoDeCuenta from './Ventas/EstadoDeCuenta';
 import {IconButton} from 'react-native-paper';
 import CustomStatusBar from '../../components/CustomStatusBar';
@@ -54,6 +55,13 @@ export default function ReportesTab() {
           component={EstadoDeCuenta}
           options={{
             headerTitle: '',
+          }}
+        />
+        <Stack.Screen
+          name={APP_NAVIGATION.SCREENS.COMPROBANTES}
+          component={ComprobantesScreen}
+          options={{
+            title: 'Comprobantes',
           }}
         />
       </Stack.Navigator>

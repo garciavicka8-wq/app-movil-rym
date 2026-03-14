@@ -31,6 +31,15 @@ export default function Main() {
                 navigation.navigate(APP_NAVIGATION.SCREENS.NUMEROS_GANADORES)
               }
             />
+            <List.Item
+              title="Comprobantes"
+              description=""
+              left={() => <List.Icon icon="image" color={Colors.primary} />}
+              right={props => <List.Icon {...props} icon="arrow-right" />}
+              onPress={() =>
+                navigation.navigate(APP_NAVIGATION.SCREENS.COMPROBANTES)
+              }
+            />
           </Card.Content>
         </Card>
       </Content>

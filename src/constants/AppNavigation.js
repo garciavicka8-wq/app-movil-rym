@@ -24,6 +24,7 @@ const APP_NAVIGATION = {
     CANCELACION_SOLICITUD: 'CancelacionSolicitud',
     // REPORTES
     REPORTES_MENU: 'ReportesMenu',
+    COMPROBANTES: 'Comprobantes',
     // RECARGAS SCREEN
     RECARGAS: 'Recargas',
     RECARGAS_MENU: 'RecargasMenu',

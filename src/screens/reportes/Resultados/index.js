@@ -4,17 +4,14 @@ import {Container, Content, Footer} from '../../../components/Layout';
 // CUSTOM COMPONENTS
 import ListaNumeros from './components/ListaNumeros';
 import SelectSorteo from './components/SelectSorteo';
-// UTILITIES
-import {Helpers, Moment} from '../../../utils';
 // STORE ACTIONS & REDUCERS
-import {obtenerSorteos} from '../../../services/tickets';
+import {obtenerUltimosSorteosApi} from '../../../services/tickets';
 import {
   setCargandoSorteosJugados,
   setSorteoSelected,
   setSorteosJugados,
 } from '../../../features/tickets/ganadores/ganadoresSlice';
 // DATABASE API
-import Database from '../../../database';
 import NumerosContainer from './components/NumerosContainer';
 import {useGanadores, useLogout} from '../../../hooks';
 import {Alert} from 'react-native';
@@ -43,22 +40,13 @@ export default function Ganadores() {
   const cargarSorteosJugados = async () => {
     try {
       dispatch(setCargandoSorteosJugados(true));
-      const _sorteos = await obtenerSorteos();
-      const timestamp = await Database.getServerDate();
-      const fechaServidor = Moment(timestamp).format('YYYY-MM-DD');
-      let jugados = [];
-      _sorteos.forEach((item, index) => {
-        if (Moment(item.fecha).isBefore(fechaServidor)) {
-          jugados.push({...item});
-        }
-      });
-      const sorteosJugadosOrdenados = Helpers.sortListByDate(jugados, 'fecha');
-      dispatch(setSorteosJugados(sorteosJugadosOrdenados));
+      const _sorteos = await obtenerUltimosSorteosApi();
+      dispatch(setSorteosJugados(_sorteos));
       dispatch(setCargandoSorteosJugados(false));
       // CARGAR PUBLICACION NUMEROS GANADORES
-      if (sorteosJugadosOrdenados.length > 0) {
-        dispatch(setSorteoSelected(sorteosJugadosOrdenados[0]));
-        cargarPublicacion(sorteosJugadosOrdenados[0].fecha);
+      if (_sorteos.length > 0) {
+        dispatch(setSorteoSelected(_sorteos[0]));
+        cargarPublicacion(_sorteos[0].fecha);
       }
     } catch ({message}) {
       if (

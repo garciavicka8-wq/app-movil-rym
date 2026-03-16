@@ -11,6 +11,32 @@ import VersionCheck from 'react-native-version-check';
 import {ERROR_CODE_NAMES} from '../../errors';
 import {requestRymAPI} from '../http';
 
+export async function loginAppApi(numeroUsuario, password){
+  try {
+    const device = {
+      uniqueId: await getUniqueId(),
+      name: await getDeviceName(),
+      systemVersion: getSystemVersion(),
+      systemName: getSystemName(),
+    };
+    const appVersion = VersionCheck.getCurrentVersion();
+    
+    const responseData = await requestRymAPI('authentication/login-app', {
+      usuario: numeroUsuario,
+      password,
+      device,
+      appVersion
+    });
+    
+    if(responseData.error){
+      throw new Error(responseData.error_message);
+    }
+    return responseData.data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
 export const iniciarSesionApi = async (numeroUsuario, password, callback) => {
   try {
     Storage.removeItem('tempUser');
@@ -30,26 +56,38 @@ export const iniciarSesionApi = async (numeroUsuario, password, callback) => {
       appVersion
     });
 
+    if (responseData.error) {
+       // Si hay tempUser en data
+       const tempUser = responseData.data?.tempUser || responseData.tempUser;
+       if (tempUser) {
+         Storage.setItem('tempUser', tempUser, true);
+       }
+       // En caso de que se envíe una bandera de update
+       let isUpdateRequired = false;
+       if (responseData.data && responseData.data.update) {
+          isUpdateRequired = true;
+       }
+       
+       throw { 
+         message: responseData.error_message || 'Ocurrió un error al iniciar sesión.', 
+         update: isUpdateRequired 
+       };
+    }
+
     const { user, versionApp } = responseData.data;
     callback(user, versionApp, null);
   } catch (error) {
-    
     let errorMessage = 'Ocurrió un error al iniciar sesión. Intenta nuevamente.';
     let isUpdateRequired = false;
 
     if (error.response && error.response.data) {
-      const errorData = error.response.data;
-      if (error.response.status === 426 || (errorData.data && errorData.data.update)) {
+      if (error.response.status === 426) {
         isUpdateRequired = true;
       }
-      errorMessage = errorData.error_message || errorData.message || errorMessage;
-      
-      const tempUser = errorData.data?.tempUser || errorData.tempUser;
-      if (tempUser) {
-        Storage.setItem('tempUser', tempUser, true);
-      }
+      errorMessage = error.response.data.error_message || error.response.data.message || errorMessage;
     } else if (error.message) {
       errorMessage = error.message;
+      if (error.update) isUpdateRequired = true;
     }
 
     callback(null, null, {

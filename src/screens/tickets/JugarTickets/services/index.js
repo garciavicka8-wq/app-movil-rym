@@ -22,7 +22,7 @@ export async function registrarTicketApi(
       Storage.setItem('saturados', res.data.saturados, true);
       throw new Error(res.data.message);
     }
-
+console.log(res);
     if (res.error) {
       throw new Error(res.error_message);
     }

@@ -13,7 +13,7 @@ export const verifyTicket = async numeroBoleto => {
   const response = await requestRymAPIConfig({
     endpoint: 'tickets/verificarBoletoPremiado',
     data: {numero_boleto: numeroBoleto},
-    method: 'GET',
+    method: 'POST',
   });
   if (response.error) {
     throw new Error(response.error_message);

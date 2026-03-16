@@ -81,8 +81,8 @@ android {
         applicationId "com.rymapp2"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 91
-        versionName "7.0.0"
+        versionCode 95
+        versionName "7.0.4"
         missingDimensionStrategy 'react-native-camera', 'general'
     }
     signingConfigs {

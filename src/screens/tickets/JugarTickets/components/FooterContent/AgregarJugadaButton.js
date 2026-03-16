@@ -118,14 +118,22 @@ export default function AgregarJugadaButton() {
       ? Object.values(lugares).reduce((acc, curr) => acc + Number(curr), 0)
       : 0;
 
-    if (automaticoLugares > 0) {
-      if (agregandoJugadas) return;
-      setAgregandoJugadas(true);
-      const automaticoLugaresArr = obtenerAutomaticoLugares(lugares);
-      const EXES = {
-        tres: 'XXX',
-        dos: 'XX',
-        una: 'X',
+    if (automaticoLugares < 1) {
+      Alert.alert(
+        'Mensaje',
+        'Debe elegir un monto al menos para un lugar.',
+        [{text: 'Entendido'}],
+      );
+      return;
+    }
+
+    if (agregandoJugadas) return;
+    setAgregandoJugadas(true);
+    const automaticoLugaresArr = obtenerAutomaticoLugares(lugares);
+    const EXES = {
+      tres: 'XXX',
+      dos: 'XX',
+      una: 'X',
       };
       let jugadasAutomaticas = [];
       for (let i = 0; i < automaticoConfig.numeroJugadas; i++) {
@@ -145,7 +153,6 @@ export default function AgregarJugadaButton() {
       modalInputs.handleReset();
       handleModalCancel();
       setAgregandoJugadas(false);
-    }
   };
 
   const hasIntegers = (list = []) => {

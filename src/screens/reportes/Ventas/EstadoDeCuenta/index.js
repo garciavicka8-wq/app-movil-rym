@@ -13,6 +13,7 @@ import {obtenerUsuarioDb} from '../../../../services/auth';
 import {definePeriod} from '../../../../services/estado_de_cuenta';
 import {useNetInfo} from '@react-native-community/netinfo';
 import {getUserAccountStatus} from '../services';
+import { Storage } from '../../../../utils';
 
 export default function EstadoDeCuenta() {
   const {cargandoEstadoDeCuenta, periodoSeleccionado, tipoEstadoDeCuenta} =
@@ -36,7 +37,7 @@ export default function EstadoDeCuenta() {
   const _cargarEstadoDeCuenta = async () => {
     try {
       dispatch(setCargandoEstadoDeCuenta(true));
-      const userDB = await obtenerUsuarioDb();
+      const userDB = Storage.getItem('usuario', true);
       const period = await definePeriod(periodoSeleccionado);
       const accountStatus = await getUserAccountStatus(period, userDB);
       dispatch(setEstadoDeCuenta(accountStatus));

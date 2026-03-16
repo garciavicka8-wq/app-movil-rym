@@ -119,14 +119,14 @@ export async function makeTransactionAPI(
       transaction_type: transactionType,
       numero_usuario: userStorage.usuario,
     });
-
+    
     if (res.error) {
       throw new Error(res.error_message);
     }
 
     return res.data;
   } catch (error) {
-    // console.error(`[Error]: ${error.message} | [Func]: makeTransactionAPI`);
+    // console.error(`[Error]: ${error} | [Func]: makeTransactionAPI`);
     throw new Error(error.message);
   }
 }

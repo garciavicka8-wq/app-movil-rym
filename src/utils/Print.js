@@ -7,8 +7,12 @@ import {
   ALIGN,
   ERROR_CORRECTION,
 } from 'tp-react-native-bluetooth-printer';
-import {CHISPAZO_LOGO, PRINT_TABLE, PRINT_TABLE_HEADER} from '../constants';
-import {TKP_LOGO_URL} from '../constants';
+import {
+  CHISPAZO_LOGO,
+  PRINT_TABLE,
+  PRINT_TABLE_HEADER,
+  TKP_LOGO_URL,
+} from '../constants';
 
 const Print = (() => {
   // TRANSACTION RECEIPT
@@ -217,19 +221,20 @@ const Print = (() => {
     }
   };
 
-  const accountStatus = async accountStatus => {
+  const accountStatus = async accountStatusObj => {
     try {
       // AccountStatus HEADER
-      await printAccountStatusHeader(accountStatus);
+      await printAccountStatusHeader(accountStatusObj);
       // AccountStatus BODY
-      await printAccountStatusBody(accountStatus);
+      await printAccountStatusBody(accountStatusObj);
       // BANK INFO
-      await printBankInfo();
+      await printBankInfo(accountStatusObj.bankInfo);
       // PRINT AccountStatus FOOTER
-      await printAccountStatusFooter(accountStatus);
-    } catch ({message}) {
-      ToastAndroid.show(message, ToastAndroid.LONG);
-      throw new Error(message);
+      await printAccountStatusFooter(accountStatusObj);
+    } catch (error) {
+      console.log(error);
+      ToastAndroid.show(error.message, ToastAndroid.LONG);
+      throw new Error(error.message);
     }
   };
 
@@ -302,8 +307,7 @@ const Print = (() => {
   // PRIVATE FUNCTIONS
   // TICKET HEADER
   async function printAccountStatusHeader(accountStatus) {
-    const {lastInform, lastInformPeriod} = accountStatus;
-
+    const {lastInformPeriodEnd, lastInformAmount, lastInformTotalDeposits, paidPrizesBeforeWeekPaymentLimitDay} = accountStatus;
     const staticFields = [
       {text: `Exp. ${accountStatus.fechaExp}`},
       {text: `${accountStatus.nomComercial}`},
@@ -311,22 +315,22 @@ const Print = (() => {
         text: `Sem. ${accountStatus.period.start} - ${accountStatus.period.end}`,
       },
       {
-        text: `S.Ant. al ${Moment(lastInformPeriod.end).format(
+        text: `S.Ant. al ${Moment(lastInformPeriodEnd).format(
           'YYYY-MM-DD',
-        )} ${Money(lastInform.amount)}`,
+        )} ${Money(lastInformAmount)}`,
       },
     ];
 
     const conditionalFields = [
       {
-        condition: accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total > 0,
+        condition: paidPrizesBeforeWeekPaymentLimitDay.total > 0,
         text: `P.pagados lun a mie ant. ${Money(
-          accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total,
+          paidPrizesBeforeWeekPaymentLimitDay.total,
         )}`,
       },
       {
-        condition: lastInform.totalDeposits > 0,
-        text: `Su pago ${Money(lastInform.totalDeposits)}`,
+        condition: lastInformTotalDeposits > 0,
+        text: `Su pago ${Money(lastInformTotalDeposits)}`,
       },
       {
         condition: accountStatus.dueBalance > 0,
@@ -376,7 +380,7 @@ const Print = (() => {
           },
           {
             label: 'P.pagados lun a mie act',
-            value: accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDay.total,
+            value: accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDayTotal,
           },
           {label: 'Com tickets', value: accountStatus.tickets.commission},
           {label: 'Com recargas', value: accountStatus.recharges.commission},
@@ -429,15 +433,25 @@ const Print = (() => {
   }
 
   // BANK INFO
-  async function printBankInfo() {
+  async function printBankInfo(bankInfo) {
     await hashesSeparator();
-    await printSectionTitle('Banco y Num Cta');
-    await printLine('BBVA: 0172490323');
-    await printLine('Scotiabank: 25601299356');
-    await printLine('B.Azteca: 01720107507910');
-    await printLine('Desarrolladora de Sistemas');
-    await printLine('Tecnologicos de Guerrero');
-    await printLine('S.A. de C.V.');
+    await printSectionTitle('CUENTAS PARA DEPÓSITO');
+    try {
+      if (bankInfo && bankInfo.cuentas && Array.isArray(bankInfo.cuentas)) {
+        for (let cta of bankInfo.cuentas) {
+          if (cta.titular) {
+            await printLine(`Tit: ${cta.titular}`);
+          }
+          await printLine(`Ban: ${cta.banco || ''}`);
+          await printLine(`Cta: ${cta.cuenta || ''}`);
+          await printLine('--------------------------------');
+        }
+      } else if (!bankInfo || !bankInfo.cuentas || bankInfo.cuentas.length === 0) {
+        await printLine('Ninguna cuenta configurada.');
+      }
+    } catch (e) {
+      console.log('Error printing bank info:', e);
+    }
   }
   // TICKET FOOTER
   async function printAccountStatusFooter(accountStatus) {
@@ -510,6 +524,11 @@ const Print = (() => {
     await printLine(`ID ${boleto.numeroBoleto}`);
     await printLine(`V1N ${Utils.generateRandomNumber(16)}`);
     await printLine(`COS ${Utils.generateRandomNumber(8)}`);
+    await printLine(
+      `Impresion ${Moment(boleto.fechaExp).format('DD/MM/YYYY')} ${
+        boleto.horaImpresion
+      }`,
+    );
 
     await alignText('center');
     await BEP.printQRCode(boleto.numeroBoleto, 220, ERROR_CORRECTION.L, 0);

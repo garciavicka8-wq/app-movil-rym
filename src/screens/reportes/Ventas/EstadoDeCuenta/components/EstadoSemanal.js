@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useModal, useThermalPrinter} from '../../../../../hooks';
 import Database from '../../../../../database';
 import {Colors, Moment, Money, Print, Utils} from '../../../../../utils';
@@ -11,16 +11,29 @@ import {Button} from 'react-native-paper';
 import {useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../../errors';
+import {DATABASE_TABLES} from '../../../../../constants';
+import { requestRymAPIConfig } from '../../../../../services/http';
 
 export default function EstadoSemanal() {
   const {estadoDeCuenta: accountStatus} = useSelector(state => state.reportes);
   const thermalPrinter = useThermalPrinter();
   const modal = useModal();
   const reactNavigation = useNavigation();
+  const [bankConfig, setBankConfig] = useState(null);
 
   useEffect(() => {
     reactNavigation.setOptions({headerTitle: 'Estado de cuenta'});
+    fetchBankConfig();
   }, []);
+
+  const fetchBankConfig = async () => {
+    try {
+      const response = await requestRymAPIConfig({endpoint: 'ajustes/bancos', method: 'GET'});
+      setBankConfig(response.data);
+    } catch (e) {
+      console.log('Error fetching bank configuration:', e);
+    }
+  };
 
   //   HANDLE MODAL CANCEL
   const handleModalCancel = () => {
@@ -84,6 +97,7 @@ export default function EstadoSemanal() {
         await Print.accountStatus({
           ...accountStatus,
           fechaExp: Moment(timestamp).format('YYYY-MM-DD HH:mm:ss'),
+          bankInfo: bankConfig,
         });
       });
       modal.setConfig({open: false});
@@ -269,17 +283,31 @@ export default function EstadoSemanal() {
             marginVertical={20}
             cols={['A PAGAR', '', Money(accountStatus.toPay)]}
           />
-          <CustomRow header cols={['Banco', 'N°Cta']} underlined={false} />
-          <CustomRow cols={['BBVA', '0172490323']} underlined={false} />
-          <CustomRow cols={['Scotiabank', '25601299356']} underlined={false} />
-          <CustomRow cols={['B.Azteca', '01720107507910']} underlined={false} />
-          <CustomRow
-            cols={[
-              'R.Social',
-              'Desarrolladora de Sistemas Tecnologicos de Guerrero S.A. de C.V.',
-            ]}
-            underlined={false}
-          />
+          <Text style={{fontWeight: 'bold', marginTop: 20, marginBottom: 10, color: Colors.dark, textAlign: 'center'}}>
+            CUENTAS PARA DEPÓSITO
+          </Text>
+          
+          {bankConfig?.cuentas && bankConfig.cuentas.map((c, i) => (
+             <View key={i} style={styles.bankCard}>
+               <View style={styles.bankCardRow}>
+                 <Text style={styles.bankCardLabel}>Titular:</Text>
+                 <Text style={styles.bankCardValue}>{c.titular || 'No especificado'}</Text>
+               </View>
+               <View style={styles.bankCardRow}>
+                 <Text style={styles.bankCardLabel}>Banco:</Text>
+                 <Text style={styles.bankCardValue}>{c.banco || ''}</Text>
+               </View>
+               <View style={styles.bankCardRow}>
+                 <Text style={styles.bankCardLabel}>Cuenta/Clabe:</Text>
+                 <Text style={styles.bankCardValue}>{c.cuenta || ''}</Text>
+               </View>
+             </View>
+          ))}
+
+          {(!bankConfig || !bankConfig.cuentas || bankConfig.cuentas.length === 0) && (
+            <CustomRow cols={['Ningun banco', 'configurado']} underlined={false} />
+          )}
+
           <Importe importe={accountStatus.amount} />
           <Button
             onPress={handlePrinterConnection}
@@ -331,5 +359,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 22,
     fontWeight: 'bold',
+  },
+  bankCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  bankCardRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+    flexWrap: 'wrap',
+  },
+  bankCardLabel: {
+    fontWeight: 'bold',
+    color: Colors.dark,
+    marginRight: 6,
+    fontSize: 13,
+  },
+  bankCardValue: {
+    color: '#444',
+    fontSize: 13,
+    flex: 1,
   },
 });

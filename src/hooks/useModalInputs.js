@@ -20,7 +20,6 @@ export default function useModalInputs() {
   const [cantidadFija, setCantidadFija] = useState(false);
   const [conPar, setConPar] = useState(false);
   const [candado, setCandado] = useState(false);
-  const [automatico, setAutomatico] = useState(false);
   const [automaticoConfig, setAutomaticoConfig] = useState({
     active: false,
     cifras: 'tres',

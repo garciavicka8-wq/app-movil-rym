@@ -16,7 +16,7 @@ import {ReactNativeBiometricsLegacy} from 'react-native-biometrics';
 import * as Keychain from 'react-native-keychain';
 import Ribbon from './Ribbon';
 import {useAuthContext} from '../../../context/AuthContext';
-import {iniciarSesionApi} from '../../../services/auth';
+import {iniciarSesionApi, loginAppApi} from '../../../services/auth';
 import {useNavigation} from '@react-navigation/native';
 import {APP_NAVIGATION} from '../../../constants';
 const BALL = require('../../../assets/ball.png');
@@ -76,10 +76,33 @@ export default function LoginForm() {
       setStartAnimation(true);
       setTimeout(() => {
         // START LOGIN PROCESS
-        startLoginProcess(inputs.usuario, inputs.password);
+        initLoginProcess(inputs.usuario, inputs.password);
       }, 1000);
     }
   };
+
+  const initLoginProcess = async (usuario, password) =>{
+    try {
+      const {user, versionApp} = await loginAppApi(usuario, password);
+        Storage.setItem('usuario', user, true);
+        Storage.setItem('versionApp', versionApp);
+        // Esta informacion la usamos en el login para mostrar el usuario
+        Storage.setItem(
+          'loginData',
+          {
+            userNumber: user.usuario,
+            userName: user.nomComercial,
+          },
+          true,
+        );
+        Utils.setLoginTime();
+        await Keychain.setGenericPassword(usuario, password);
+        setIsAuthenticated(true);
+    } catch (error) {
+      setStartAnimation(false);
+      Alert.alert('Error', error.message);
+    }
+  }
 
   const startLoginProcess = async (usuario, password) => {
     try {
@@ -133,7 +156,7 @@ export default function LoginForm() {
       );
     } catch (e) {
       setStartAnimation(false);
-      Alert.alert('Error Crítico API', String(e.message || e));
+      Alert.alert('Error', String(e.message || e));
     }
   };
 

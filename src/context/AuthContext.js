@@ -1,4 +1,4 @@
-import {createContext, useCallback, useContext, useMemo, useState} from 'react';
+import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {Storage, Utils} from '../utils';
 import {useDispatch} from 'react-redux';
 import {
@@ -8,6 +8,7 @@ import {
 } from '../features/taecel/taecelSlice';
 
 import {cerrarSesionApi} from '../services/auth';
+import { Alert, DeviceEventEmitter } from 'react-native';
 
 export const AuthContext = createContext(null);
 
@@ -16,6 +17,27 @@ export function AuthProvider({children}) {
     Storage.getItem('usuario', true) !== null,
   );
   const dispatch = useDispatch();
+
+  useEffect(() => {
+  const subscription = DeviceEventEmitter.addListener('FORCE_LOGOUT', (data) => {
+    Alert.alert(
+      "Actualización Requerida",
+      data.message || "Tu sesión ha expirado debido a una versión antigua.",
+      [
+        { 
+          text: "Aceptar", 
+          onPress: () => signout()
+        }
+      ],
+      { cancelable: false }
+    );
+  });
+
+  return () => {
+    // Limpiamos la suscripción al desmontar
+    subscription.remove();
+  };
+}, [signout]);
 
   const signout = useCallback(async function () {
     try {

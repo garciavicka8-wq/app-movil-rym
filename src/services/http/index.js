@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from './config';
 import ENV from 'react-native-config';
 import {Storage, Utils} from '../../utils';
 import {RYM_API_URL} from '../../constants';

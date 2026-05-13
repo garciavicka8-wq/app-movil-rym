@@ -1,7 +1,7 @@
-import React, {useState} from 'react';
+import React, {useState, cloneElement} from 'react';
 import {IconButton, Menu} from 'react-native-paper';
 
-export default function PeriodoMenu({cargando, onMenuItemPress}) {
+export default function PeriodoMenu({cargando, onMenuItemPress, trigger}) {
   const [visible, setVisible] = useState(false);
 
   const handleItemPress = value => {
@@ -9,16 +9,25 @@ export default function PeriodoMenu({cargando, onMenuItemPress}) {
     setVisible(false);
   };
 
+  const openMenu = () => setVisible(true);
+
   return (
     <Menu
       visible={visible}
       onDismiss={() => setVisible(false)}
       anchor={
-        <IconButton
-          icon={!visible ? 'chevron-down' : 'chevron-up'}
-          disabled={cargando}
-          onPress={() => setVisible(true)}
-        />
+        trigger ? (
+          cloneElement(trigger, {
+            onPress: openMenu,
+            disabled: cargando,
+          })
+        ) : (
+          <IconButton
+            icon={!visible ? 'chevron-down' : 'chevron-up'}
+            disabled={cargando}
+            onPress={openMenu}
+          />
+        )
       }>
       <Menu.Item title="Semana En Curso" onPress={() => handleItemPress(0)} />
       <Menu.Item title="Semana pasada" onPress={() => handleItemPress(1)} />

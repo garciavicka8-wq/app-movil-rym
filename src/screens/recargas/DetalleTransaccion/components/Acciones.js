@@ -1,6 +1,5 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {Col, Row} from 'react-native-easy-grid';
 import {Button} from 'react-native-paper';
 import {
   useCustomNavigation,
@@ -12,7 +11,7 @@ import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import {sendTransactionReceipt} from '../../../../services/taecel';
 import {useSelector} from 'react-redux';
-import {Helpers, Print, Storage} from '../../../../utils';
+import {Helpers, Print, Storage, Colors} from '../../../../utils';
 import {APP_NAVIGATION, TXN} from '../../../../constants';
 import {ERROR_NAMES} from '../../../../errors';
 
@@ -20,6 +19,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
   const {transaccionStore} = useSelector(state => state.taecel);
   const modal = useModal();
   const thermalPrinter = useThermalPrinter();
+  
   const formik = useFormik({
     initialValues: {
       correo: '',
@@ -31,7 +31,6 @@ export default function Acciones({shareWhatsappBtn = null}) {
     }),
     onSubmit: async data => {
       try {
-        // Mostrar modal de progreso
         modal.setConfig({
           open: true,
           type: 'progress',
@@ -56,12 +55,11 @@ export default function Acciones({shareWhatsappBtn = null}) {
         const isRecarga = [TXN.CODES.RECARGA, TXN.CODES.PAQUETE].includes(
           CategoriaID,
         );
-        // Determinar comisión
         const comision =
           isRecarga && _comisionRecargas !== undefined
             ? _comisionRecargas
             : Helpers.sumWithDecimals(Cargo, Comision) || Money(2);
-        // Enviar comprobante
+
         const rymResponse = await sendTransactionReceipt({
           correo: data.correo,
           status: Status,
@@ -77,7 +75,6 @@ export default function Acciones({shareWhatsappBtn = null}) {
           fecha: Fecha,
         });
 
-        // Manejo de respuesta
         modal.setConfig({
           type: 'alert',
           alertTitle: 'Mensaje',
@@ -85,7 +82,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
           action: rymResponse.success ? 'mensaje' : 'error',
           showCancelBtn: false,
           content: (
-            <Text>
+            <Text style={styles.modalText}>
               {rymResponse.success
                 ? `Comprobante enviado a ${data.correo}`
                 : 'Error al enviar el comprobante'}
@@ -96,30 +93,27 @@ export default function Acciones({shareWhatsappBtn = null}) {
 
         formik.handleReset();
       } catch (error) {
-        console.error('[onSubmit] Error:', error.message);
-        console.log(error);
-
         modal.setConfig({
           type: 'alert',
           alertTitle: 'Mensaje',
           contentType: 'error',
           action: 'error',
           showCancelBtn: false,
-          content: <Text>{error.message}</Text>,
+          content: <Text style={styles.modalText}>{error.message}</Text>,
           confirmBtnText: 'Entendido',
         });
-
         formik.handleReset();
       }
     },
   });
+
   const navigation = useCustomNavigation();
-  //   HANDLE MODAL CANCEL
+  
   const handleModalCancel = () => {
     modal.setConfig({open: false});
     formik.handleReset();
   };
-  //   HANDLE MODAL ACCEPT
+
   const handleModalAccept = () => {
     if (modal.config.action === 'error' || modal.config.action === 'mensaje') {
       handleModalCancel();
@@ -128,7 +122,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
       formik.handleSubmit();
     }
   };
-  // ENVIAR COMPROBANTE
+
   const enviarCorreo = () => {
     modal.setConfig({
       open: true,
@@ -140,7 +134,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
       showCancelBtn: true,
     });
   };
-  //   IMPRIMIR COMPROBANTE
+
   const imprimir = async () => {
     try {
       if (!thermalPrinter.isPrinting) {
@@ -151,7 +145,6 @@ export default function Acciones({shareWhatsappBtn = null}) {
         });
         const isPrintingPossible = await thermalPrinter.isPrintingPossible();
         if (isPrintingPossible) {
-          // IMPRIMIR COMPROBANTE
           await thermalPrinter.print(async function () {
             await Print.transactionReceipt(transaccionStore);
           });
@@ -163,54 +156,86 @@ export default function Acciones({shareWhatsappBtn = null}) {
         modal.setConfig({open: false});
         return;
       }
-      if (message === ERROR_NAMES.CONNECTING_DEVICE_FAILED) {
-        modal.setConfig({
-          type: 'alert',
-          alertTitle: 'Mensaje',
-          contentType: 'error',
-          action: 'error',
-          showCancelBtn: false,
-          confirmBtnText: 'Entendido',
-          error: <Text>verifica que la impresora este encendida</Text>,
-        });
-        return;
-      }
       modal.setConfig({
         type: 'alert',
-        alertTitle: 'Mensaje',
+        alertTitle: 'Error de Impresión',
         contentType: 'error',
         action: 'error',
         showCancelBtn: false,
         confirmBtnText: 'Entendido',
-        error: <Text>{message}</Text>,
+        content: <Text style={styles.modalText}>Verifica que la impresora esté encendida y conectada.</Text>,
       });
-      modal.setConfig({open: false});
     }
   };
 
   const terminar = async () => {
-    // Utils.setLoginTime();
     modal.setConfig({open: false});
     navigation.resetStack(APP_NAVIGATION.SCREENS.RECARGAS_MENU);
   };
 
   if (transaccionStore.Status !== 'Exitosa') {
-    return null;
+    return (
+      <View style={styles.actions}>
+        <Button 
+          mode="contained" 
+          buttonColor={Colors.primary} 
+          style={styles.fullButton}
+          onPress={() => navigation.goBack()}
+        >
+          REGRESAR
+        </Button>
+      </View>
+    );
   }
 
   return (
     <>
       <View style={styles.actions}>
-        <Text style={styles.subtitulo}>Compartir</Text>
-        <Row style={{marginBottom: 10}}>
-          {shareWhatsappBtn && <Col style={styles.col}>{shareWhatsappBtn}</Col>}
-          <ColButton color="red" text="CORREO" onPress={() => enviarCorreo()} />
-        </Row>
-        <Row>
-          <ColButton color="black" text="IMPRIMIR" onPress={() => imprimir()} />
-          <ColButton color="gray" text="TERMINAR" onPress={() => terminar()} />
-        </Row>
+        <Text style={styles.subtitle}>Acciones</Text>
+        
+        <View style={styles.buttonGrid}>
+          <View style={styles.buttonWrapper}>
+            {shareWhatsappBtn}
+          </View>
+          <View style={styles.buttonWrapper}>
+            <Button 
+              mode="contained" 
+              buttonColor="#3B82F6" 
+              style={styles.actionButton}
+              labelStyle={styles.buttonLabel}
+              onPress={() => enviarCorreo()}
+            >
+              CORREO
+            </Button>
+          </View>
+        </View>
+
+        <View style={[styles.buttonGrid, {marginTop: 12}]}>
+          <View style={styles.buttonWrapper}>
+            <Button 
+              mode="contained" 
+              buttonColor="#64748B" 
+              style={styles.actionButton}
+              labelStyle={styles.buttonLabel}
+              onPress={() => imprimir()}
+            >
+              IMPRIMIR
+            </Button>
+          </View>
+          <View style={styles.buttonWrapper}>
+            <Button 
+              mode="contained" 
+              buttonColor="#0E1321" 
+              style={styles.actionButton}
+              labelStyle={styles.buttonLabel}
+              onPress={() => terminar()}
+            >
+              TERMINAR
+            </Button>
+          </View>
+        </View>
       </View>
+
       <CustomModal
         open={modal.config.open}
         type={modal.config.type}
@@ -224,7 +249,7 @@ export default function Acciones({shareWhatsappBtn = null}) {
         onAccept={handleModalAccept}>
         {modal.config.contentType === 'enviar' && (
           <CustomInput
-            label="Correo"
+            label="Correo Electrónico"
             keyboardType="email-address"
             value={formik.values.correo}
             onChange={formik.handleChange('correo')}
@@ -233,34 +258,49 @@ export default function Acciones({shareWhatsappBtn = null}) {
             errorMessage={formik.errors.correo}
           />
         )}
-        {modal.config.contentType === 'mensaje' && modal.config.content}
-        {modal.config.contentType === 'error' && modal.config.content}
+        {(modal.config.contentType === 'mensaje' || modal.config.contentType === 'error') && modal.config.content}
       </CustomModal>
     </>
   );
 }
 
-const ColButton = ({onPress, text, color}) => {
-  return (
-    <Col style={styles.col}>
-      <Button mode="contained" buttonColor={color} onPress={onPress}>
-        {text}
-      </Button>
-    </Col>
-  );
-};
-
 const styles = StyleSheet.create({
-  subtitulo: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
   actions: {
-    width: '100%',
-    marginVertical: 20,
+    paddingHorizontal: 20,
+    marginTop: 25,
   },
-  col: {
-    paddingHorizontal: 2,
+  subtitle: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: 15,
   },
+  buttonGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  buttonWrapper: {
+    width: '48%',
+  },
+  actionButton: {
+    borderRadius: 12,
+    paddingVertical: 4,
+  },
+  fullButton: {
+    borderRadius: 12,
+    paddingVertical: 6,
+  },
+  buttonLabel: {
+    fontFamily: 'Inter',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  modalText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 20,
+  }
 });

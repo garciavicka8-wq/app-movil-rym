@@ -13,12 +13,12 @@ export default function NumerosContainer() {
     <View
       style={[
         styles.ribbon,
-        {backgroundColor: loadingContent ? '#eee' : Colors.purple},
+        {backgroundColor: loadingContent ? '#F1F5F9' : '#0E1321'},
       ]}>
       <View
         style={[
           styles.imgBox,
-          {backgroundColor: loadingContent ? '#c2c2c2' : '#fff'},
+          {backgroundColor: loadingContent ? '#E2E8F0' : '#FFFFFF'},
         ]}>
         {!loadingContent && publicacion && (
           <Image
@@ -35,20 +35,29 @@ export default function NumerosContainer() {
 const styles = StyleSheet.create({
   ribbon: {
     width: '100%',
-    height: 200,
+    height: 180,
     justifyContent: 'flex-end',
     alignItems: 'center',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    overflow: 'hidden',
   },
   imgBox: {
-    width: 300,
-    height: 150,
+    width: '85%',
+    height: 140,
     justifyContent: 'center',
     alignItems: 'center',
-    borderTopLeftRadius: 20,
-    borderTopEndRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   img: {
-    width: 200,
-    height: 200,
+    width: '100%',
+    height: '100%',
+    maxHeight: 120,
   },
 });

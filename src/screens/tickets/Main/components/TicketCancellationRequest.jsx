@@ -15,6 +15,7 @@ import {RNCamera} from 'react-native-camera';
 import RNFS from 'react-native-fs';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {Colors, Utils} from '../../../../utils';
+import CustomStatusBar from '../../../../components/CustomStatusBar';
 
 import { uploadTicketCapture, requestTicketCancellation } from '../../../../services/tickets';
 import { Storage } from '../../../../utils';
@@ -145,32 +146,37 @@ export default function TicketCancellationRequest() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{flex: 1, backgroundColor: '#f5f5f5'}}>
+      style={styles.mainContainer}>
       
+      <CustomStatusBar color="darkBackground" />
+
       <Portal>
         <Modal visible={loading} dismissable={false} contentContainerStyle={styles.modalContent}>
-           <ActivityIndicator animating={true} color={Colors.PRIMARY} size="large" />
+           <ActivityIndicator animating={true} color={Colors.primary} size="large" />
            <Text style={styles.loadingText}>Enviando solicitud...</Text>
         </Modal>
       </Portal>
 
+      <View style={styles.headerContainer}>
+        <IconButton 
+          icon="close" 
+          iconColor="#FFFFFF"
+          size={24} 
+          style={styles.headerIconBg}
+          onPress={() => navigation.goBack()} 
+        />
+        <Text style={styles.headerTitle}>SOLICITUD DE CANCELACIÓN</Text>
+        <View style={{width: 48}} />
+      </View>
+
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.headerContainer}>
-          <IconButton 
-            icon="close" 
-            size={30} 
-            onPress={() => navigation.goBack()} 
-          />
-          <Title style={styles.screenTitle}>Solicitud de Cancelación</Title>
-          <View style={{width: 48}} />
-        </View>
         
         {registro && (
-          <Card style={styles.card}>
+          <Card style={styles.modernCard}>
             <Card.Content>
-              <Title>Ticket ID: {Utils.shortenID(registro.numeroBoleto)}</Title>
-              <Paragraph>Total: {registro.total} pts</Paragraph>
-              <Paragraph>Fecha: {registro.fecha} {registro.hora}</Paragraph>
+              <Text style={styles.cardTitle}>Ticket ID: {Utils.shortenID(registro.numeroBoleto)}</Text>
+              <Text style={styles.cardText}>Total: {registro.total} pts</Text>
+              <Text style={styles.cardText}>Fecha: {registro.fecha} {registro.hora}</Text>
             </Card.Content>
           </Card>
         )}
@@ -195,8 +201,9 @@ export default function TicketCancellationRequest() {
                 icon="camera"
                 mode="contained"
                 onPress={() => setShowCamera(true)}
-                style={{marginTop: 10}}
-                buttonColor="black">
+                style={{marginTop: 15, borderRadius: 8}}
+                buttonColor="#0E1321"
+                labelStyle={{fontFamily: 'Inter', fontWeight: '600'}}>
                 Tomar Foto
               </Button>
             </View>
@@ -210,15 +217,17 @@ export default function TicketCancellationRequest() {
             numberOfLines={4}
             style={styles.input}
             placeholder="Motivo de la cancelación"
+            outlineColor="#CBD5E1"
+            activeOutlineColor={Colors.primary}
           />
-
-
 
           <Button
             mode="contained"
             onPress={sendRequest}
             style={styles.sendButton}
             contentStyle={{height: 50}}
+            buttonColor={Colors.primary}
+            labelStyle={{fontFamily: 'Inter', fontWeight: 'bold', fontSize: 16}}
             disabled={!message.trim() || !photoUri}>
             Enviar Solicitud
           </Button>
@@ -229,30 +238,70 @@ export default function TicketCancellationRequest() {
 }
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: Colors.lightBackground,
+  },
+  headerContainer: {
+    backgroundColor: '#0E1321',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    zIndex: 10,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  headerIconBg: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    margin: 0,
+  },
   container: {
     padding: 20,
     flexGrow: 1,
   },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  modernCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: '#CBD5E1',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
     marginBottom: 20,
   },
-  screenTitle: {
-    textAlign: 'center',
+  cardTitle: {
+    fontFamily: 'Inter',
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: 8,
   },
-  card: {
-    marginBottom: 20,
-    backgroundColor: 'white',
+  cardText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 4,
   },
   formSection: {
     flex: 1,
   },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     marginBottom: 20,
+    fontFamily: 'Inter',
   },
   mediaSection: {
     flexDirection: 'row',
@@ -266,10 +315,10 @@ const styles = StyleSheet.create({
   imagePreviewContainer: {
     position: 'relative',
     height: 200,
-    borderRadius: 10,
+    borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 20,
-    borderColor: '#ddd',
+    borderColor: '#E2E8F0',
     borderWidth: 1,
   },
   imagePreview: {
@@ -285,22 +334,25 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   placeholderContainer: {
-    height: 100,
+    height: 120,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 16,
     borderStyle: 'dashed',
-    borderWidth: 1,
-    borderColor: '#999'
+    borderWidth: 2,
+    borderColor: '#CBD5E1'
   },
   placeholderText: {
-    color: '#666',
+    fontFamily: 'Inter',
+    color: '#64748B',
+    fontSize: 14,
   },
   sendButton: {
     marginTop: 'auto',
     marginBottom: 20,
+    borderRadius: 12,
   },
   // Camera Styles
   cameraContainer: {

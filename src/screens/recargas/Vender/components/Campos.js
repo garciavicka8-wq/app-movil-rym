@@ -1,10 +1,10 @@
 import React, {useRef, useState} from 'react';
-import {Alert, Keyboard, StyleSheet, Text} from 'react-native';
+import {Alert, Keyboard, StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {CustomModal, CustomScanner} from '../../../../components';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {Button, Menu} from 'react-native-paper';
+import {Button} from 'react-native-paper';
 import {setTransaccionStore} from '../../../../features/taecel/taecelSlice';
 import {Helpers, Storage} from '../../../../utils';
 import {useCustomNavigation, useLogout, useModal} from '../../../../hooks';
@@ -23,8 +23,6 @@ export default function Campos({route}) {
   const [selectedProduct, setSelectedProduct] = useState(
     carrier.CategoriaID == TXN.CODES.SERVICIO ? products[0] : null,
   );
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [menuButtonText, setMenuButtonText] = useState('$00.00 MXN');
   const campoReferencia = {
     nombre: carrier.Campos[0].Nombre,
     minLeng: carrier.Campos[0].Min,
@@ -190,8 +188,6 @@ export default function Campos({route}) {
   };
 
   const handleMenuItemPress = item => {
-    setMenuVisible(false);
-    setMenuButtonText(`$${item.Monto} MXN`);
     if (item.Monto == '00.00') {
       formik.setFieldError('monto', 'Este campo es requerido');
       formik.setFieldValue('monto', '');
@@ -230,40 +226,35 @@ export default function Campos({route}) {
               prefix="$"
             />
             {formik.errors.monto && formik.touched.monto && (
-              <ErrorMessage message={formik.errors.monto} />
+              <Text style={styles.errorMessage}>{formik.errors.monto}</Text>
             )}
           </>
         ) : (
           <>
             <Text style={styles.listaProductosLabel}>Elige un monto</Text>
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
-                <Button
-                  mode="outlined"
-                  icon="chevron-down"
-                  contentStyle={{
-                    flexDirection: 'row-reverse',
-                    justifyContent: 'space-between',
-                  }}
-                  style={{marginTop: 20}}
-                  onPress={() => setMenuVisible(true)}>
-                  {menuButtonText}
-                </Button>
-              }>
-              <Menu.Item
-                title="00.00"
-                onPress={() => handleMenuItemPress({Monto: '00.00'})}
-              />
-              {products.map(item => (
-                <Menu.Item
-                  key={item.Codigo}
-                  title={item.Monto}
-                  onPress={() => handleMenuItemPress(item)}
-                />
-              ))}
-            </Menu>
+            <View style={styles.chipsContainer}>
+              {products.map(item => {
+                const isSelected = selectedProduct?.Codigo === item.Codigo;
+                return (
+                  <TouchableOpacity
+                    key={item.Codigo}
+                    activeOpacity={0.7}
+                    onPress={() => handleMenuItemPress(item)}
+                    style={[
+                      styles.chip,
+                      isSelected && styles.chipSelected,
+                    ]}>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        isSelected && styles.chipTextSelected,
+                      ]}>
+                      ${item.Monto}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             {formik.errors.monto && formik.touched.monto && (
               <Text style={styles.errorMessage}>{formik.errors.monto}</Text>
             )}
@@ -313,13 +304,13 @@ export default function Campos({route}) {
         maxLength={4}
         error={formik.errors.codigoPin && formik.touched.codigoPin}
         errorMessage={formik.errors.codigoPin}
+        marginY={5}
       />
       <Descripcion />
       <Button
-        style={{marginTop: 10}}
+        style={styles.modernButton}
+        labelStyle={styles.buttonLabel}
         mode="contained"
-        buttonColor="black"
-        uppercase
         onPress={() => {
           formik.handleSubmit();
         }}>
@@ -345,8 +336,20 @@ export default function Campos({route}) {
 
 const styles = StyleSheet.create({
   listaProductosLabel: {
+    fontFamily: 'Inter',
     fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1E293B',
     marginBottom: 10,
+    marginTop: 10,
+  },
+  inputLabel: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 5,
+    marginTop: 15,
   },
   vigencia: {
     marginTop: 10,
@@ -363,7 +366,62 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   errorMessage: {
-    color: 'red',
+    color: '#EF4444',
     fontStyle: 'italic',
+    fontSize: 12,
+    marginTop: 5,
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -5,
+    marginTop: 10,
+  },
+  chip: {
+    backgroundColor: '#F1F5F9',
+    width: '30%', // Ajuste para 3 columnas uniformes
+    height: 45,
+    borderRadius: 12,
+    margin: '1.5%',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipSelected: {
+    backgroundColor: '#0E1321',
+    borderColor: '#0E1321',
+  },
+  chipClear: {
+    backgroundColor: 'transparent',
+    borderStyle: 'dashed',
+  },
+  chipText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  chipTextSelected: {
+    color: '#FFFFFF',
+  },
+  modernButton: {
+    marginTop: 20,
+    borderRadius: 14,
+    height: 54,
+    justifyContent: 'center',
+    backgroundColor: '#0E1321', // Dark blue black
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  buttonLabel: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 1.5,
+    color: '#FFFFFF',
   },
 });

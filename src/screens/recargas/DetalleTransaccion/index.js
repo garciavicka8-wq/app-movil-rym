@@ -1,28 +1,27 @@
-import React, {useState, useEffect, useRef} from 'react';
-import {Linking, Text, View} from 'react-native';
-import {Container, Content} from '../../../components/Layout';
+import React, {useState, useEffect, useRef, useLayoutEffect} from 'react';
+import {Linking, Text, View, StyleSheet, ScrollView} from 'react-native';
+import {Appbar, Button} from 'react-native-paper';
+import {Container} from '../../../components/Layout';
 import DetallesHeader from './components/DetallesHeader';
 import Detalles from './components/Detalles';
 import Acciones from './components/Acciones';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import {useDispatch, useSelector} from 'react-redux';
-import {getStatusRequest} from '../../../services/taecel';
-import Database from '../../../database';
-import {DATABASE_TABLES, TXN} from '../../../constants';
+import {actualizarTransaccionApi} from '../../../services/taecel';
 import {
   setTransaccionStore,
   setTransacciones,
   setUltimasTransacciones,
 } from '../../../features/taecel/taecelSlice';
-import {Colors, Helpers, Moment} from '../../../utils';
+import {Colors} from '../../../utils';
 import NoConnection from '../../../components/NoConnection';
 import {useNetInfo} from '@react-native-community/netinfo';
-import {Button} from 'react-native-paper';
 import {captureRef} from 'react-native-view-shot';
 import Share from 'react-native-share';
-import {useCredito} from '../../../hooks';
+import {useCredito, useCustomNavigation} from '../../../hooks';
+import CustomStatusBar from '../../../components/CustomStatusBar';
 
-export default function DetalleTransaccion() {
+export default function DetalleTransaccion({navigation}) {
   const {transaccionStore} = useSelector(state => state.taecel);
   const [cargando, setCargando] = useState(true);
   const [compartirWABtnClicked, setCompartirWABtnClicked] = useState(false);
@@ -31,15 +30,21 @@ export default function DetalleTransaccion() {
   const imageRef = useRef();
   const [isTxnProcessed, setIsTxnProcessed] = useState(false);
   const {restarCredito} = useCredito();
+  const {isFocused} = useCustomNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   useEffect(() => {
-    // VERIFICAR CONEXION
     if (netInfo?.isConnected) {
       if (transaccionStore.Status == 'PROCESSING') {
         actualizarTransaccion();
-      }
-      if (transaccionStore.Status !== 'PROCESSING') {
-        cargarTransaccionDB();
+      } else {
+        setIsTxnProcessed(true);
+        setCargando(false);
       }
     }
   }, [netInfo?.isConnected]);
@@ -47,86 +52,33 @@ export default function DetalleTransaccion() {
   const actualizarTransaccion = async () => {
     try {
       setCargando(true);
-      // console.log(transaccionStore);
-      const tempTransaction = await Database.getItemByKey(
-        DATABASE_TABLES.TRANSACCIONES,
-        transaccionStore.key,
-      );
-      if (tempTransaction) {
-        const statusRequest = await getStatusRequest(transaccionStore.TransID);
-        const newTransaction = {
-          ...statusRequest.transaccion,
-          CategoriaID: tempTransaction.CategoriaID,
-          _usuario: tempTransaction._usuario,
-          _fecha: Moment(statusRequest.transaccion.Fecha).format('YYYY-MM-DD'),
-          _hora: Moment(statusRequest.transaccion.Fecha).format('HH:mm:ss'),
-          descripcionProducto: tempTransaction.descripcionProducto,
-          // SE APLICA SOLO PARA RECARGAS
-          _comisionRecargas: tempTransaction._comisionRecargas,
-          _comisionRecargasFecha: tempTransaction._comisionRecargasFecha,
-        };
+      const data = await actualizarTransaccionApi(transaccionStore.TransID);
+      const newTransaction = data.transaccion;
 
-        setIsTxnProcessed(newTransaction.Status !== TXN.STATES.PROCESSING);
-        //  UPDATE TRANSACCION
-        await Database.save(
-          DATABASE_TABLES.TRANSACCIONES,
-          newTransaction,
-          tempTransaction.key,
-        );
-        // UPDATE TRANSACTIONS AND LAST TRANSACTIONS LIST
-        dispatch(
-          setTransacciones(prevState =>
-            prevState.map(txn => {
-              if (txn.key === tempTransaction.key) {
-                return {...newTransaction};
-              }
-              return txn;
-            }),
+      setIsTxnProcessed(data.status !== 'PROCESSING');
+
+      dispatch(
+        setTransacciones(prevState =>
+          prevState.map(txn =>
+            txn.TransID === newTransaction.TransID ? {...newTransaction} : txn,
           ),
-        );
-        // UPDATE LAST TRANSACTIONS LIST
-        dispatch(
-          setUltimasTransacciones(prevState =>
-            prevState.map(txn => {
-              if (txn.key === tempTransaction.key) {
-                return {...newTransaction};
-              }
-              return txn;
-            }),
+        ),
+      );
+      dispatch(
+        setUltimasTransacciones(prevState =>
+          prevState.map(txn =>
+            txn.TransID === newTransaction.TransID ? {...newTransaction} : txn,
           ),
-        );
-        // UPDATE TRANSACTION STORE
-        dispatch(setTransaccionStore(newTransaction));
-        // SI LA TRANSACCION ES EXITOSA ACTUALIZAMOS EL CREDITO
-        if (newTransaction.Status === TXN.STATES.SUCCESS) {
-          const montoTransaccion = Helpers.calcularTotalTransaccion(
-            newTransaction,
-            newTransaction.CategoriaID,
-          );
-          await restarCredito(montoTransaccion);
-        }
+        ),
+      );
+      dispatch(setTransaccionStore(newTransaction));
+
+      if (data.status === 'SUCCESS') {
+        await restarCredito();
       }
       setCargando(false);
     } catch ({message}) {
       alert(message);
-    }
-  };
-
-  const cargarTransaccionDB = async () => {
-    try {
-      setCargando(true);
-      const txn = await Database.getItem(
-        DATABASE_TABLES.TRANSACCIONES,
-        'TransID',
-        transaccionStore.TransID,
-      );
-      if (txn) {
-        dispatch(setTransaccionStore(txn));
-      }
-      setIsTxnProcessed(true);
-      setCargando(false);
-    } catch ({message}) {
-      console.log(message);
     }
   };
 
@@ -155,20 +107,14 @@ export default function DetalleTransaccion() {
 
   if (!cargando && !isTxnProcessed)
     return (
-      <View
-        style={{
-          display: 'flex',
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginHorizontal: '2.5%',
-        }}>
-        <Text style={{fontSize: 18, marginBottom: 20, textAlign: 'center'}}>
+      <View style={styles.errorContainer}>
+        <CustomStatusBar color="darkBackground" />
+        <Text style={styles.errorText}>
           La transacción no ha sido procesada, intente de nuevo más tarde
         </Text>
         <Button
           mode="contained"
-          buttonColor={Colors.blue}
+          buttonColor={Colors.primary}
           uppercase
           icon={'reload'}
           onPress={() => {
@@ -181,33 +127,126 @@ export default function DetalleTransaccion() {
     );
 
   return (
-    <Container bgColor="#fff">
-      <Content marginBottom={0}>
-        <View collapsable={false} style={{backgroundColor: '#fff'}}>
+    <Container bgColor={Colors.lightBackground}>
+      {isFocused && <CustomStatusBar color="darkBackground" />}
+      
+      <Appbar.Header style={styles.appBar}>
+        <Appbar.BackAction color="white" onPress={() => navigation.goBack()} />
+        <Appbar.Content 
+          color="white" 
+          titleStyle={styles.appBarTitle} 
+          title="Detalle de Transacción" 
+        />
+      </Appbar.Header>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.receiptCard}>
           <DetallesHeader />
+          <View style={styles.divider} />
           <Detalles sharedBtnClicked={false} />
         </View>
-        {/* PRINTABLE VIEW ONLY */}
+
+        <View style={styles.actionsContainer}>
+          <Acciones
+            shareWhatsappBtn={
+              <Button
+                mode="contained"
+                buttonColor="#25D366"
+                uppercase
+                style={styles.actionButton}
+                labelStyle={styles.actionButtonLabel}
+                onPress={handleShare}>
+                Whatsapp
+              </Button>
+            }
+          />
+        </View>
+
+        {/* PRINTABLE VIEW ONLY (Hidden) */}
         <View
           ref={imageRef}
           collapsable={false}
-          style={{backgroundColor: '#fff', position: 'absolute', left: 500}}>
-          <DetallesHeader />
-          <Detalles sharedBtnClicked={compartirWABtnClicked} />
+          style={styles.printableView}>
+          <View style={{padding: 20}}>
+            <DetallesHeader />
+            <View style={[styles.divider, {marginVertical: 15}]} />
+            <Detalles sharedBtnClicked={compartirWABtnClicked} />
+          </View>
         </View>
-        {/* PRINTABLE VIEW ONLY */}
-        <Acciones
-          shareWhatsappBtn={
-            <Button
-              mode="contained"
-              buttonColor={Colors.green}
-              uppercase
-              onPress={handleShare}>
-              Whatsapp
-            </Button>
-          }
-        />
-      </Content>
+      </ScrollView>
     </Container>
   );
 }
+
+const styles = StyleSheet.create({
+  appBar: {
+    backgroundColor: '#0E1321',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  appBarTitle: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  receiptCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingVertical: 30,
+    elevation: 4,
+    shadowColor: '#CBD5E1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 25,
+    marginHorizontal: 20,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  actionsContainer: {
+    marginTop: 10,
+  },
+  actionButton: {
+    borderRadius: 12,
+    paddingVertical: 4,
+  },
+  actionButtonLabel: {
+    fontFamily: 'Inter',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: Colors.lightBackground,
+  },
+  errorText: {
+    fontFamily: 'Inter',
+    fontSize: 18,
+    color: '#64748B',
+    marginBottom: 24,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  printableView: {
+    backgroundColor: '#fff',
+    position: 'absolute',
+    left: -2000, // Move far away instead of 500 to be safer
+    width: 400,
+  }
+});

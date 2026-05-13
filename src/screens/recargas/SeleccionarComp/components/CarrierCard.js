@@ -1,48 +1,58 @@
 import React from 'react';
-import {Surface} from 'react-native-paper';
 import {Dimensions, Pressable, StyleSheet, Text, View} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 
 export default function CarrierCard({text, imageURL, onPress, empty}) {
   if (empty) {
-    return (
-      <Surface
-        elevation={0}
-        style={[styles.card, {backgroundColor: 'transparent'}]}></Surface>
-    );
+    return <View style={styles.emptyCard} />;
   }
   return (
-    <View style={styles.listItem}>
-      <Pressable onPress={onPress}>
-        <Surface style={styles.listItemSurfce}>
-          <FastImage
-            source={{uri: imageURL, priority: FastImage.priority.normal}}
-            style={styles.listItemLogo}
-            resizeMode={FastImage.resizeMode.contain}
-          />
-          <Text style={{fontSize: 12}}>{text}</Text>
-        </Surface>
-      </Pressable>
-    </View>
+    <Pressable onPress={onPress} style={styles.listItem}>
+      <View style={styles.listItemSurface}>
+        <FastImage
+          source={{uri: imageURL, priority: FastImage.priority.normal}}
+          style={styles.listItemLogo}
+          resizeMode={FastImage.resizeMode.contain}
+        />
+        <Text style={styles.text} numberOfLines={1}>{text}</Text>
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  listItem: {
-    width: Dimensions.get('window').width / 2,
-    // margin: 5,
-    padding: 5,
+  emptyCard: {
+    width: '46%',
+    marginHorizontal: '2%',
+    marginBottom: 15,
   },
-  listItemSurfce: {
-    borderRadius: 5,
-    display: 'flex',
-    justifyContent: 'center',
+  listItem: {
+    width: '46%',
+    marginHorizontal: '2%',
+    marginBottom: 15,
+  },
+  listItemSurface: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 15,
     alignItems: 'center',
-    padding: 5,
-    flex: 1,
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#CBD5E1',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   listItemLogo: {
-    width: 80,
-    height: 80,
+    width: 60,
+    height: 60,
+    marginBottom: 10,
+  },
+  text: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1E293B',
+    textAlign: 'center',
   },
 });

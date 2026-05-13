@@ -491,6 +491,25 @@ export async function getLastTransactions(numTransLimit = 100) {
  * @param {number} [numTransLimit=100] - Número máximo de transacciones a devolver.
  * @returns {Promise<Object[]>} Lista de transacciones filtradas y limitadas.
  */
+export async function getTransactionsApi(start, end) {
+  try {
+    const response = await requestRymAPI(
+      'taecel/recent-transactions',
+      {start, end},
+      true,
+      'GET',
+    );
+    if (response.error) {
+      throw new Error(response.error_message);
+    }
+    return response.data || [];
+  } catch (error) {
+    throw new Error(
+      `getTransactionsApi: ${error.message || 'Error desconocido'}`,
+    );
+  }
+}
+
 export async function getLastTransactionsApi(numTransLimit = 100) {
   try {
     const response = await requestRymAPI(
@@ -509,6 +528,22 @@ export async function getLastTransactionsApi(numTransLimit = 100) {
     throw new Error(
       `getLastTransactionsApi: ${error.message || 'Error desconocido'}`,
     );
+  }
+}
+export async function actualizarTransaccionApi(TransID) {
+  try {
+    const response = await requestRymAPI(
+      'taecel/actualizar-transaccion',
+      {TransID},
+      true,
+      'POST',
+    );
+    if (response.error) {
+      throw new Error(response.error_message);
+    }
+    return response.data;
+  } catch (error) {
+    throw new Error(error.message);
   }
 }
 // TRANSACTION FALIED

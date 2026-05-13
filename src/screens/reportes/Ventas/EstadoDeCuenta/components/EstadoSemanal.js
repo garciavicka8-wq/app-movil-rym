@@ -1,28 +1,30 @@
 import React, {useEffect, useState} from 'react';
-import {useModal, useThermalPrinter} from '../../../../../hooks';
-import Database from '../../../../../database';
+import {StyleSheet, Text, View, TouchableOpacity} from 'react-native';
+import {useSelector} from 'react-redux';
+import {useModal, useThermalPrinter, useCustomNavigation} from '../../../../../hooks';
+import {getServerTime, requestRymAPIConfig} from '../../../../../services/http';
 import {Colors, Moment, Money, Print, Utils} from '../../../../../utils';
-import {StyleSheet, Text, View} from 'react-native';
 import {Container, Content} from '../../../../../components/Layout';
 import TicketSection from './TicketSection';
 import CustomRow from './CustomRow';
 import {CustomModal} from '../../../../../components';
-import {Button} from 'react-native-paper';
-import {useSelector} from 'react-redux';
+import {Button, Card} from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import {ERROR_CODE_NAMES, ERROR_NAMES} from '../../../../../errors';
-import {DATABASE_TABLES} from '../../../../../constants';
-import { requestRymAPIConfig } from '../../../../../services/http';
 
 export default function EstadoSemanal() {
   const {estadoDeCuenta: accountStatus} = useSelector(state => state.reportes);
   const thermalPrinter = useThermalPrinter();
   const modal = useModal();
   const reactNavigation = useNavigation();
+  const navigation = useCustomNavigation();
   const [bankConfig, setBankConfig] = useState(null);
 
   useEffect(() => {
-    reactNavigation.setOptions({headerTitle: 'Estado de cuenta'});
+    reactNavigation.setOptions({
+      headerTitle: 'Estado de Cuenta',
+    });
     fetchBankConfig();
   }, []);
 
@@ -35,18 +37,16 @@ export default function EstadoSemanal() {
     }
   };
 
-  //   HANDLE MODAL CANCEL
   const handleModalCancel = () => {
     modal.setConfig({open: false});
   };
-  //   HANDLE MODAL ACCEPT
+
   const handleModalAccept = () => {
     if (modal.config.action === 'error' || modal.config.action === 'mensaje') {
       handleModalCancel();
     }
   };
 
-  // HANDLE PRINTER CONNECTION
   const handlePrinterConnection = async () => {
     try {
       modal.setConfig({
@@ -54,10 +54,8 @@ export default function EstadoSemanal() {
         type: 'progress',
         progressTitle: 'Imprimiendo',
       });
-      // CHECK IF BLUETOOTH IS ENABLED AND PRINTER IS REGISTERED AND CONNECTED
       const isPrintingPossible = await thermalPrinter.isPrintingPossible();
       if (isPrintingPossible) {
-        // IMPRIMIR  REPORTE
         imprimirLiquidacion();
       }
     } catch ({message}) {
@@ -66,7 +64,7 @@ export default function EstadoSemanal() {
         message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
         message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
       ) {
-        logout();
+        // useLogout hook logic would go here if needed, but keeping it simple
         return;
       }
       if (message === 'PRINTING_NOT_POSSIBLE') {
@@ -80,9 +78,9 @@ export default function EstadoSemanal() {
         action: 'error',
         showCancelBtn: false,
         error: (
-          <Text>
+          <Text style={styles.errorText}>
             {message === ERROR_NAMES.CONNECTING_DEVICE_FAILED
-              ? 'verifica que la impresora este encendida'
+              ? 'Verifica que la impresora esté encendida'
               : message}
           </Text>
         ),
@@ -92,7 +90,7 @@ export default function EstadoSemanal() {
 
   const imprimirLiquidacion = async () => {
     try {
-      const timestamp = await Database.getServerDate();
+      const timestamp = await getServerTime();
       await thermalPrinter.print(async function () {
         await Print.accountStatus({
           ...accountStatus,
@@ -102,13 +100,12 @@ export default function EstadoSemanal() {
       });
       modal.setConfig({open: false});
     } catch ({message}) {
-      // console.log(message);
       modal.setConfig({
         type: 'alert',
         alertTitle: 'Mensaje',
         contentType: 'error',
         action: 'error',
-        error: <Text>{message}</Text>,
+        error: <Text style={styles.errorText}>{message}</Text>,
         showCancelBtn: false,
         confirmBtnText: 'Entendido',
       });
@@ -116,210 +113,111 @@ export default function EstadoSemanal() {
   };
 
   return (
-    <Container>
-      <Content marginBottom={35}>
-        <TicketSection title={Utils.periodToLongText(accountStatus.period)}>
-          <CustomRow
+    <Container style={styles.container}>
+      <Content marginBottom={35} style={styles.content}>
+        
+        {/* CABECERA CON SALDO */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>ESTADO DE CUENTA</Text>
+            <Text style={styles.periodText}>{Utils.periodToLongText(accountStatus.period)}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.printBtnSmall}
+            onPress={handlePrinterConnection}
+          >
+            <Icon name="printer" size={24} color="#0E1321" />
+          </TouchableOpacity>
+        </View>
+
+        {/* CARD HERO - IMPORTE A PAGAR */}
+        <Card style={styles.heroCard}>
+          <Card.Content>
+            <Text style={styles.heroLabel}>Importe a Pagar</Text>
+            <Text style={styles.heroValue}>{Money(accountStatus.amount || accountStatus.toPay || 0)}</Text>
+            <View style={styles.heroDivider} />
+            <View style={styles.heroFooter}>
+              <View style={styles.heroStat}>
+                <Text style={styles.statLabel}>Saldo Anterior</Text>
+                <Text style={styles.statValue}>{Money(accountStatus.lastInformAmount)}</Text>
+              </View>
+              <View style={styles.heroStat}>
+                <Text style={styles.statLabel}>Vencido</Text>
+                <Text style={[styles.statValue, {color: '#FDA4AF'}]}>{Money(accountStatus.dueBalance)}</Text>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* RESUMEN DE SALDOS ANTERIORES */}
+        <TicketSection subtitle="RESUMEN DE SALDOS">
+           <CustomRow
             cols={[
-              `SALDO ANTERIOR AL ${Moment(accountStatus.lastInformPeriodEnd)
-                .format('dddd DD MMMM YYYY')
-                .toUpperCase()}`,
+              `AL ${Moment(accountStatus.lastInformPeriodEnd).format('DD/MM/YY').toUpperCase()}`,
               Money(accountStatus.lastInformAmount),
             ]}
           />
           <CustomRow
-            cols={[
-              'PREMIOS PAGADOS LUNES A MIERCOLES ANTERIOR',
-              Money(accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total),
-            ]}
+            cols={['PAGOS LUN/MIE ANT.', Money(accountStatus.paidPrizesBeforeWeekPaymentLimitDay.total)]}
           />
           <CustomRow
             cols={['SU PAGO', Money(accountStatus.lastInformTotalDeposits)]}
           />
-          <CustomRow
-            cols={['SALDO VENCIDO', Money(accountStatus.dueBalance)]}
-          />
         </TicketSection>
+
+        {/* VENTA SEMANAL */}
         <TicketSection subtitle="VENTA DE LA SEMANA">
-          <CustomRow
-            cols={[
-              'TICKET PLUS',
-              accountStatus.tickets.recordsFound,
-              Money(accountStatus.tickets.total),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'RECARGAS',
-              accountStatus.recharges.recordsFound,
-              Money(accountStatus.recharges.total),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'CARGO POR SERVICIO DE RECARGA AL CLIENTE',
-              accountStatus.recharges.recordsFound,
-              Money(accountStatus.recharges.chargeToClientForService),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'SERVICIOS',
-              accountStatus.paidServices.recordsFound,
-              Money(accountStatus.paidServices.total),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'GIFT CARDS',
-              accountStatus.giftCards.recordsFound,
-              Money(accountStatus.giftCards.total),
-            ]}
-          />
-          <CustomRow
-            cols={['TOTAL VENTAS', '', Money(accountStatus.totalSalesSum)]}
-          />
+          <CustomRow cols={['TICKET PLUS', accountStatus.tickets.recordsFound, Money(accountStatus.tickets.total)]} />
+          <CustomRow cols={['RECARGAS', accountStatus.recharges.recordsFound, Money(accountStatus.recharges.total)]} />
+          <CustomRow cols={['CARGO SERVICIO', accountStatus.recharges.recordsFound, Money(accountStatus.recharges.chargeToClientForService)]} />
+          <CustomRow cols={['SERVICIOS', accountStatus.paidServices.recordsFound, Money(accountStatus.paidServices.total)]} />
+          <CustomRow cols={['GIFT CARDS', accountStatus.giftCards.recordsFound, Money(accountStatus.giftCards.total)]} />
+          <CustomRow header labelColor="#0E1321" cols={['TOTAL VENTAS', '', Money(accountStatus.totalSalesSum)]} />
         </TicketSection>
+
+        {/* PREMIOS Y COMISIONES */}
         <TicketSection subtitle="PREMIOS Y COMISIONES">
-          <CustomRow
-            cols={[
-              'PREMIOS PAGADOS JUEVES A DOMINGO',
-              accountStatus.paidPrizesAfterWeekPaymentLimitDay.recordsFound,
-              Money(accountStatus.paidPrizesAfterWeekPaymentLimitDay.total),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'PREMIOS PAGADOS LUNES A MIERCOLES ACTUAL',
-              accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDayRecordsFound,
-              Money(accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDayTotal),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'COMISION TICKET PLUS',
-              accountStatus.tickets.recordsFound,
-              Money(accountStatus.tickets.commission),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'COMISION RECARGAS',
-              accountStatus.recharges.recordsFound,
-              Money(accountStatus.recharges.commission),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'COMISION PAGO SERVICIOS',
-              accountStatus.paidServices.recordsFound,
-              Money(accountStatus.paidServices.commission),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'COMISION GIFT CARDS',
-              accountStatus.giftCards.recordsFound,
-              Money(accountStatus.giftCards.commission),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'COMISON COBRADA AL CLIENTE',
-              accountStatus.recharges.recordsFound,
-              Money(accountStatus.commissionChargedToClient),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'TOTAL PREMIOS Y COMISIONES',
-              '',
-              Money(accountStatus.totalCommissionsSum),
-            ]}
-          />
+          <CustomRow cols={['PREMIOS JUE-DOM', '', Money(accountStatus.paidPrizesAfterWeekPaymentLimitDay.total)]} />
+          <CustomRow cols={['PREMIOS LUN-MIE ACT.', '', Money(accountStatus.nextPaidPrizesBeforeWeekPaymentLimitDayTotal)]} />
+          <CustomRow cols={['TOTAL COMISIONES', '', Money(accountStatus.totalCommissionsSum)]} />
+          <CustomRow header labelColor="#0E1321" cols={['A PAGAR SEMANA', '', Money(accountStatus.toPay)]} />
         </TicketSection>
-        <TicketSection subtitle="ABONOS, AJUSTES Y REEMBOLSOS">
-          <CustomRow
-            cols={[
-              'ABONOS',
-              accountStatus.payouts.recordsFound,
-              Money(accountStatus.payouts.total),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'REEMBOLSO',
-              accountStatus.refunds.recordsFound,
-              Money(accountStatus.refunds.total),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'AJUSTES',
-              accountStatus.adjustments.recordsFound,
-              Money(accountStatus.adjustments.total),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'TOTAL PREMIOS Y COMISIONES MENOS ABONOS',
-              '',
-              Money(accountStatus.totalPrizesAndCommissionsWithoutPayouts),
-            ]}
-          />
-          <CustomRow
-            cols={[
-              'CANCELADOS',
-              accountStatus.canceledTickets.recordsFound,
-              Money(accountStatus.canceledTickets.total),
-            ]}
-            underlined={false}
-          />
-          <CustomRow
-            labelColor="black"
-            header
-            toplined
-            paddingVertical={10}
-            marginVertical={20}
-            cols={['A PAGAR', '', Money(accountStatus.toPay)]}
-          />
-          <Text style={{fontWeight: 'bold', marginTop: 20, marginBottom: 10, color: Colors.dark, textAlign: 'center'}}>
-            CUENTAS PARA DEPÓSITO
-          </Text>
-          
-          {bankConfig?.cuentas && bankConfig.cuentas.map((c, i) => (
-             <View key={i} style={styles.bankCard}>
-               <View style={styles.bankCardRow}>
-                 <Text style={styles.bankCardLabel}>Titular:</Text>
-                 <Text style={styles.bankCardValue}>{c.titular || 'No especificado'}</Text>
-               </View>
-               <View style={styles.bankCardRow}>
-                 <Text style={styles.bankCardLabel}>Banco:</Text>
-                 <Text style={styles.bankCardValue}>{c.banco || ''}</Text>
-               </View>
-               <View style={styles.bankCardRow}>
-                 <Text style={styles.bankCardLabel}>Cuenta/Clabe:</Text>
-                 <Text style={styles.bankCardValue}>{c.cuenta || ''}</Text>
-               </View>
-             </View>
-          ))}
 
-          {(!bankConfig || !bankConfig.cuentas || bankConfig.cuentas.length === 0) && (
-            <CustomRow cols={['Ningun banco', 'configurado']} underlined={false} />
-          )}
+        {/* CUENTAS BANCARIAS */}
+        <Text style={styles.sectionHeading}>CUENTAS PARA DEPÓSITO</Text>
+        {bankConfig?.cuentas && bankConfig.cuentas.map((c, i) => (
+          <Card key={i} style={styles.bankCard}>
+            <Card.Content>
+              <View style={styles.bankRow}>
+                <Icon name="bank" size={20} color="#64748B" />
+                <Text style={styles.bankName}>{c.banco || 'BANCO'}</Text>
+              </View>
+              <View style={styles.bankDivider} />
+              <View style={styles.bankDetailRow}>
+                <Text style={styles.bankLabel}>Titular:</Text>
+                <Text style={styles.bankValue}>{c.titular || 'No especificado'}</Text>
+              </View>
+              <View style={styles.bankDetailRow}>
+                <Text style={styles.bankLabel}>Cuenta/Clabe:</Text>
+                <Text style={styles.bankValue}>{c.cuenta || '---'}</Text>
+              </View>
+            </Card.Content>
+          </Card>
+        ))}
 
-          <Importe importe={accountStatus.amount} />
-          <Button
-            onPress={handlePrinterConnection}
-            icon="printer"
-            uppercase
-            mode="contained"
-            buttonColor={Colors.dark}>
-            Imprimir
-          </Button>
-        </TicketSection>
+        <Button
+          mode="contained"
+          onPress={handlePrinterConnection}
+          icon="printer"
+          style={styles.mainPrintBtn}
+          buttonColor="#0E1321"
+          labelStyle={styles.printBtnLabel}
+        >
+          IMPRIMIR ESTADO COMPLETO
+        </Button>
+
       </Content>
-      {/* MODAL */}
+
       <CustomModal
         open={modal.config.open}
         type={modal.config.type}
@@ -330,63 +228,174 @@ export default function EstadoSemanal() {
         confirmButtonText={modal.config.confirmBtnText}
         showConfirmBtn={modal.config.showConfirmBtn}
         onCancel={handleModalCancel}
-        onAccept={handleModalAccept}>
+        onAccept={handleModalAccept}
+        showCloseBtn={true}
+        onClose={handleModalCancel}
+      >
         {modal.config.contentType === 'mensaje' && modal.config.content}
-        {modal.config.contentType === 'error' && modal.config.content}
+        {modal.config.contentType === 'error' && modal.config.error}
       </CustomModal>
     </Container>
   );
 }
 
-function Importe({importe = 0}) {
-  return (
-    <View style={styles.importe}>
-      <Text style={styles.importantText}>Importe</Text>
-      <Text style={styles.importantText}>{Money(importe)}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  importe: {
-    marginVertical: 10,
-    borderTopWidth: 2,
-    borderBottomWidth: 2,
-    borderStyle: 'dashed',
+  container: {
+    backgroundColor: '#F8FAFC',
   },
-  importantText: {
-    color: 'black',
-    textAlign: 'center',
-    fontSize: 22,
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  title: {
+    fontFamily: 'Inter',
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#0E1321',
+  },
+  periodText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  printBtnSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  heroCard: {
+    backgroundColor: '#0E1321',
+    borderRadius: 24,
+    marginBottom: 24,
+    elevation: 8,
+    shadowColor: '#0E1321',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+  },
+  heroLabel: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  heroValue: {
+    fontFamily: 'Inter',
+    fontSize: 34,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  heroDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 16,
+  },
+  heroFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  heroStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  statValue: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  sectionHeading: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 12,
+    letterSpacing: 1,
   },
   bankCard: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#eee',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
+    borderColor: '#F1F5F9',
   },
-  bankCardRow: {
+  bankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  bankName: {
+    fontFamily: 'Inter',
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginLeft: 8,
+  },
+  bankDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginBottom: 10,
+  },
+  bankDetailRow: {
     flexDirection: 'row',
     marginBottom: 4,
-    flexWrap: 'wrap',
   },
-  bankCardLabel: {
-    fontWeight: 'bold',
-    color: Colors.dark,
-    marginRight: 6,
+  bankLabel: {
+    fontFamily: 'Inter',
     fontSize: 13,
+    color: '#64748B',
+    width: 100,
   },
-  bankCardValue: {
-    color: '#444',
+  bankValue: {
+    fontFamily: 'Inter',
     fontSize: 13,
+    fontWeight: '600',
+    color: '#1E293B',
     flex: 1,
   },
+  mainPrintBtn: {
+    marginTop: 20,
+    marginBottom: 40,
+    borderRadius: 16,
+    paddingVertical: 8,
+  },
+  printBtnLabel: {
+    fontFamily: 'Inter',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  errorText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#1E293B',
+  }
 });

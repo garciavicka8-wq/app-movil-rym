@@ -85,7 +85,7 @@ export default function UltimosMovimientos() {
           data={ultimasTransacciones}
           renderItem={({item}) => <UltimaTxnCard txn={item} />}
           keyExtractor={item => item.TransID}
-          horizontal
+          showsVerticalScrollIndicator={false}
         />
       )}
       {/* {!cargando && (
@@ -105,11 +105,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontStyle: 'normal',
     fontWeight: '700',
-    color: Colors.darkBlue,
-    marginBottom: 20,
+    color: Colors.dark, // Changed from darkBlue to dark
+    marginBottom: 15,
   },
   container: {
+    marginTop: 20,
     marginBottom: 10,
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
   },
 });

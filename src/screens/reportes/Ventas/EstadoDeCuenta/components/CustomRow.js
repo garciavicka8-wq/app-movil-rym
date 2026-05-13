@@ -1,7 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {Col, Row} from 'react-native-easy-grid';
-import {uuid} from '../../../../../utils';
 
 export default function CustomRow({
   cols = [],
@@ -12,40 +11,45 @@ export default function CustomRow({
   dividerTop = false,
   dividerBottom = false,
   dividerBoth = false,
-  paddingVertical,
+  paddingVertical = 12,
   marginVertical,
   marginTop,
-  labelColor = 'rgba(0,0,0,0.6)',
+  labelColor = '#1E293B',
 }) {
   return (
-    <>
+    <View style={styles.container}>
       {dividerTop && <View style={styles.divider}></View>}
       {dividerBoth && <View style={styles.divider}></View>}
       <Row
-        style={{
-          backgroundColor: highLight ? 'yellow' : '',
-          borderTopColor: 'gray',
-          borderTopWidth: toplined ? 1 : 0,
-          borderBottomColor: 'gray',
-          borderBottomWidth: underlined ? 1 : 0,
-          paddingVertical: paddingVertical,
-          marginVertical: marginVertical,
-          marginTop: marginTop,
-        }}>
+        style={[
+          styles.row,
+          {
+            backgroundColor: highLight ? '#FEF9C3' : 'transparent',
+            borderTopColor: '#F1F5F9',
+            borderTopWidth: toplined ? 1 : 0,
+            borderBottomColor: '#F1F5F9',
+            borderBottomWidth: underlined ? 1 : 0,
+            paddingVertical: paddingVertical,
+            marginVertical: marginVertical,
+            marginTop: marginTop,
+          }
+        ]}>
         {cols.map((item, index) => (
-          <Col key={uuid()} size={index === 0 ? 60 : 40}>
+          <Col key={index} size={index === 0 ? 60 : 40}>
             <Text
               style={[
                 styles.label,
                 {
                   color: labelColor,
-                  fontWeight: index === 0 || header ? 'bold' : 'normal',
+                  fontFamily: 'Inter',
+                  fontWeight: index === 0 || header ? 'bold' : '500',
                   textAlign:
                     index === 0
                       ? 'left'
                       : index === 1 && cols.length > 2
                       ? 'center'
                       : 'right',
+                  fontSize: header ? 15 : 13,
                 },
               ]}>
               {item}
@@ -55,20 +59,25 @@ export default function CustomRow({
       </Row>
       {dividerBottom && <View style={styles.divider}></View>}
       {dividerBoth && <View style={styles.divider}></View>}
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  row: {
+    alignItems: 'center',
+  },
   label: {
-    textAlign: 'right',
-    paddingVertical: 5,
-    textTransform: 'uppercase',
-    fontSize: 14,
+    paddingVertical: 2,
+    color: '#1E293B',
   },
   divider: {
-    marginVertical: 20,
-    borderBottomWidth: 2,
+    marginVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: '#E2E8F0',
     borderStyle: 'dashed',
   },
 });

@@ -1,13 +1,7 @@
 import {Utils} from '../../../../utils';
-import * as Request from '../../../../services/http';
-import {obtenerUsuarioDb} from '../../../../services/auth';
-import Database from '../../../../database';
-import {DATABASE_TABLES} from '../../../../services/constants';
+import {requestRymAPIConfig} from '../../../../services/http';
 
-const {requestRymAPI, requestRymAPIConfig} = Request;
-const {buildFileObj, getWeekPeriod, compressImage, deleteCapturedImage} = Utils;
-const {getServerDate, getItemsInRange} = Database;
-const {PAID_PRIZES} = DATABASE_TABLES;
+const {buildFileObj, compressImage, deleteCapturedImage} = Utils;
 
 export const verifyTicket = async numeroBoleto => {
   const response = await requestRymAPIConfig({
@@ -41,30 +35,13 @@ export async function registrarPago(
   });
 
   if (response.error) {
-    // console.log(response);
     throw new Error(response.error_message);
   }
 
-  // Delete the captured image from storage
   await deleteCapturedImage(compressedUri);
   await deleteCapturedImage(capturaUri);
 
   return response.data;
-}
-
-export async function obtenerPremiosPagados() {
-  // VERIFICAMOS AL USUARIO
-  const {usuario} = await obtenerUsuarioDb();
-  const timestamp = await getServerDate();
-  const {start, end} = getWeekPeriod(timestamp, 'hoy');
-  const pagosRealizados = await getItemsInRange(
-    PAID_PRIZES,
-    'fechaPago',
-    start,
-    end,
-    item => item.pagadoPor == usuario,
-  );
-  return pagosRealizados;
 }
 
 export async function obtenerPremiosPagadosApi() {

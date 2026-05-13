@@ -1,11 +1,12 @@
 import Database from '../../database';
 import {Moment} from '../../utils';
 import {DATABASE_TABLES} from '../constants';
+import {getServerTime} from '../http';
 
 // RETURNS THE SERVER TIMESTAMP
 export async function getServerTimestamp() {
   try {
-    return await Database.getServerDate();
+    return await getServerTime();
   } catch ({message}) {
     throw new Error(message);
   }

@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import SplashScreen from 'react-native-splash-screen';
@@ -10,7 +10,7 @@ import JugarTickets from './src/screens/tickets/JugarTickets';
 import {APP_NAVIGATION} from './src/constants';
 import colors from './src/utils/Colors';
 import {Colors} from './src/utils';
-import {Alert, StatusBar, Text, View} from 'react-native';
+import {Alert, DeviceEventEmitter, StatusBar, Text, View} from 'react-native';
 import {IconButton} from 'react-native-paper';
 import ConfiguracionMenu from './src/screens/configuracion/ConfiguracionMenu';
 import RegistrarImpresora from './src/screens/configuracion/RegistrarImpresora';
@@ -18,27 +18,22 @@ import CodigoPin from './src/screens/configuracion/CodigoPin';
 import EstablecerComision from './src/screens/configuracion/EstablecerComision';
 import Seguridad from './src/screens/configuracion/Seguridad';
 import {useAuthContext} from './src/context/AuthContext';
-import PagoConTarjeta from './src/screens/PagoConTarjeta';
-import TestComponent from './src/screens/TestComponent';
-import Ventas from './src/screens/reportes/Ventas';
-import Liquidacion from './src/screens/liquidacion';
 import Notificaciones from './src/screens/notificaciones';
 import {NotificationUtils} from './src/utils';
+import AppUpdater from './src/components/AppUpdater';
+import {Snackbar} from 'react-native-paper';
 
 const Stack = createStackNavigator();
 
 export default function App() {
-  // useEffect(() => {
-  //   SplashScreen.hide();
-  // }, []);
-
-  // return <TestComponent />;
-
   const {isAuthenticated} = useAuthContext();
+  const [sinInternet, setSinInternet] = useState(false);
 
   useEffect(() => {
     initApp();
     NotificationUtils.NotificationListener();
+    const sub = DeviceEventEmitter.addListener('NO_INTERNET', () => setSinInternet(true));
+    return () => sub.remove();
   }, []);
 
   const initApp = async () => {
@@ -52,6 +47,7 @@ export default function App() {
   };
 
   return (
+    <View style={{flex: 1}}>
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
@@ -68,10 +64,6 @@ export default function App() {
               options={{
                 headerShown: false,
               }}
-            />
-            <Stack.Screen
-              name={APP_NAVIGATION.SCREENS.LIQUIDACION}
-              component={Liquidacion}
             />
           </>
         )}
@@ -156,7 +148,17 @@ export default function App() {
           </>
         )}
       </Stack.Navigator>
+      <AppUpdater />
     </NavigationContainer>
+    <Snackbar
+      visible={sinInternet}
+      onDismiss={() => setSinInternet(false)}
+      duration={4000}
+      style={{backgroundColor: '#1E293B'}}
+      action={{label: 'OK', onPress: () => setSinInternet(false)}}>
+      Sin conexión a internet
+    </Snackbar>
+    </View>
   );
 }
 

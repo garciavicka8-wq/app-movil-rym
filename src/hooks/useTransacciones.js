@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {Helpers, Moment, Money} from '../utils';
-import {getTransactions} from '../services/taecel';
-import Database from '../database';
+import {getTransactionsApi} from '../services/taecel';
+import {getServerTime} from '../services/http';
 import {useDispatch} from 'react-redux';
 import {setTransacciones} from '../features/taecel/taecelSlice';
 import {useLogout} from './';
@@ -19,24 +19,18 @@ export default function useTransacciones() {
     try {
       setCargandoTransacciones(true);
       setListaTransacciones([]);
-      const timestamp = await Database.getServerDate();
+      dispatch(setTransacciones([]));
+      const timestamp = await getServerTime();
       const _fechas = obtenerPeriodo(timestamp, id_semana);
-      let _transacciones = await getTransactions({
-        inicial: _fechas[0],
-        final: _fechas[_fechas.length - 1],
-      });
+      const _transacciones = await getTransactionsApi(
+        _fechas[0],
+        _fechas[_fechas.length - 1],
+      );
+
       const cantidadesTransaccionesExitosas = [];
       _transacciones.forEach(t => {
         if (t.Status === 'Exitosa' || t.Status === 'PROCESSING') {
-          let commission = t.Comision;
-          // SI ES RECARGA
-          if (['1', '2'].includes(t.CategoriaID)) {
-            // commission =
-            //   t._comisionRecargas !== undefined
-            //     ? t._comisionRecargas
-            //     : Money(2);
-            commission = Money(0);
-          }
+          const commission = ['1', '2'].includes(t.CategoriaID) ? Money(0) : (t.Comision ?? Money(0));
           cantidadesTransaccionesExitosas.push(
             Helpers.sumArrayWithDecimals([t.Monto, t.Cargo, commission]),
           );
@@ -51,20 +45,12 @@ export default function useTransacciones() {
         final: _fechas.length > 0 ? _fechas[_fechas.length - 1] : '',
       });
 
-      setListaTransacciones(
-        Helpers.ordenarElementos(
-          _transacciones,
-          (a, b) => Moment(b.Fecha).valueOf() - Moment(a.Fecha).valueOf(),
-        ),
+      const sorted = Helpers.ordenarElementos(
+        _transacciones,
+        (a, b) => Moment(b.Fecha).valueOf() - Moment(a.Fecha).valueOf(),
       );
-      dispatch(
-        setTransacciones(
-          Helpers.ordenarElementos(
-            _transacciones,
-            (a, b) => Moment(b.Fecha).valueOf() - Moment(a.Fecha).valueOf(),
-          ),
-        ),
-      );
+      setListaTransacciones(sorted);
+      dispatch(setTransacciones(sorted));
       setCargandoTransacciones(false);
     } catch ({message}) {
       if (
@@ -84,7 +70,6 @@ export default function useTransacciones() {
     let ocurrenciesCounter = 0;
     let counter = 0;
     let dias_lunes = [];
-    // OBTENEMOS SOLO LOS DIAS LUNES
     while (ocurrenciesCounter !== ocurrencies) {
       if (
         Moment(timestamp)
@@ -99,14 +84,12 @@ export default function useTransacciones() {
       }
       counter++;
     }
-    // FECHAS FINALES
     const fechasFinales = {
       0: Moment(timestamp).format('YYYY-MM-DD'),
       1: Moment(dias_lunes[0]).subtract(1, 'days').format('YYYY-MM-DD'),
       2: Moment(dias_lunes[1]).subtract(1, 'days').format('YYYY-MM-DD'),
       3: Moment(dias_lunes[2]).subtract(1, 'days').format('YYYY-MM-DD'),
     };
-    // OBTENER DIAS DE LA SEMANA
     let _fechas = [];
     let counter2 = 0;
     while (

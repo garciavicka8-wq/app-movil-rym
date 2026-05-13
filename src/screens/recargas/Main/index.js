@@ -1,5 +1,6 @@
-import React, {useEffect} from 'react';
-import {Alert, ScrollView} from 'react-native';
+import React, {useEffect, useState, useLayoutEffect} from 'react';
+import {Alert, ScrollView, View, Text, StyleSheet} from 'react-native';
+import {IconButton} from 'react-native-paper';
 import {Colors, Storage} from '../../../utils';
 import {
   APP_NAVIGATION,
@@ -25,6 +26,7 @@ import {useNavigation} from '@react-navigation/native';
 import {useAuthContext} from '../../../context/AuthContext';
 import {getProducts} from '../../../services/taecel';
 import {Button} from 'react-native-paper';
+import CustomStatusBar from '../../../components/CustomStatusBar';
 
 export default function RecargasMenu() {
   const {isAuthenticated} = useAuthContext();
@@ -32,8 +34,19 @@ export default function RecargasMenu() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const netInfo = useNetInfo();
+  const [userName, setUserName] = useState('');
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   useEffect(() => {
+    const loginData = Storage.getItem('loginData', true);
+    if (loginData !== null) {
+      setUserName(loginData.userName);
+    }
     loadProducts();
   }, []);
 
@@ -109,11 +122,34 @@ export default function RecargasMenu() {
 
   return (
     <>
-      <CreditCard
-        backDropColor={Colors.blue}
-        cardColor={Colors.darkBlue}
-        iconBgColor={Colors.blue}
-      />
+      <CustomStatusBar color="darkBackground" />
+      <View style={styles.mainContainer}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>{userName ? userName.toUpperCase() : 'USUARIO'}</Text>
+        <View style={styles.headerIcons}>
+          <IconButton 
+            icon="bell" 
+            iconColor="#FBBF24" 
+            size={24} 
+            style={styles.headerIconBg} 
+            onPress={() => navigation.navigate(APP_NAVIGATION.SCREENS.NOTIFICACIONES)}
+          />
+          <IconButton 
+            icon="cog" 
+            iconColor={Colors.white} 
+            size={24} 
+            style={styles.headerIconBg} 
+            onPress={() => navigation.navigate(APP_NAVIGATION.SCREENS.CONFIG_MENU)}
+          />
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <CreditCard
+          backDropColor="transparent"
+          cardColor={Colors.primary}
+          iconBgColor="rgba(255,255,255,0.2)"
+        />
       {loadingProducts && (
         <>
           <MainMenuSectionButtons title="Opciones" titleColor={Colors.darkBlue}>
@@ -132,7 +168,7 @@ export default function RecargasMenu() {
         </Button>
       )}
       {!loadingProducts && mainProducts.length > 0 && (
-        <ScrollView>
+        <View>
           <UltimosMovimientos />
           <MainMenuSectionButtons title="Opciones" titleColor={Colors.darkBlue}>
             {mainProducts.map(item => (
@@ -161,8 +197,49 @@ export default function RecargasMenu() {
               </>
             )}
           </MainMenuSectionButtons>
-        </ScrollView>
+        </View>
       )}
+      </ScrollView>
+    </View>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: Colors.lightBackground,
+  },
+  headerContainer: {
+    backgroundColor: '#0E1321',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    zIndex: 10,
+  },
+  headerTitle: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  headerIcons: {
+    flexDirection: 'row',
+  },
+  headerIconBg: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    margin: 0,
+    marginLeft: 10,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+});

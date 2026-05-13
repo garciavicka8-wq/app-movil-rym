@@ -23,27 +23,29 @@ export default function LoginFormInput({
   };
 
   return (
-    <View
-      style={[
-        styles.inputBox,
-        {borderColor: focused ? Colors.lightBlue : 'transparent'},
-      ]}>
+    <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <View style={{display: 'flex', flexDirection: 'row'}}>
+      <View
+        style={[
+          styles.inputBox,
+          {borderColor: focused ? Colors.primary : 'rgba(255,255,255,0.1)'},
+        ]}>
         <TextInput
           keyboardType="number-pad"
           secureTextEntry={showPassword}
           style={styles.input}
           value={value}
+          placeholderTextColor="rgba(255,255,255,0.3)"
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onChangeText={onChange}
         />
         {togglePasswordType && (
           <IconButton
-            iconColor="rgba(0,0,0,0.3)"
+            iconColor="rgba(255,255,255,0.4)"
             icon={iconName}
             onPress={handlePress}
+            size={20}
           />
         )}
       </View>
@@ -52,24 +54,29 @@ export default function LoginFormInput({
 }
 
 const styles = StyleSheet.create({
-  inputBox: {
-    width: '100%',
-    borderWidth: 2,
-    borderRadius: 8,
-    backgroundColor: '#FAFAFA',
-    paddingHorizontal: 10,
+  container: {
     marginVertical: 10,
   },
   label: {
-    color: 'rgba(0,0,0,0.3)',
+    color: '#828C9B',
     fontWeight: 'bold',
-    marginTop: 10,
+    fontSize: 12,
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  inputBox: {
+    flexDirection: 'row',
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 12,
+    backgroundColor: '#232A3B',
+    paddingHorizontal: 10,
+    alignItems: 'center',
   },
   input: {
-    backgroundColor: 'transparent',
-    padding: 5,
+    color: '#FFF',
+    padding: 10,
     margin: 0,
-    borderRadius: 8,
     fontSize: 18,
     flex: 1,
   },

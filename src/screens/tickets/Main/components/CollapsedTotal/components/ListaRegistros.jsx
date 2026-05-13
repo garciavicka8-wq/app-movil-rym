@@ -65,7 +65,7 @@ function RegistroItem({registro}) {
                   fontSize: 12,
                   fontWeight: 'bold',
                 }}>
-                manten presionado para cancelar
+                manten presionado para solicitar cancelacion
               </Text>
             )}
           </View>

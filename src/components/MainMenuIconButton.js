@@ -9,23 +9,23 @@ import {
 import {IconButton} from 'react-native-paper';
 
 export default function MainMenuIconButton({
-  buttonColor = 'gray',
+  buttonColor = '#EFF6FF',
   icon = 'progress-question',
   iconColor = '#000',
-  textColor = '#000',
-  size = 130,
+  textColor = '#1E293B',
+  size = 110,
   empty = false,
   progress = false,
   text = '',
   onPress,
   fullwidth = false,
 }) {
-  const [scaleValue, setScaleValue] = useState(new Animated.Value(1));
+  const [scaleValue] = useState(new Animated.Value(1));
 
   const animateButton = () => {
     const duration = 100;
     Animated.timing(scaleValue, {
-      toValue: 0.8,
+      toValue: 0.95,
       duration: duration,
       useNativeDriver: true,
     }).start(() => {
@@ -40,9 +40,10 @@ export default function MainMenuIconButton({
       });
     });
   };
+
   // SI ESTA EMPTY
   if (empty) {
-    return <View style={[styles.button, {width: size, height: size}]}></View>;
+    return <View style={[styles.emptyContainer, {width: fullwidth ? '96%' : '46%', height: size}]}></View>;
   }
 
   // SI ESTA EN PROGRESS
@@ -50,8 +51,8 @@ export default function MainMenuIconButton({
     return (
       <View
         style={[
-          styles.button,
-          {width: size, height: size, backgroundColor: '#E7E7E7'},
+          styles.progressContainer,
+          {width: fullwidth ? '96%' : '46%', height: size},
         ]}></View>
     );
   }
@@ -64,24 +65,22 @@ export default function MainMenuIconButton({
     <TouchableWithoutFeedback onPress={handlePress}>
       <Animated.View
         style={[
-          styles.button,
+          styles.cardContainer,
           {
-            backgroundColor: buttonColor,
-            width: fullwidth ? size * 2 : size,
+            width: fullwidth ? '96%' : '46%',
             height: size,
             transform: [{scale: scaleValue}],
           },
         ]}>
-        <IconButton
-          icon={icon}
-          size={52}
-          iconColor={iconColor}
-          style={{
-            borderRadius: 0,
-            margin: 0,
-          }}
-        />
-        <Text style={{color: textColor, fontWeight: 'bold', fontSize: 14}}>
+        <View style={[styles.iconWrapper, {backgroundColor: buttonColor}]}>
+          <IconButton
+            icon={icon}
+            size={36}
+            iconColor={iconColor}
+            style={{margin: 0}}
+          />
+        </View>
+        <Text style={[styles.buttonText, {color: textColor}]}>
           {text}
         </Text>
       </Animated.View>
@@ -90,12 +89,45 @@ export default function MainMenuIconButton({
 }
 
 const styles = StyleSheet.create({
-  button: {
-    backgroundColor: 'transparent',
-    borderRadius: 8,
+  cardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     display: 'flex',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 5,
+    marginVertical: 8,
+    marginHorizontal: '2%',
+    elevation: 2,
+    shadowColor: '#CBD5E1',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    padding: 10,
+  },
+  iconWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  buttonText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    backgroundColor: 'transparent',
+    marginVertical: 8,
+    marginHorizontal: '2%',
+  },
+  progressContainer: {
+    backgroundColor: '#F1F5F9', // Slate 100
+    borderRadius: 16,
+    marginVertical: 8,
+    marginHorizontal: '2%',
   },
 });

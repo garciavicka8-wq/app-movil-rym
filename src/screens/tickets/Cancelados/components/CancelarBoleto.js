@@ -1,6 +1,7 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import {useSelector} from 'react-redux';
+import {Card} from 'react-native-paper';
 import {
   CustomModal,
   CustomAlert,
@@ -25,20 +26,27 @@ export default function CancelarBoleto() {
   };
 
   return (
-    <>
-      <Text>Escanea el codígo QR</Text>
-      {/* BOLETO INPUT GROUP AND SCANNER */}
-      <CustomTicketInputGroup
-        onSubmit={async (data, capturedImageUri, resetInputField) => {
-          await cancelarBoletoHook.handleCancelar(data, capturedImageUri);
-          resetInputField();
-        }}
-        disableSubmit={cargandoCancelados}
-      />
-      <CustomAlert
-        text="Conserve el ticket una vez cancelado ya que podria solicitarse para su recolección"
-        type="danger"
-      />
+    <View style={styles.container}>
+      <Card style={styles.modernCard}>
+        <Card.Content>
+          <Text style={styles.instructionText}>Escanea o ingresa el código QR</Text>
+          {/* BOLETO INPUT GROUP AND SCANNER */}
+          <CustomTicketInputGroup
+            onSubmit={async (data, capturedImageUri, resetInputField) => {
+              await cancelarBoletoHook.handleCancelar(data, capturedImageUri);
+              resetInputField();
+            }}
+            disableSubmit={cargandoCancelados}
+          />
+          <View style={styles.alertContainer}>
+            <CustomAlert
+              text="Conserve el ticket una vez cancelado ya que podría solicitarse para su recolección."
+              type="danger"
+            />
+          </View>
+        </Card.Content>
+      </Card>
+      
       {/* MODAL */}
       <CustomModal
         open={modal.config.open}
@@ -54,6 +62,32 @@ export default function CancelarBoleto() {
         {modal.config.contentType === 'mensaje' && modal.config.content}
         {modal.config.contentType === 'error' && modal.config.error}
       </CustomModal>
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 15,
+    marginHorizontal: 12,
+  },
+  modernCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: '#CBD5E1',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  instructionText: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: 15,
+  },
+  alertContainer: {
+    marginTop: 15,
+  },
+});

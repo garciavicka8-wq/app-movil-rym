@@ -1,11 +1,12 @@
 import Database from '.';
 import {DATABASE_TABLES} from '../services/constants';
 import {actualizarCredito} from '../services/credito';
+import {getServerTime} from '../services/http';
 import {Moment, Utils} from '../utils';
 
 const {totalWithoutCommissionTicket} = Utils;
 const {DRAWS, CREDITS, CLOSING_TIME, TICKETS, BET_LIMIT} = DATABASE_TABLES;
-const {getItem, getItemsByProp, getObject, getServerDate, save} = Database;
+const {getItem, getItemsByProp, getObject, save} = Database;
 
 export async function getSorteo(id) {
   const sorteo = await getItem(DRAWS, 'id', id);
@@ -76,8 +77,7 @@ export async function updateCreditoUsuario(numeroUsuario, totalApostado) {
 }
 
 export async function getTimestamp() {
-  const timestamp = await getServerDate();
-  return timestamp;
+  return await getServerTime();
 }
 
 export async function getTicketsFromRange(start, end) {

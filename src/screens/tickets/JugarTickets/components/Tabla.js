@@ -1,17 +1,10 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {Alert, Keyboard, StyleSheet, Text, View} from 'react-native';
+import {Alert, Keyboard, StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
+import {Divider} from 'react-native-paper';
 import {CustomModal, CustomNumericField} from '../../../../components';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from '../../../../components/CustomTable';
 import {setJugadas} from '../../../../features/tickets/jugarTickets/jugarTicketsSlice';
 import {useModal, useModalInputs} from '../../../../hooks';
-import {uuid} from '../../../../utils';
 
 export default function Tabla() {
   const [jugadaSeleccionada, setJugadaSeleccionada] = useState(null);
@@ -37,11 +30,7 @@ export default function Tabla() {
   };
 
   const onRowPress = item => {
-    // SI EL NUMERO CONTIENE ALGUNA X SE TRATA DE UNA
-    // APUESTA AUTOMATICA POR LO TANTO NO SE PUEDE EDITAR
     if (item.numero.includes('X')) return;
-    // SI NO CONTIENE NINGUNA X ENTONCES SE TRATA DE UNA
-    // JUGADA REGULAR Y ES POSIBLE EDITARLA
     setJugadaSeleccionada(item);
     modal.setConfig({
       open: true,
@@ -67,11 +56,11 @@ export default function Tabla() {
       },
     ]);
   };
-  //   HANDLE MODAL CANCEL
+
   const handleModalCancel = () => {
     modal.setConfig({open: false});
   };
-  //   HANDLE MODAL ACCEPT
+
   const handleModalAccept = () => {
     if (modal.config.action === 'error' || modal.config.action === 'mensaje') {
       handleModalCancel();
@@ -80,7 +69,7 @@ export default function Tabla() {
       handleActualizarJugada();
     }
   };
-  // HANDLE ACTUALIZAR JUGADA
+
   const handleActualizarJugada = () => {
     const {validInputs, data, handleReset} = modalInputs;
     if (jugadaSeleccionada && validInputs() && data) {
@@ -107,33 +96,53 @@ export default function Tabla() {
   };
 
   if (!sorteoSeleccionado) {
-    return <Text style={{marginLeft: 15}}>No hay sorteos</Text>;
+    return <Text style={styles.noSorteosText}>No hay sorteos seleccionados</Text>;
   }
 
+  const columns = obtenerNumColumnas(sorteoSeleccionado.codigoSorteo);
+
   return (
-    <>
-      <Table>
-        <TableHeader>
-          <TableCell text="Número" />
-          {obtenerNumColumnas(sorteoSeleccionado.codigoSorteo).map(text => {
-            return <TableCell key={text} text={text} />;
-          })}
-        </TableHeader>
-        <TableBody scrollable>
-          {jugadas.map(item => (
-            <TableRow
-              key={uuid()}
-              onPress={() => onRowPress(item)}
-              onLongPress={() => onRowLongPress(item)}>
-              <TableCell text={item.numero} />
-              {item.lugares.map(lugar => {
-                const text = lugar === '' || lugar === '0' ? 'X' : lugar;
-                return <TableCell key={uuid()} text={text} />;
-              })}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <View style={styles.container}>
+      {/* HEADER SIMULADO */}
+      <View style={styles.tableHeader}>
+        <View style={styles.headerCell}>
+          <Text style={styles.headerText}>Número</Text>
+        </View>
+        {columns.map(col => (
+          <View key={col} style={styles.headerCell}>
+            <Text style={styles.headerText}>{col}</Text>
+          </View>
+        ))}
+      </View>
+      <Divider />
+
+      {/* FILAS SIMULADAS */}
+      {jugadas.map((item, index) => (
+        <React.Fragment key={item.id}>
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            onPress={() => onRowPress(item)}
+            onLongPress={() => onRowLongPress(item)}
+            style={styles.tableRow}
+          >
+            <View style={styles.cell}>
+              <Text style={styles.cellText}>{item.numero}</Text>
+            </View>
+            {item.lugares.map((lugar, idx) => {
+              const valor = lugar === '' || lugar === '0' ? 'X' : lugar;
+              return (
+                <View key={`${item.id}-${idx}`} style={styles.cell}>
+                  <Text style={[styles.cellText, valor === 'X' && styles.textMuted]}>
+                    {valor}
+                  </Text>
+                </View>
+              );
+            })}
+          </TouchableOpacity>
+          {index < jugadas.length - 1 && <Divider style={styles.rowDivider} />}
+        </React.Fragment>
+      ))}
+
       {/* MODAL */}
       <CustomModal
         open={modal.config.open}
@@ -155,17 +164,13 @@ export default function Tabla() {
         {modal.config.contentType === 'mensaje' && modal.config.content}
         {modal.config.contentType === 'error' && modal.config.error}
       </CustomModal>
-    </>
+    </View>
   );
 }
 
 const ModalInputGroup = ({jugada, modalInputs}) => {
   const {inputs, errors} = modalInputs;
-  const posiciones = {
-    0: 'primero',
-    1: 'segundo',
-    2: 'tercero',
-  };
+  const posiciones = {0: 'primero', 1: 'segundo', 2: 'tercero'};
   const apuestaInputRef = useRef(null);
 
   useEffect(() => {
@@ -181,95 +186,137 @@ const ModalInputGroup = ({jugada, modalInputs}) => {
   }, [jugada]);
 
   return (
-    <View style={styles.inputGroup}>
-      <CustomNumericField
-        inputRef={apuestaInputRef}
-        placeholder="Número"
-        value={inputs.apuesta}
-        error={errors.apuesta}
-        onChange={text => modalInputs.handleOnchange('apuesta', text)}
-        maxLength={3}
-        hideErrorMessage
-        width={70}
-      />
-      {jugada.lugares.length === 1 && (
-        <CustomNumericField
-          placeholder="1er"
-          value={inputs.primero}
-          error={errors.primero}
-          onChange={text => modalInputs.handleOnchange('primero', text)}
-          maxLength={3}
-          hideErrorMessage
-          width={70}
-          marginX={10}
-        />
-      )}
-      {jugada.lugares.length === 2 && (
-        <>
+    <View style={styles.modalContent}>
+      <View style={styles.inputRow}>
+        <View style={styles.inputFieldContainer}>
+          <Text style={styles.inputFieldLabel}>Número</Text>
           <CustomNumericField
-            placeholder="1er"
-            value={inputs.primero}
-            error={errors.primero}
-            onChange={text => modalInputs.handleOnchange('primero', text)}
-            maxLength={3}
-            hideErrorMessage
-            width={70}
-            marginX={10}
-          />
-          <CustomNumericField
-            placeholder="2do"
-            value={inputs.segundo}
-            error={errors.segundo}
-            onChange={text => modalInputs.handleOnchange('segundo', text)}
+            inputRef={apuestaInputRef}
+            placeholder="00"
+            value={inputs.apuesta}
+            error={errors.apuesta}
+            onChange={text => modalInputs.handleOnchange('apuesta', text)}
             maxLength={3}
             hideErrorMessage
             width={70}
           />
-        </>
-      )}
-      {jugada.lugares.length === 3 && (
-        <>
-          <CustomNumericField
-            placeholder="1er"
-            value={inputs.primero}
-            error={errors.primero}
-            onChange={text => modalInputs.handleOnchange('primero', text)}
-            maxLength={3}
-            hideErrorMessage
-            width={50}
-            marginX={10}
-          />
-          <CustomNumericField
-            placeholder="2do"
-            value={inputs.segundo}
-            error={errors.segundo}
-            onChange={text => modalInputs.handleOnchange('segundo', text)}
-            maxLength={3}
-            hideErrorMessage
-            width={50}
-          />
-          <CustomNumericField
-            placeholder="3er"
-            value={inputs.tercero}
-            error={errors.tercero}
-            onChange={text => modalInputs.handleOnchange('tercero', text)}
-            maxLength={3}
-            hideErrorMessage
-            width={50}
-            marginX={10}
-          />
-        </>
-      )}
+        </View>
+        {jugada.lugares.length >= 1 && (
+          <View style={styles.inputFieldContainer}>
+            <Text style={styles.inputFieldLabel}>1er</Text>
+            <CustomNumericField
+              placeholder="0"
+              value={inputs.primero}
+              error={errors.primero}
+              onChange={text => modalInputs.handleOnchange('primero', text)}
+              maxLength={3}
+              hideErrorMessage
+              width={65}
+            />
+          </View>
+        )}
+        {jugada.lugares.length >= 2 && (
+          <View style={styles.inputFieldContainer}>
+            <Text style={styles.inputFieldLabel}>2do</Text>
+            <CustomNumericField
+              placeholder="0"
+              value={inputs.segundo}
+              error={errors.segundo}
+              onChange={text => modalInputs.handleOnchange('segundo', text)}
+              maxLength={3}
+              hideErrorMessage
+              width={65}
+            />
+          </View>
+        )}
+        {jugada.lugares.length >= 3 && (
+          <View style={styles.inputFieldContainer}>
+            <Text style={styles.inputFieldLabel}>3er</Text>
+            <CustomNumericField
+              placeholder="0"
+              value={inputs.tercero}
+              error={errors.tercero}
+              onChange={text => modalInputs.handleOnchange('tercero', text)}
+              maxLength={3}
+              hideErrorMessage
+              width={65}
+            />
+          </View>
+        )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  inputGroup: {
+  container: {
     width: '100%',
-    display: 'flex',
-    justifyContent: 'flex-start',
+  },
+  tableHeader: {
     flexDirection: 'row',
-    marginVertical: 10,
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  headerCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  cell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellText: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  textMuted: {
+    color: '#CBD5E1',
+  },
+  rowDivider: {
+    backgroundColor: '#F1F5F9',
+  },
+  noSorteosText: {
+    fontFamily: 'Inter',
+    textAlign: 'center',
+    padding: 20,
+    color: '#64748B',
+  },
+  modalContent: {
+    paddingVertical: 10,
+    width: '100%',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-end',
+    width: '100%',
+  },
+  inputFieldContainer: {
+    alignItems: 'center',
+  },
+  inputFieldLabel: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 8,
   },
 });

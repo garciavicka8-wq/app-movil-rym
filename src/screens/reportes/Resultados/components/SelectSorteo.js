@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Alert, View} from 'react-native';
+import {Alert, View, StyleSheet, Text} from 'react-native';
 import {IconButton, List, Menu} from 'react-native-paper';
 import {useDispatch, useSelector} from 'react-redux';
 import {setSorteoSelected} from '../../../../features/tickets/ganadores/ganadoresSlice';
@@ -11,6 +11,7 @@ export default function SelectSorteo() {
     useSelector(state => state.ganadores);
   const ganadoresHook = useGanadores();
   const dispatch = useDispatch();
+  
   const cargarGanadores = async fechaSorteo => {
     await ganadoresHook.obtenerPublicacion(fechaSorteo);
     const _sorteoSelected = sorteosJugados.find(s =>
@@ -18,15 +19,14 @@ export default function SelectSorteo() {
     );
     dispatch(setSorteoSelected(_sorteoSelected));
   };
+  
   const thermalPrinter = useThermalPrinter();
 
   const handleImprimir = async () => {
     try {
       if (!thermalPrinter.isPrinting) {
         const isPrintingPossible = await thermalPrinter.isPrintingPossible();
-        // SI SE CONECTO A IMPRESORA CORRECTAMENTE
         if (isPrintingPossible && publicacion) {
-          // IMPRIMIR NUMEROS
           await thermalPrinter.print(
             Print.winningNumbers(publicacion.fechaSorteo, publicacion.numeros),
           );
@@ -39,42 +39,32 @@ export default function SelectSorteo() {
 
   if (cargandoSorteosJugados || !publicacion) {
     return (
-      <View style={{width: '100%'}}>
+      <View style={styles.container}>
         <List.Item
-          title="cargando sorteos"
-          description="..."
-          left={props => (
-            <List.Icon {...props} icon="dots-vertical" color={Colors.dark} />
-          )}
-          // right={props => (
-          //   <List.Icon {...props} icon="printer" color={Colors.dark} />
-          // )}
+          title="Cargando sorteos..."
+          titleStyle={styles.loadingTitle}
+          left={props => <List.Icon {...props} icon="refresh" color="#94A3B8" />}
         />
       </View>
     );
   }
 
   return (
-    <View style={{width: '100%'}}>
+    <View style={styles.container}>
       <List.Item
         title={sorteoSelected ? sorteoSelected.sorteo : 'No hay sorteo'}
+        titleStyle={styles.title}
         description={
           sorteoSelected
-            ? Moment(sorteoSelected.fecha).format('dddd DD MMM YY')
+            ? Moment(sorteoSelected.fecha).format('dddd, DD [de] MMMM')
             : ''
         }
+        descriptionStyle={styles.description}
         left={props => (
           <MenuDesplegable
             onMenuItemPress={fechaSorteo => cargarGanadores(fechaSorteo)}
           />
         )}
-        // right={() => (
-        //   <IconButton
-        //     icon="printer"
-        //     color={Colors.dark}
-        //     onPress={handleImprimir}
-        //   />
-        // )}
       />
     </View>
   );
@@ -82,7 +72,6 @@ export default function SelectSorteo() {
 
 const MenuDesplegable = ({onMenuItemPress}) => {
   const {sorteosJugados} = useSelector(state => state.ganadores);
-
   const [visible, setVisible] = useState(false);
 
   const handleItemPress = value => {
@@ -94,22 +83,61 @@ const MenuDesplegable = ({onMenuItemPress}) => {
     <Menu
       visible={visible}
       onDismiss={() => setVisible(false)}
+      contentStyle={styles.menuContent}
       anchor={
         <IconButton
-          icon={!visible ? 'chevron-down' : 'chevron-up'}
-          color={Colors.dark}
+          icon="calendar-search"
+          iconColor="#0E1321"
+          containerStyle={styles.menuAnchor}
           onPress={() => setVisible(true)}
         />
       }>
-      <>
-        {sorteosJugados.map(item => (
-          <Menu.Item
-            key={item.id}
-            title={Moment(item.fecha).format('dddd DD MMM YY')}
-            onPress={() => handleItemPress(item.fecha)}
-          />
-        ))}
-      </>
+      {sorteosJugados.map(item => (
+        <Menu.Item
+          key={item.id}
+          title={Moment(item.fecha).format('DD MMM YY')}
+          titleStyle={styles.menuItemTitle}
+          onPress={() => handleItemPress(item.fecha)}
+        />
+      ))}
     </Menu>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  title: {
+    fontFamily: 'Inter',
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#0E1321',
+    textTransform: 'capitalize',
+  },
+  description: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#64748B',
+    textTransform: 'capitalize',
+  },
+  loadingTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: '#94A3B8',
+  },
+  menuAnchor: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+  },
+  menuContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginTop: 40,
+  },
+  menuItemTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: '#1E293B',
+  },
+});

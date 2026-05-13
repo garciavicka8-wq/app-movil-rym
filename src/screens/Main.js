@@ -1,4 +1,5 @@
 import React, {useEffect} from 'react';
+import {View, Text} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 // TABS
 import RecargasTab from './recargas';
@@ -63,57 +64,75 @@ export default function Main() {
   }, []);
 
   return (
-    <Tab.Navigator
-      initialRouteName={APP_NAVIGATION.TABS.RECARGAS}
-      screenOptions={{
-        tabBarStyle: {
-          backgroundColor: Colors.blue,
-        },
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.50)',
-        tabBarActiveTintColor: 'white',
-        headerShown: false,
-        tabBarHideOnKeyboard: true,
-      }}>
-      <Tab.Screen
-        name={APP_NAVIGATION.TABS.RECARGAS}
-        // component={TestComponent}
-        component={RecargasTab}
-        options={{
-          title: 'Recargas',
-          tabBarIcon: ({focused, color, size}) => {
-            let customColor = focused ? 'white' : 'rgba(255,255,255,0.50)';
-            return <Icon name="mobile" size={30} color={customColor} />;
-          },
-        }}
-      />
-      <Tab.Screen
-        name={APP_NAVIGATION.TABS.TICKETS}
-        component={TicketsTab}
-        options={{
-          title: 'Ticket',
-          tabBarIcon: ({focused}) => {
-            let customColor = focused ? 'white' : 'rgba(255,255,255,0.50)';
-            return <Icon name="ticket" size={30} color={customColor} />;
-          },
+    <View style={{flex: 1, backgroundColor: Colors.darkBackground}}>
+      <Tab.Navigator
+        initialRouteName={APP_NAVIGATION.TABS.RECARGAS}
+        screenOptions={{
           tabBarStyle: {
-            backgroundColor: Colors.primary,
+            backgroundColor: '#FFFFFF',
+            height: 70,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderTopWidth: 0,
           },
-        }}
-      />
-      <Tab.Screen
-        name={APP_NAVIGATION.TABS.REPORTES}
-        component={ReportesTab}
-        options={{
-          title: 'Reportes',
-          tabBarIcon: ({focused}) => {
-            let customColor = focused ? 'white' : 'rgba(255,255,255,0.50)';
-            return <Icon name="calculator" size={30} color={customColor} />;
+          tabBarLabelStyle: {
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: 'bold',
+            marginBottom: 10,
           },
-          tabBarStyle: {
-            backgroundColor: Colors.purple,
-          },
-        }}
-      />
-    </Tab.Navigator>
+          tabBarInactiveTintColor: '#94A3B8',
+          tabBarActiveTintColor: Colors.primary,
+          headerShown: false,
+          tabBarHideOnKeyboard: true,
+        }}>
+        <Tab.Screen
+          name={APP_NAVIGATION.TABS.RECARGAS}
+          component={RecargasTab}
+          options={{
+            title: 'Recargas',
+            tabBarIcon: ({focused}) => (
+              <View style={[
+                {
+                  width: 36, 
+                  height: 36, 
+                  justifyContent: 'center', 
+                  alignItems: 'center', 
+                  borderRadius: 10, 
+                  marginTop: 5
+                },
+                focused ? {backgroundColor: 'rgba(199, 44, 51, 0.1)'} : {}
+              ]}>
+                <Icon name="mobile" size={24} color={focused ? Colors.dark : '#94A3B8'} />
+              </View>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name={APP_NAVIGATION.TABS.TICKETS}
+          component={TicketsTab}
+          options={{
+            title: 'Ticket',
+            tabBarIcon: ({focused}) => (
+              <View style={{marginTop: 5}}>
+                <Icon name="ticket" size={20} color={focused ? Colors.dark : '#94A3B8'} />
+              </View>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name={APP_NAVIGATION.TABS.REPORTES}
+          component={ReportesTab}
+          options={{
+            title: 'Reportes',
+            tabBarIcon: ({focused}) => (
+              <View style={{marginTop: 5}}>
+                <Icon name="bar-chart" size={20} color={focused ? Colors.dark : '#94A3B8'} />
+              </View>
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </View>
   );
 }

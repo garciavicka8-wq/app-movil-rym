@@ -15,7 +15,7 @@ export const Table = ({children}) => {
 
 export const TableHeader = ({children, borderColor = Colors.primary}) => {
   return (
-    <View style={[styles.tableRow, {borderBottomColor: borderColor}]}>
+    <View style={[styles.tableRow, styles.headerBackground, {borderBottomColor: borderColor}]}>
       {children}
     </View>
   );
@@ -24,13 +24,16 @@ export const TableHeader = ({children, borderColor = Colors.primary}) => {
 export const TableBody = ({
   children,
   scrollable = false,
-  paddingBottom = 240,
+  paddingBottom = 10,
 }) => {
   if (scrollable) {
     return (
-      <View style={{paddingBottom: paddingBottom}}>
-        <ScrollView>{children}</ScrollView>
-      </View>
+      <ScrollView 
+        style={{flex: 1}} 
+        contentContainerStyle={{flexGrow: 1, paddingBottom: paddingBottom}}
+      >
+        {children}
+      </ScrollView>
     );
   }
   return <View>{children}</View>;
@@ -78,7 +81,7 @@ export const TableRow = ({children, onPress, onLongPress}) => {
   return <View style={[styles.tableRow]}>{children}</View>;
 };
 
-export const TableCell = ({text, color = '#000'}) => {
+export const TableCell = ({text, color = '#1E293B'}) => {
   return (
     <View style={styles.tableCell}>
       <Text style={[styles.cellText, {color: color}]}>{text}</Text>
@@ -95,16 +98,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 2,
     justifyContent: 'space-between',
-    borderBottomColor: 'gray',
+    borderBottomColor: '#F1F5F9',
     paddingVertical: 15,
+    minHeight: 50,
+    alignItems: 'center',
   },
   tableCell: {
-    width: '25%',
-    display: 'flex',
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cellText: {
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  headerBackground: {
+    backgroundColor: '#F8FAFC',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
 });

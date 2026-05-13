@@ -169,15 +169,22 @@ export async function requestRymAPI(
       );
       console.log(error.response.data.error_message);
       throw new Error(
-        `Error API ${error.response.status}: ${
-          error.response.data.error_message || 'Error desconocido'
-        }`,
+        error.response.data.error_message ||
+        error.response.data.message ||
+        `Error al comunicarse con el servidor (${error.response.status}).`,
       );
+    } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      throw new Error('Sin conexión a internet. Verifica tu red e intenta de nuevo.');
     } else {
       console.error('[requestRymAPI] Error:', error.message);
       throw new Error('Error al comunicarse con la API de Recargas y Más.');
     }
   }
+}
+
+export async function getServerTime() {
+  const response = await requestRymAPI('server-time', {}, true, 'GET');
+  return response.data.timestamp;
 }
 
 /**

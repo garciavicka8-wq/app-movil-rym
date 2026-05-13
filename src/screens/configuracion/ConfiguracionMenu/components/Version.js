@@ -11,7 +11,7 @@ export default function Version() {
 
   return (
     <View style={styles.box}>
-      <Text>versión {versionApp}</Text>
+      <Text style={styles.text}>VERSIÓN {versionApp}</Text>
     </View>
   );
 }
@@ -20,7 +20,14 @@ const styles = StyleSheet.create({
   box: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 30,
     padding: 15,
+  },
+  text: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#CBD5E1',
+    letterSpacing: 1,
   },
 });

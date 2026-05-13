@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   },
   total: {
     borderRadius: 20,
-    backgroundColor: Colors.primary,
+    backgroundColor: '#0E1321',
     width: 160,
     display: 'flex',
     flexDirection: 'row',
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   totalBadge: {
-    color: Colors.primary,
+    color: '#0E1321',
     fontSize: 16,
     borderRadius: 50,
     width: 25,

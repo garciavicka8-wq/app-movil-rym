@@ -1,14 +1,13 @@
 import React from 'react';
+import {StyleSheet, Text, View, Linking, Alert} from 'react-native';
 import {IconButton, TextInput} from 'react-native-paper';
 import {Colors, Storage, Utils} from '../../../../../utils';
 import {CustomModal} from '../../../../../components';
 import {useCustomNavigation, useLogout, useModal} from '../../../../../hooks';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {Alert, Linking} from 'react-native';
 import {registrarMagicoApi, registrarTicketApi} from '../../services';
 import {useDispatch, useSelector} from 'react-redux';
-import {Text} from 'react-native';
 import {ERROR_CODE_NAMES} from '../../../../../errors';
 import {
   restarCredito,
@@ -25,6 +24,7 @@ export default function WhatsappBtn() {
   const {logout} = useLogout();
   const dispatch = useDispatch();
   const navigation = useCustomNavigation();
+
   const formik = useFormik({
     initialValues: {
       numero: '',
@@ -36,17 +36,16 @@ export default function WhatsappBtn() {
         .matches('[0-9]', 'Debes ingresar solo números'),
     }),
   });
-  //   HANDLE MODAL CANCEL
+
   const handleModalCancel = () => {
     modal.setConfig({open: false});
   };
-  //   HANDLE MODAL ACCEPT
+
   const handleModalAccept = () => {
     if (modal.config.action === 'error' || modal.config.action === 'mensaje') {
       handleModalCancel();
     }
     if (modal.config.action === 'ingresar-tel') {
-      // enviarInformacionBoleto();
       sendMessage();
     }
     if (modal.config.action === 'numeros-saturados') {
@@ -76,7 +75,7 @@ export default function WhatsappBtn() {
         action: 'error',
         showCancelBtn: false,
         error: (
-          <Text>
+          <Text style={styles.errorAlertText}>
             Parece que no tienes Whatsapp instalado, por favor instalalo y
             vuelve a intentar.
           </Text>
@@ -101,8 +100,6 @@ export default function WhatsappBtn() {
 
   const sendMessage = async newJugadas => {
     try {
-      console.log('105 -> sendMessage');
-      // LIMPIAR SATURADOS DE MEMORIA EN CASO DE EXISTIR
       Storage.removeItem('saturados');
       const _jugadas = newJugadas ?? [...jugadas];
       const numeroValido = formik.values.numero.length === 10;
@@ -121,13 +118,10 @@ export default function WhatsappBtn() {
       let boletoRegistrado = null;
 
       if (esMagico) {
-        // console.log('es magico');
         boletoRegistrado = await registrarTicketMagico(_jugadas);
       } else {
-        console.log('es normal');
         boletoRegistrado = await registrarTicketNormal(_jugadas);
       }
-      console.log('130 -> boletoRegistrado', boletoRegistrado);
 
       await enviarPorWhatsapp(boletoRegistrado);
     } catch ({message}) {
@@ -151,7 +145,7 @@ export default function WhatsappBtn() {
         showCancelBtn: saturados !== null,
         cancelBtnText: saturados !== null ? 'Cerrar' : 'Cancelar',
         confirmBtnText: saturados !== null ? 'Continuar' : 'Aceptar',
-        error: <Text>{message}</Text>,
+        error: <Text style={styles.errorAlertText}>{message}</Text>,
       });
     }
   };
@@ -223,6 +217,8 @@ export default function WhatsappBtn() {
     navigation.goBack();
   };
 
+  const isButtonDisabled = modal.config.action === 'ingresar-tel' && formik.values.numero.length !== 10;
+
   return (
     <>
       <IconButton
@@ -231,9 +227,8 @@ export default function WhatsappBtn() {
         iconColor={Colors.green}
         size={40}
         onPress={handleCompartir}
-        style={{margin: 0}}
+        style={styles.iconButton}
       />
-      {/* MODAL */}
       <CustomModal
         open={modal.config.open}
         type={modal.config.type}
@@ -242,24 +237,44 @@ export default function WhatsappBtn() {
         showCancelButton={modal.config.showCancelBtn}
         cancelButtonText={modal.config.cancelBtnText}
         confirmButtonText={modal.config.confirmBtnText}
+        confirmButtonDisabled={isButtonDisabled}
         showConfirmBtn={modal.config.showConfirmBtn}
         onCancel={handleModalCancel}
-        onAccept={handleModalAccept}>
+        onAccept={handleModalAccept}
+        showCloseBtn={true}
+        onClose={handleModalCancel}
+      >
         {modal.config.contentType === 'ingresar-tel' && (
-          <TextInput
-            keyboardType="numeric"
-            placeholder="Número a 10 digitos"
-            maxLength={10}
-            onChangeText={handleChange}
-            error={formik.errors.numero}
-            value={formik.values.numero}
-            autoFocus={true}
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              mode="outlined"
+              label="Número de teléfono"
+              keyboardType="numeric"
+              placeholder="10 dígitos"
+              maxLength={10}
+              onChangeText={handleChange}
+              value={formik.values.numero}
+              autoFocus={true}
+              outlineStyle={styles.inputOutline}
+              style={styles.input}
+              activeOutlineColor="#0E1321"
+              outlineColor="#E2E8F0"
+              left={<TextInput.Affix text="+52 " />}
+              error={formik.errors.numero && formik.values.numero.length > 0}
+            />
+            {formik.errors.numero && formik.values.numero.length > 0 && (
+              <Text style={styles.errorText}>{formik.errors.numero}</Text>
+            )}
+          </View>
         )}
         {modal.config.contentType === 'mensaje' && modal.config.content}
-        {modal.config.contentType === 'error' && modal.config.error}
+        {modal.config.contentType === 'error' && (
+          <View style={styles.errorContent}>
+            {modal.config.error}
+          </View>
+        )}
         {modal.config.action === 'numeros-saturados' && (
-          <Text>
+          <Text style={styles.warningText}>
             Si continuas las jugadas ajustaran sus cantidades automaticamente y
             las que esten completamente agotadas serán eliminadas.
           </Text>
@@ -268,3 +283,45 @@ export default function WhatsappBtn() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  iconButton: {
+    margin: 0,
+  },
+  inputContainer: {
+    paddingVertical: 10,
+    width: '100%',
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    fontFamily: 'Inter',
+  },
+  inputOutline: {
+    borderRadius: 12,
+  },
+  errorText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 5,
+    marginLeft: 5,
+  },
+  errorAlertText: {
+    fontFamily: 'Inter',
+    fontSize: 15,
+    textAlign: 'center',
+    color: '#1E293B',
+    lineHeight: 22,
+  },
+  warningText: {
+    fontFamily: 'Inter',
+    fontSize: 15,
+    textAlign: 'center',
+    color: '#1E293B',
+    lineHeight: 22,
+  },
+  errorContent: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  }
+});

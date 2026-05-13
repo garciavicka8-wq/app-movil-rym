@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
-import {Text} from 'react-native';
+import {Text, StyleSheet, View} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
-import {Moment, Styles as globalStyles} from '../../../../utils';
+import {Moment} from '../../../../utils';
 import {Grid, Row} from 'react-native-easy-grid';
 import ReporteButton from './ReporteButton';
 import ReporteSemanalLoader from './ReporteSemanalLoader';
@@ -35,64 +35,62 @@ export default function ReporteSemanal() {
   };
 
   return (
-    <>
-      <Text style={globalStyles.sectionTitle}>Liquidación</Text>
+    <View style={styles.container}>
+      <Text style={styles.sectionTitle}>Liquidación Semanal</Text>
       {periodos.length > 0 && (
-        <Grid>
-          {/* <Row>
-            <ReporteButton
-              label="En curso"
-              icon="calendar-month"
-              selected={periodos[0].active}
-              onPress={() => handleClick(periodos[0], true)}
-            />
-          </Row> */}
-          <Row>
-            <ReporteButton
-              label={Moment(periodos[1].final).format('DD MMM')}
-              selected={periodos[1].active}
-              onPress={() => handleClick(periodos[1])}
-            />
-            <ReporteButton
-              label={Moment(periodos[2].final).format('DD MMM')}
-              selected={periodos[2].active}
-              onPress={() => handleClick(periodos[2])}
-            />
-            <ReporteButton
-              label={Moment(periodos[3].final).format('DD MMM')}
-              selected={periodos[3].active}
-              onPress={() => handleClick(periodos[3])}
-            />
-            <ReporteButton
-              label={Moment(periodos[4].final).format('DD MMM')}
-              selected={periodos[4].active}
-              onPress={() => handleClick(periodos[4])}
-            />
-          </Row>
-          {/* <Row>
-            <ReporteButton
-              label={Moment(periodos[5].final).format('DD MMM')}
-              selected={periodos[5].active}
-              onPress={() => handleClick(periodos[5])}
-            />
-            <ReporteButton
-              label={Moment(periodos[6].final).format('DD MMM')}
-              selected={periodos[6].active}
-              onPress={() => handleClick(periodos[6])}
-            />
-            <ReporteButton
-              label={Moment(periodos[7].final).format('DD MMM')}
-              selected={periodos[7].active}
-              onPress={() => handleClick(periodos[7])}
-            />
-            <ReporteButton
-              label={Moment(periodos[8].final).format('DD MMM')}
-              selected={periodos[8].active}
-              onPress={() => handleClick(periodos[8])}
-            />
-          </Row> */}
-        </Grid>
+        <View style={styles.gridContainer}>
+          <Grid>
+            <Row>
+              <ReporteButton
+                label={Moment(periodos[1].final).format('DD MMM')}
+                selected={periodos[1].active}
+                onPress={() => handleClick(periodos[1])}
+              />
+              <ReporteButton
+                label={Moment(periodos[2].final).format('DD MMM')}
+                selected={periodos[2].active}
+                onPress={() => handleClick(periodos[2])}
+              />
+              <ReporteButton
+                label={Moment(periodos[3].final).format('DD MMM')}
+                selected={periodos[3].active}
+                onPress={() => handleClick(periodos[3])}
+              />
+              <ReporteButton
+                label={Moment(periodos[4].final).format('DD MMM')}
+                selected={periodos[4].active}
+                onPress={() => handleClick(periodos[4])}
+              />
+            </Row>
+          </Grid>
+        </View>
       )}
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 15,
+    marginLeft: 5,
+  },
+  gridContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 10,
+    elevation: 2,
+    shadowColor: '#CBD5E1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+});

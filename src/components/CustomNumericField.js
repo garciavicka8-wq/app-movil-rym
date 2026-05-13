@@ -71,7 +71,7 @@ const CustomNumericField = ({
             prefix={prefix}
             placeholder={placeholder}
             editable={!disabled}
-            style={{fontSize: 18}}
+            style={{fontSize: 18, color: '#000', height: 40}}
           />
         )}
         {!['currency', 'password'].includes(type) && (
@@ -85,10 +85,9 @@ const CustomNumericField = ({
             onChangeText={handleMaskChange}
             onBlur={onBlur}
             value={value}
-            placeholder={placeholder}
-            // placeholderTextColor="#000"
+            placeholderTextColor="#94A3B8"
             editable={!disabled}
-            style={{fontSize: 18}}
+            style={{fontSize: 18, color: '#000', height: 40}}
           />
         )}
       </View>
@@ -125,10 +124,11 @@ const PasswordInput = ({
         maxLength={maxLength}
       />
       <TextInput
-        style={styles.textInput}
+        style={[styles.textInput, {color: '#000'}]}
         value={toAsterisks(value)}
         keyboardType="numeric"
         placeholder={placeholder}
+        placeholderTextColor="#94A3B8"
       />
     </View>
   );
@@ -154,7 +154,11 @@ const styles = StyleSheet.create({
     width: '100%',
     borderWidth: 1,
     borderRadius: 8,
-    borderColor: 'gray',
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
   errorMessage: {
     fontStyle: 'italic',

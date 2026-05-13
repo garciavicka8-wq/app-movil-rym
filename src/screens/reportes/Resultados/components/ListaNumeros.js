@@ -9,71 +9,111 @@ export default function ListaNumeros() {
   const loadingContent = cargandoSorteosJugados || cargandoPublicacion;
 
   return (
-    <>
+    <View style={styles.container}>
       <View style={styles.numerosBox}>
-        {loadingContent && (
+        {loadingContent ? (
           <>
-            <View style={styles.numeroBox}></View>
-            <View style={styles.numeroBox}></View>
+            <View style={styles.numeroBoxLoader}></View>
+            <View style={styles.numeroBoxLoader}></View>
           </>
-        )}
-        {!loadingContent &&
+        ) : (
           publicacion?.numeros?.map((n, index) => (
             <NumeroGanador key={index} numero={n} posicion={index + 1} />
-          ))}
+          ))
+        )}
       </View>
-    </>
+    </View>
   );
 }
 
 const NumeroGanador = ({numero, posicion}) => {
   return (
-    <View style={styles.numeroBox}>
-      <View style={styles.posicionBox}>
-        <Text style={styles.posicion}>{posicion}°</Text>
+    <View style={styles.itemContainer}>
+      <View style={styles.numeroBox}>
+        <View style={styles.innerCircle}>
+          <Text style={styles.numero}>{numero}</Text>
+        </View>
       </View>
-      <Text style={styles.numero}>{numero}</Text>
+      <View style={styles.labelContainer}>
+        <Text style={styles.labelText}>{posicion}° PREMIO</Text>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    paddingVertical: 20,
+  },
   numerosBox: {
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
-    paddingTop: 20,
+    flexWrap: 'wrap',
+  },
+  itemContainer: {
+    alignItems: 'center',
+    margin: 12,
   },
   numeroBox: {
-    backgroundColor: '#eee',
-    width: 80,
-    height: 80,
-    borderColor: '#EE5E22',
-    borderColor: '#eee',
-    borderWidth: 3,
-    borderRadius: 50,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 5,
-    position: 'relative',
+    elevation: 10,
+    shadowColor: '#EE5E22',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: '#FDE6D2',
+  },
+  innerCircle: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 42,
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#EE5E22',
+    borderStyle: 'dashed',
+  },
+  numeroBoxLoader: {
+    backgroundColor: '#F1F5F9',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    margin: 12,
   },
   numero: {
-    color: '#EE5E22',
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Inter',
+    color: '#1E293B',
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: -1,
   },
-  posicionBox: {
-    position: 'absolute',
-    bottom: -5,
-    left: -5,
-    width: 30,
-    height: 30,
+  labelContainer: {
+    marginTop: 10,
     backgroundColor: '#EE5E22',
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  posicion: {
-    color: '#fff',
+  labelText: {
+    fontFamily: 'Inter',
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });

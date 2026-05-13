@@ -1,17 +1,26 @@
-import React, {useEffect, useState} from 'react';
-import {View, Text, FlatList, StyleSheet, ActivityIndicator} from 'react-native';
+import React, {useEffect, useState, useLayoutEffect} from 'react';
+import {View, Text, FlatList, StyleSheet, TouchableOpacity} from 'react-native';
 import axios from 'axios';
 import {RYM_API_URL} from '../../constants';
-import {Storage} from '../../utils';
+import {Storage, Colors} from '../../utils';
 import {useDispatch} from 'react-redux';
 import {setUnreadCount} from '../../features/notifications/notificationsSlice';
 import moment from 'moment';
 import CustomStatusBar from '../../components/CustomStatusBar';
+import {Appbar} from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import LoadingIndicator from '../../components/LoadingIndicator';
 
-export default function Notificaciones() {
+export default function Notificaciones({navigation}) {
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     fetchNotificaciones();
@@ -32,7 +41,6 @@ export default function Notificaciones() {
       const {data} = await axios.get(`${RYM_API_URL}/notifications`, {
         headers: getHeaders(),
       });
-      // data.data asume que Laravel usó paginate()
       setNotificaciones(data.data || data);
     } catch (error) {
       console.log('Error fetching notifications:', error);
@@ -46,7 +54,6 @@ export default function Notificaciones() {
       await axios.post(`${RYM_API_URL}/notifications/mark-read`, {}, {
         headers: getHeaders(),
       });
-      // Poner contador en cero a nivel global inmediatamente
       dispatch(setUnreadCount(0));
     } catch (error) {
       console.log('Error marking read:', error);
@@ -56,22 +63,40 @@ export default function Notificaciones() {
   const renderItem = ({item}) => {
     const isUnread = item.read_at === null;
     return (
-      <View style={[styles.card, isUnread && styles.cardUnread]}>
+      <TouchableOpacity activeOpacity={0.7} style={[styles.card, isUnread && styles.cardUnread]}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.iconContainer, isUnread && styles.iconContainerUnread]}>
+            <Icon 
+              name={isUnread ? "bell-ring" : "bell-outline"} 
+              size={20} 
+              color={isUnread ? "#3B82F6" : "#64748B"} 
+            />
+          </View>
+          <Text style={styles.date}>
+            {moment(item.created_at).fromNow()}
+          </Text>
+        </View>
         <Text style={styles.title}>{item.data?.title || 'Notificación'}</Text>
         <Text style={styles.message}>{item.data?.message || ''}</Text>
-        <Text style={styles.date}>
-          {moment(item.created_at).format('DD MMM YYYY, hh:mm A')}
-        </Text>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   return (
-    <>
-      <CustomStatusBar />
+    <View style={styles.mainContainer}>
+      <CustomStatusBar color="darkBackground" />
+      <Appbar.Header style={styles.appBar}>
+        <Appbar.BackAction color="white" onPress={() => navigation.goBack()} />
+        <Appbar.Content 
+          color="white" 
+          titleStyle={styles.appBarTitle} 
+          title="Notificaciones" 
+        />
+      </Appbar.Header>
+
       <View style={styles.container}>
         {loading ? (
-          <ActivityIndicator size="large" color="blue" style={{marginTop: 50}} />
+          <LoadingIndicator message="Buscando avisos..." />
         ) : (
           <FlatList
             data={notificaciones}
@@ -79,58 +104,107 @@ export default function Notificaciones() {
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             ListEmptyComponent={
-              <Text style={styles.emptyText}>No tienes notificaciones recientes.</Text>
+              <View style={styles.emptyContainer}>
+                <Icon name="bell-off-outline" size={64} color="#CBD5E1" />
+                <Text style={styles.emptyText}>No tienes notificaciones recientes.</Text>
+              </View>
             }
           />
         )}
       </View>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: Colors.lightBackground,
+  },
+  appBar: {
+    backgroundColor: '#0E1321',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  appBarTitle: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   list: {
-    padding: 15,
+    padding: 20,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
     elevation: 2,
+    shadowColor: '#CBD5E1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   cardUnread: {
+    backgroundColor: '#F0F7FF',
     borderLeftWidth: 4,
-    borderLeftColor: 'red',
-    backgroundColor: '#FFF5F5',
+    borderLeftColor: '#3B82F6',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainerUnread: {
+    backgroundColor: '#DBEAFE',
   },
   title: {
-    fontSize: 16,
+    fontFamily: 'Inter',
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#333'
+    color: '#1E293B',
+    marginBottom: 4,
   },
   message: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
   },
   date: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'right',
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 100,
   },
   emptyText: {
+    fontFamily: 'Inter',
     textAlign: 'center',
-    color: '#999',
-    marginTop: 50,
-    fontSize: 16,
+    color: '#94A3B8',
+    marginTop: 15,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

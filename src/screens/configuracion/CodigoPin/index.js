@@ -1,12 +1,12 @@
-import React, {useEffect, useState, useRef} from 'react';
-import {StatusBar, Alert, Text} from 'react-native';
+import React, {useEffect, useState, useRef, useLayoutEffect} from 'react';
+import {Alert, Text, View, StyleSheet} from 'react-native';
 import {useFormik} from 'formik';
 import {useCustomNavigation, useLogout, useModal} from '../../../hooks';
 import * as Yup from 'yup';
 import {Colors, Storage} from '../../../utils';
 import {CustomModal} from '../../../components';
 import {Container, Content} from '../../../components/Layout';
-import {Button, Card} from 'react-native-paper';
+import {Button, Card, Appbar} from 'react-native-paper';
 import {usuarioAutenticado} from '../../../services/auth';
 import {APP_NAVIGATION} from '../../../constants';
 import CustomNumericField from '../../../components/CustomNumericField';
@@ -14,19 +14,26 @@ import {ERROR_CODE_NAMES} from '../../../errors';
 import {useNetInfo} from '@react-native-community/netinfo';
 import NoConnectionSnackbar from '../../../components/NoConnectionSnackbar';
 import { saveUserAppPINCodeAPi } from './services';
+import CustomStatusBar from '../../../components/CustomStatusBar';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-export default function CodigoPin() {
+export default function CodigoPin({navigation}) {
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [usuario, setUsuario] = useState({usuario: ''});
   const [verificandoCodigoPin, setVerificandoCodigoPin] = useState(true);
   const [cardContent, setCardContent] = useState({
     text: '',
     buttonText: '',
   });
   const modal = useModal();
-  const navigation = useCustomNavigation();
   const {logout} = useLogout();
   const netInfo = useNetInfo();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
+
   const formik = useFormik({
     initialValues: {
       password: '',
@@ -51,8 +58,8 @@ export default function CodigoPin() {
       savePINCode(data);
     },
   });
+
   useEffect(() => {
-    // VERIFICAR CONEXION
     if (netInfo.isConnected) {
       setOpenSnackbar(false);
       comprobarCodigoPin();
@@ -61,22 +68,21 @@ export default function CodigoPin() {
       setOpenSnackbar(true);
     }
   }, [netInfo.isConnected]);
-  // COMPROBAR SI YA EXISTE UN CODIGO PIN DEFINIDO
+
   const comprobarCodigoPin = async () => {
     try {
       setVerificandoCodigoPin(true);
       const existePin = Storage.getItem('codigoPin');
-      // SI EXISTE CODIGO PIN O NO
       if (existePin) {
         setCardContent({
-          text: 'Parece que ya tienes un PIN definido, Quieres cambiarlo?',
-          buttonText: 'Cambiar código pin',
+          text: 'Parece que ya tienes un PIN definido. ¿Quieres cambiarlo para mayor seguridad?',
+          buttonText: 'Cambiar código PIN',
           action: 'actualizar',
         });
       } else {
         setCardContent({
-          text: ' El código PIN sirve para proteger las transacciones que realices por medio de esta app de modo que sólo quién conózca el PIN podrá realizar dichas operaciones.',
-          buttonText: 'Crear código pin',
+          text: 'El código PIN protege tus transacciones. Solo quien conozca el PIN podrá realizar operaciones financieras en esta app.',
+          buttonText: 'Crear código PIN',
           action: 'crear',
         });
       }
@@ -93,12 +99,12 @@ export default function CodigoPin() {
       Alert.alert(message);
     }
   };
-  //   HANDLE MODAL CANCEL
+
   const handleModalCancel = () => {
     modal.setConfig({open: false});
     formik.handleReset();
   };
-  //   HANDLE MODAL ACCEPT
+
   const handleModalAccept = () => {
     if (modal.config.action === 'error' || modal.config.action === 'mensaje') {
       handleModalCancel();
@@ -114,91 +120,20 @@ export default function CodigoPin() {
       navigation.replace(APP_NAVIGATION.SCREENS.CONFIG_MENU);
     }
   };
-  // HANDLE OPEN MODAL
+
   const handleOpenModal = () => {
     modal.setConfig({
       open: true,
       type: 'alert',
-      alertTitle: cardContent.action == 'actualizar' ? 'Cambiar' : 'Crear',
+      alertTitle: cardContent.action == 'actualizar' ? 'Actualizar PIN' : 'Configurar PIN',
       action: cardContent.action,
       contentType: cardContent.action,
       showCancelBtn: true,
-      confirmBtnText: 'Aceptar',
+      confirmBtnText: 'Confirmar',
     });
-  };
-  // GUARDAR CODIGO PIN
-  const guardarCodigoPin = async data => {
-    try {
-      // VERIFICAR CONEXION
-      if (!netInfo?.isConnected) {
-        Alert.alert('Mensaje', '¡Vaya parece que no hay internet!');
-        return;
-      }
-      modal.setConfig({
-        open: true,
-        type: 'progress',
-        progressTitle: 'Guardando pin',
-      });
-      // VERIFICAR AUTENTICACION
-      await usuarioAutenticado(
-        usuario.usuario,
-        data.password,
-        async (autenticado, error) => {
-          // SI HAY ERROR
-          if (error) {
-            if (
-              error.message == 'DEVICE_NOT_LINKED' ||
-              error.message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
-              error.message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
-            ) {
-              logout();
-              return;
-            }
-            modal.setConfig({
-              type: 'alert',
-              alertTitle: 'Mensaje',
-              contentType: 'error',
-              action: 'error',
-              showCancelBtn: false,
-              error: <Text>{error.message}</Text>,
-              confirmBtnText: 'Entendido',
-            });
-            return;
-          }
-          // SI EL USUARIO ESTA AUTENTICADO
-          if (autenticado) {
-            Storage.setItem('codigoPin', data.codigoPin);
-            modal.setConfig({
-              type: 'alert',
-              alertTitle: 'Mensaje',
-              contentType: 'mensaje',
-              action: 'autenticado',
-              showCancelBtn: false,
-              content: <Text>Pin guardado correctamente</Text>,
-              confirmBtnText: 'Entendido',
-            });
-          }
-        },
-      );
-    } catch ({message}) {
-      if (message === 'DEVICE_NOT_LINKED') {
-        logout();
-        return;
-      }
-      modal.setConfig({
-        type: 'alert',
-        alertTitle: 'Mensaje',
-        contentType: 'error',
-        action: 'error',
-        showCancelBtn: false,
-        error: <Text>{message}</Text>,
-        confirmBtnText: 'Entendido',
-      });
-    }
   };
 
   const savePINCode = async ({password, codigoPin}) =>{
-    // VERIFICAR CONEXION
       if (!netInfo?.isConnected) {
         Alert.alert('Mensaje', '¡Vaya parece que no hay internet!');
         return;
@@ -206,85 +141,100 @@ export default function CodigoPin() {
       modal.setConfig({
         open: true,
         type: 'progress',
-        progressTitle: 'Guardando pin',
+        progressTitle: 'Guardando PIN...',
       });
       
       try {
         const data = await saveUserAppPINCodeAPi(password, codigoPin);
-      Storage.setItem('codigoPin', data.codigoPin);
-      modal.setConfig({
-        type: 'alert',
-        alertTitle: 'Mensaje',
-        contentType: 'mensaje',
-        action: 'autenticado',
-        showCancelBtn: false,
-        content: <Text>Pin guardado correctamente</Text>,
-        confirmBtnText: 'Entendido',
-      });
+        Storage.setItem('codigoPin', data.codigoPin);
+        modal.setConfig({
+          type: 'alert',
+          alertTitle: 'Éxito',
+          contentType: 'mensaje',
+          action: 'autenticado',
+          showCancelBtn: false,
+          content: <Text style={styles.modalText}>Código PIN guardado correctamente.</Text>,
+          confirmBtnText: 'Entendido',
+        });
       } catch (error) {
         modal.setConfig({
           type: 'alert',
-          alertTitle: 'Mensaje',
+          alertTitle: 'Error',
           contentType: 'error',
           action: 'error',
           showCancelBtn: false,
-          error: <Text>{error.message}</Text>,
-          confirmBtnText: 'Entendido',
+          error: <Text style={styles.modalText}>{error.message}</Text>,
+          confirmBtnText: 'Reintentar',
         });
       }
   }
 
   return (
-    <Container>
-      {navigation.isFocused && <StatusBar backgroundColor={Colors.dark} />}
-      <Content>
-        {verificandoCodigoPin && (
-          <Text style={{marginVertical: 20, fontSize: 16}}>
-            Verificando código pin...
-          </Text>
-        )}
-        {!verificandoCodigoPin && (
-          <Card style={{backgroundColor: 'white'}}>
-            <Card.Content>
-              <Text style={{marginVertical: 20, fontSize: 16}}>
-                {cardContent.text}
-              </Text>
-            </Card.Content>
-            <Card.Actions>
-              <Button
-                uppercase
-                mode="contained"
-                buttonColor="black"
-                onPress={handleOpenModal}>
-                {cardContent.buttonText}
-              </Button>
-            </Card.Actions>
-          </Card>
-        )}
-        <CustomModal
-          open={modal.config.open}
-          type={modal.config.type}
-          progressTitle={modal.config.progressTitle}
-          alertTitle={modal.config.alertTitle}
-          showCancelButton={modal.config.showCancelBtn}
-          cancelButtonText={modal.config.cancelBtnText}
-          confirmButtonText={modal.config.confirmBtnText}
-          showConfirmBtn={modal.config.showConfirmBtn}
-          onCancel={handleModalCancel}
-          onAccept={handleModalAccept}>
-          {(modal.config.contentType === 'actualizar' ||
-            modal.config.contentType === 'crear') && (
-            <ModalFormContent formik={formik} />
+    <View style={styles.mainContainer}>
+      <CustomStatusBar color="darkBackground" />
+      <Appbar.Header style={styles.appBar}>
+        <Appbar.BackAction color="white" onPress={() => navigation.goBack()} />
+        <Appbar.Content 
+          color="white" 
+          titleStyle={styles.appBarTitle} 
+          title="Código PIN" 
+        />
+      </Appbar.Header>
+
+      <Container bgColor={Colors.lightBackground}>
+        <Content>
+          {verificandoCodigoPin ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Verificando configuración...</Text>
+            </View>
+          ) : (
+            <Card style={styles.card}>
+              <Card.Content>
+                <View style={styles.iconCircle}>
+                  <Icon name="lock-reset" size={40} color="#0E1321" />
+                </View>
+                <Text style={styles.cardText}>
+                  {cardContent.text}
+                </Text>
+              </Card.Content>
+              <View style={styles.cardActions}>
+                <Button
+                  uppercase
+                  mode="contained"
+                  buttonColor="#0E1321"
+                  style={styles.actionButton}
+                  labelStyle={styles.actionButtonLabel}
+                  onPress={handleOpenModal}>
+                  {cardContent.buttonText}
+                </Button>
+              </View>
+            </Card>
           )}
-          {modal.config.contentType === 'mensaje' && modal.config.content}
-          {modal.config.contentType === 'error' && modal.config.error}
-        </CustomModal>
-      </Content>
-      <NoConnectionSnackbar
-        open={openSnackbar}
-        onDismiss={() => setOpenSnackbar(false)}
-      />
-    </Container>
+          <CustomModal
+            open={modal.config.open}
+            type={modal.config.type}
+            progressTitle={modal.config.progressTitle}
+            alertTitle={modal.config.alertTitle}
+            showCancelButton={modal.config.showCancelBtn}
+            cancelButtonText={modal.config.cancelBtnText}
+            confirmButtonText={modal.config.confirmBtnText}
+            showConfirmBtn={modal.config.showConfirmBtn}
+            onCancel={handleModalCancel}
+            onAccept={handleModalAccept}>
+            {(modal.config.contentType === 'actualizar' ||
+              modal.config.contentType === 'crear') && (
+              <ModalFormContent formik={formik} />
+            )}
+            {modal.config.contentType === 'mensaje' && modal.config.content}
+            {modal.config.contentType === 'error' && modal.config.error}
+          </CustomModal>
+        </Content>
+        <NoConnectionSnackbar
+          open={openSnackbar}
+          onDismiss={() => setOpenSnackbar(false)}
+        />
+      </Container>
+    </View>
   );
 }
 
@@ -308,14 +258,14 @@ const ModalFormContent = ({formik}) => {
   };
 
   return (
-    <>
+    <View style={styles.formContainer}>
       <CustomNumericField
-        placeholder="Crea un PIN de 4 digitos"
+        placeholder="Crea un PIN de 4 dígitos"
         inputRef={codigoPinRef}
         value={formik.values.codigoPin}
         onChange={text => handleTextInputChange(text, 'codigoPin')}
         onBlur={formik.handleBlur('codigoPin')}
-        marginY={10}
+        marginY={8}
         error={formik.errors.codigoPin && formik.touched.codigoPin}
         errorMessage={formik.errors.codigoPin}
         type="password"
@@ -327,7 +277,7 @@ const ModalFormContent = ({formik}) => {
         value={formik.values.confirmarCodigoPin}
         onChange={text => handleTextInputChange(text, 'confirmarCodigoPin')}
         onBlur={formik.handleBlur('confirmarCodigoPin')}
-        marginY={10}
+        marginY={8}
         error={
           formik.errors.confirmarCodigoPin && formik.touched.confirmarCodigoPin
         }
@@ -343,10 +293,108 @@ const ModalFormContent = ({formik}) => {
         value={formik.values.password}
         error={formik.errors.password && formik.touched.password}
         errorMessage={formik.errors.password}
-        marginY={10}
+        marginY={8}
         type="password"
       />
-      <Text>Es la contraseña con la que inicias sesión</Text>
-    </>
+      <Text style={styles.formHint}>Es la contraseña con la que inicias sesión</Text>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: Colors.lightBackground,
+  },
+  appBar: {
+    backgroundColor: '#0E1321',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  appBarTitle: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 10,
+    elevation: 2,
+    shadowColor: '#CBD5E1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    marginTop: 10,
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  cardText: {
+    fontFamily: 'Inter',
+    fontSize: 15,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  cardActions: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 25,
+  },
+  actionButton: {
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 4,
+    marginTop: 15,
+  },
+  actionButtonLabel: {
+    fontFamily: 'Inter',
+    fontWeight: 'bold',
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+  formContainer: {
+    paddingVertical: 10,
+  },
+  formHint: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  modalText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+});

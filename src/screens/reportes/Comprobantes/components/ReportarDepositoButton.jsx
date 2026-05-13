@@ -1,10 +1,9 @@
-import {} from 'react-native-easy-grid';
+import React, {useState} from 'react';
+import {Alert} from 'react-native';
+import {useSelector} from 'react-redux';
 import ReporteButton from '../../Ventas/components/ReporteButton';
 import UploadImageModal from '../../../../components/UploadImageModal';
-import {useState} from 'react';
-import {Alert} from 'react-native';
 import {saveDepositReceipt} from '../../../../services/reports';
-import {useSelector} from 'react-redux';
 
 export default function ReportarDepositoButton({onSaved}) {
   const [showModal, setShowModal] = useState(false);
@@ -12,10 +11,9 @@ export default function ReportarDepositoButton({onSaved}) {
 
   const handleCaptureUploaded = async imageUrl => {
     try {
-      // console.log(imageUrl);
       const savedCapture = await saveDepositReceipt(imageUrl);
       setShowModal(false);
-      Alert.alert('Mensaje', 'Comprobante subido correctamente');
+      Alert.alert('¡Éxito!', 'Tu comprobante ha sido subido correctamente.');
       if (onSaved) {
         onSaved(savedCapture);
       }
@@ -34,12 +32,12 @@ export default function ReportarDepositoButton({onSaved}) {
   return (
     <>
       <ReporteButton
-        label="Reportar deposito"
-        icon="upload"
+        label="Reportar Depósito"
+        icon="camera-plus"
         onPress={() => setShowModal(true)}
-        btnColor="purple"
-        textColor={'white'}
-        iconColor="white"
+        btnColor="#0E1321"
+        textColor="#FFFFFF"
+        iconColor="#FFFFFF"
       />
       {/* UPLOAD MODAL */}
       {showModal && (

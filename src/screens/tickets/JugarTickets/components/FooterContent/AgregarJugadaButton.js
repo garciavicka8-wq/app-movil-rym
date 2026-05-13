@@ -25,7 +25,7 @@ export default function AgregarJugadaButton() {
       open: true,
       type: 'alert',
       alertTitle: 'Agregar',
-      confirmBtnText: 'ACEPTAR',
+      confirmBtnText: 'Agregar jugada',
       cancelBtnText: 'CERRAR',
       contentType: 'agregar',
       action: 'agregar',
@@ -195,7 +195,24 @@ export default function AgregarJugadaButton() {
     );
   };
 
-  return (
+    const {inputs, automaticoConfig} = modalInputs;
+    let hasNumber = false;
+    let hasQuantity = false;
+
+    if (automaticoConfig.active) {
+      hasNumber = true;
+      hasQuantity = automaticoConfig.lugares && 
+                    Object.values(automaticoConfig.lugares).some(val => parseInt(val) > 0);
+    } else {
+      hasNumber = inputs.apuesta && inputs.apuesta.trim() !== '';
+      hasQuantity = (inputs.primero && parseInt(inputs.primero) > 0) ||
+                    (inputs.segundo && parseInt(inputs.segundo) > 0) ||
+                    (inputs.tercero && parseInt(inputs.tercero) > 0);
+    }
+
+    const buttonDisabled = modal.config.contentType === 'agregar' && !(hasNumber && hasQuantity);
+
+    return (
     <>
       <IconButton
         icon="plus-circle"
@@ -210,6 +227,7 @@ export default function AgregarJugadaButton() {
         progressTitle={modal.config.progressTitle}
         alertTitle={modal.config.alertTitle}
         confirmButtonText={modal.config.confirmBtnText}
+        confirmButtonDisabled={buttonDisabled}
         showConfirmBtn={modal.config.showConfirmBtn}
         showCloseBtn={true}
         onClose={handleModalCancel}

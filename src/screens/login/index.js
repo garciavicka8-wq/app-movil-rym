@@ -1,35 +1,36 @@
 import React from 'react';
-import {View, StyleSheet, Image} from 'react-native';
+import {View, StyleSheet, Text} from 'react-native';
 import LoginForm from './components/LoginForm';
-import Ribbon from './components/Ribbon';
 import CustomStatusBar from '../../components/CustomStatusBar';
-const LOGO = require('../../assets/logo.jpg');
 
 export default function Login() {
   return (
     <>
-      <CustomStatusBar />
+      <CustomStatusBar color="darkBackground" />
       <View style={styles.container}>
-        <Image
-          source={LOGO}
-          style={{width: 300, height: 150}}
-          resizeMode="contain"
-        />
-        {/* FORMULARIO */}
         <LoginForm />
-        {/* RED RIBBON */}
-        <Ribbon />
+
+        <Text style={styles.footerText}>LOGIN</Text>
       </View>
     </>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     display: 'flex',
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#0E1321',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
+  footerText: {
+    position: 'absolute',
+    bottom: 20,
+    color: '#4B5565',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  }
 });

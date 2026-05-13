@@ -1,6 +1,5 @@
-import React, {useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {Button, Menu} from 'react-native-paper';
+import React from 'react';
+import {StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {setProductoSeleccionado} from '../../../../features/taecel/taecelSlice';
 import {CustomNumericField} from '../../../../components';
@@ -8,17 +7,12 @@ import {CustomNumericField} from '../../../../components';
 export default function CampoMonto({formik}) {
   const {
     carrierSeleccionado,
-    filtrandoProductos,
     productosFiltrados,
     productoSeleccionado,
   } = useSelector(state => state.taecel);
-  const [visible, setVisible] = useState(false);
-  const [buttonText, setButtonText] = useState('$00.00 MXN');
   const dispatch = useDispatch();
 
   const handleItemPress = item => {
-    setVisible(false);
-    setButtonText(`$${item.Monto} MXN`);
     if (item.Monto == '00.00') {
       formik.setFieldError('monto', 'Este campo es requerido');
       formik.setFieldValue('monto', '');
@@ -63,31 +57,29 @@ export default function CampoMonto({formik}) {
   return (
     <>
       <Text style={styles.listaProductosLabel}>Elige un monto</Text>
-      <Menu
-        visible={visible}
-        onDismiss={() => setVisible(false)}
-        anchor={
-          <Button
-            disabled={filtrandoProductos}
-            mode="outlined"
-            icon="chevron-down"
-            contentStyle={{flexDirection: 'row-reverse'}}
-            onPress={() => setVisible(true)}>
-            {buttonText}
-          </Button>
-        }>
-        <Menu.Item
-          title="$00.00 MXN"
-          onPress={() => handleItemPress({Monto: '00.00'})}
-        />
-        {productosFiltrados.map(item => (
-          <Menu.Item
-            key={item.Codigo}
-            title={`$${item.Monto} MXN`}
-            onPress={() => handleItemPress(item)}
-          />
-        ))}
-      </Menu>
+      <View style={styles.chipsContainer}>
+        {productosFiltrados.map(item => {
+          const isSelected = productoSeleccionado?.Codigo === item.Codigo;
+          return (
+            <TouchableOpacity
+              key={item.Codigo}
+              activeOpacity={0.7}
+              onPress={() => handleItemPress(item)}
+              style={[
+                styles.chip,
+                isSelected && styles.chipSelected,
+              ]}>
+              <Text
+                style={[
+                  styles.chipText,
+                  isSelected && styles.chipTextSelected,
+                ]}>
+                ${item.Monto}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
       {productoSeleccionado &&
         productoSeleccionado.Vigencia != '0' &&
         productoSeleccionado.CategoriaID !== '4' && (
@@ -120,7 +112,42 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   errorMessage: {
-    color: 'red',
+    color: '#EF4444',
     fontStyle: 'italic',
+    fontSize: 12,
+    marginTop: 5,
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -5,
+  },
+  chip: {
+    backgroundColor: '#F1F5F9',
+    width: '30%', // Ajuste para 3 columnas uniformes
+    height: 45,
+    borderRadius: 12,
+    margin: '1.5%',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipSelected: {
+    backgroundColor: '#0E1321',
+    borderColor: '#0E1321',
+  },
+  chipClear: {
+    backgroundColor: 'transparent',
+    borderStyle: 'dashed',
+  },
+  chipText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  chipTextSelected: {
+    color: '#FFFFFF',
   },
 });

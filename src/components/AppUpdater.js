@@ -32,11 +32,8 @@ export default function AppUpdater() {
       }
     });
 
-    // TEMPORAL: Limpiamos absolutamente todos los APK localmente para que puedas simular desde 0
     cleanupOldApks(null);
-
-    // TEMPORAL: Comentamos la verificación de inicio automático
-    // checkForUpdates();
+    checkForUpdates();
 
     return () => {
       unsubscribe();

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import SplashScreen from 'react-native-splash-screen';
@@ -10,7 +10,7 @@ import JugarTickets from './src/screens/tickets/JugarTickets';
 import {APP_NAVIGATION} from './src/constants';
 import colors from './src/utils/Colors';
 import {Colors} from './src/utils';
-import {Alert, DeviceEventEmitter, StatusBar, Text, View} from 'react-native';
+import {Alert, AppState, DeviceEventEmitter, StatusBar, Text, View} from 'react-native';
 import {IconButton} from 'react-native-paper';
 import ConfiguracionMenu from './src/screens/configuracion/ConfiguracionMenu';
 import RegistrarImpresora from './src/screens/configuracion/RegistrarImpresora';
@@ -28,12 +28,29 @@ const Stack = createStackNavigator();
 export default function App() {
   const {isAuthenticated} = useAuthContext();
   const [sinInternet, setSinInternet] = useState(false);
+  const [obscured, setObscured] = useState(false);
+  const appState = useRef(AppState.currentState);
+  const hideTimer = useRef(null);
 
   useEffect(() => {
     initApp();
     NotificationUtils.NotificationListener();
     const sub = DeviceEventEmitter.addListener('NO_INTERNET', () => setSinInternet(true));
-    return () => sub.remove();
+    const appStateSub = AppState.addEventListener('change', nextState => {
+      appState.current = nextState;
+      if (nextState !== 'active') {
+        if (hideTimer.current) clearTimeout(hideTimer.current);
+        setObscured(true);
+      } else {
+        // Espera 600ms antes de mostrar contenido para evitar flash al volver
+        hideTimer.current = setTimeout(() => setObscured(false), 600);
+      }
+    });
+    return () => {
+      sub.remove();
+      appStateSub.remove();
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
   }, []);
 
   const initApp = async () => {
@@ -48,6 +65,16 @@ export default function App() {
 
   return (
     <View style={{flex: 1}}>
+      {obscured && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: '#000',
+            zIndex: 9999,
+          }}
+        />
+      )}
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{

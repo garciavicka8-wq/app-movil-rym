@@ -136,12 +136,6 @@ const Sorteos = () => {
                 ]}>
                   {Moment(s.fecha).format('ddd DD')}
                 </Text>
-                <Text style={[
-                  styles.horaText,
-                  isSelected && styles.horaTextActive
-                ]}>
-                  {Moment(s.fecha).format('hh:mm A')}
-                </Text>
               </View>
             </TouchableOpacity>
           );

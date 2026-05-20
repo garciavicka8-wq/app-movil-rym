@@ -59,7 +59,7 @@ export default function UltimaTxnCard({txn}) {
             txn.Status == 'Exitosa' ? {color: Colors.green} : 
             txn.Status == 'Procesando' ? {color: Colors.dev} : {color: Colors.primary}
           ]}>
-            ${txn.Monto}
+            {txn.Monto}
           </Text>
         </View>
       </View>

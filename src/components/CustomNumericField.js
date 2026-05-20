@@ -71,7 +71,7 @@ const CustomNumericField = ({
             prefix={prefix}
             placeholder={placeholder}
             editable={!disabled}
-            style={{fontSize: 18, color: '#000', height: 40}}
+            style={styles.textInputMask}
           />
         )}
         {!['currency', 'password'].includes(type) && (
@@ -87,7 +87,7 @@ const CustomNumericField = ({
             value={value}
             placeholderTextColor="#94A3B8"
             editable={!disabled}
-            style={{fontSize: 18, color: '#000', height: 40}}
+            style={styles.textInputMask}
           />
         )}
       </View>
@@ -165,6 +165,13 @@ const styles = StyleSheet.create({
     color: 'red',
     marginVertical: 5,
   },
+  textInputMask: {
+    fontSize: 18,
+    color: '#000',
+    paddingVertical: 8,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
   textInput: {
     fontSize: 18,
     position: 'absolute',
@@ -172,6 +179,8 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     zIndex: -1,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 });
 

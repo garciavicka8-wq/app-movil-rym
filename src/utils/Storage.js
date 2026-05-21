@@ -1,5 +1,6 @@
 import {MMKV} from 'react-native-mmkv';
 import * as Keychain from 'react-native-keychain';
+import RNFS from 'react-native-fs';
 
 const KEYCHAIN_SERVICE = 'com.rymapp2.storage.key';
 const STORAGE_ID = 'rym-app-v2';
@@ -37,17 +38,24 @@ export async function initStorage() {
   const encKey = await getOrCreateEncryptionKey();
   const encrypted = new MMKV({id: STORAGE_ID, encryptionKey: encKey});
 
-  // Migración única desde el store legacy sin cifrar
-  const legacy = new MMKV({id: STORAGE_ID_LEGACY});
-  const legacyKeys = legacy.getAllKeys();
-  if (legacyKeys.length > 0) {
-    for (const key of legacyKeys) {
+  // Migración única desde el store legacy sin cifrar.
+  // Se verifica la existencia del archivo físico (no las claves) porque clearAll()
+  // deja el archivo en disco con bytes legibles; hay que borrarlo explícitamente.
+  const legacyBase = `${RNFS.DocumentDirectoryPath}/mmkv/${STORAGE_ID_LEGACY}`;
+  const legacyExists = await RNFS.exists(legacyBase);
+  if (legacyExists) {
+    const legacy = new MMKV({id: STORAGE_ID_LEGACY});
+    for (const key of legacy.getAllKeys()) {
       const val = legacy.getString(key);
       if (val !== undefined) {
         encrypted.set(key, val);
       }
     }
     legacy.clearAll();
+    await Promise.allSettled([
+      RNFS.unlink(legacyBase),
+      RNFS.unlink(`${legacyBase}.crc`),
+    ]);
   }
 
   appStorage = encrypted;

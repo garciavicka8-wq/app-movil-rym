@@ -3,6 +3,8 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import SplashScreen from 'react-native-splash-screen';
 import BleManager from 'react-native-ble-manager';
+import DeviceInfo from 'react-native-device-info';
+import SecurityBlockScreen from './src/components/SecurityBlockScreen';
 // PANTALLAS
 import Login from './src/screens/login';
 import Main from './src/screens/Main';
@@ -29,6 +31,7 @@ export default function App() {
   const {isAuthenticated} = useAuthContext();
   const [sinInternet, setSinInternet] = useState(false);
   const [obscured, setObscured] = useState(false);
+  const [securityThreat, setSecurityThreat] = useState(null);
   const appState = useRef(AppState.currentState);
   const hideTimer = useRef(null);
 
@@ -56,12 +59,32 @@ export default function App() {
   const initApp = async () => {
     try {
       await BleManager.start();
+      if (!__DEV__) {
+        const [rooted, emulator] = await Promise.all([
+          DeviceInfo.isRooted(),
+          DeviceInfo.isEmulator(),
+        ]);
+        if (rooted) {
+          setSecurityThreat('root');
+          SplashScreen.hide();
+          return;
+        }
+        if (emulator) {
+          setSecurityThreat('emulator');
+          SplashScreen.hide();
+          return;
+        }
+      }
       SplashScreen.hide();
     } catch ({message}) {
       SplashScreen.hide();
       Alert.alert('Error', message);
     }
   };
+
+  if (securityThreat) {
+    return <SecurityBlockScreen threat={securityThreat} />;
+  }
 
   return (
     <View style={{flex: 1}}>

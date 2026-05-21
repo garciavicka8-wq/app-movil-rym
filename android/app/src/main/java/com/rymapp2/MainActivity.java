@@ -4,39 +4,28 @@ import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactActivityDelegate;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.WindowManager;
-import com.facebook.react.ReactActivity;
+import java.io.BufferedReader;
+import java.io.FileReader;
 // react-native-splash-screen >= 0.3.1
 import org.devio.rn.splashscreen.SplashScreen;
 
 public class MainActivity extends ReactActivity {
 
-  /**
-   * Returns the name of the main component registered from JavaScript. This is
-   * used to schedule
-   * rendering of the component.
-   */
   @Override
   protected String getMainComponentName() {
     return "rymapp2";
   }
 
-  /**
-   * Returns the instance of the {@link ReactActivityDelegate}. Here we use a util
-   * class {@link
-   * DefaultReactActivityDelegate} which allows you to easily enable Fabric and
-   * Concurrent React
-   * (aka React 18) with two boolean flags.
-   */
   @Override
   protected ReactActivityDelegate createReactActivityDelegate() {
     return new DefaultReactActivityDelegate(
         this,
         getMainComponentName(),
-        // If you opted-in for the New Architecture, we enable the Fabric Renderer.
         DefaultNewArchitectureEntryPoint.getFabricEnabled());
   }
 
@@ -44,7 +33,44 @@ public class MainActivity extends ReactActivity {
   protected void onCreate(Bundle savedInstanceState) {
     SplashScreen.show(this);
     super.onCreate(savedInstanceState);
+    if (!BuildConfig.DEBUG && (isFridaDetected() || isXposedDetected())) {
+      finishAffinity();
+      android.os.Process.killProcess(android.os.Process.myPid());
+      return;
+    }
     getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
     getWindow().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
+  }
+
+  // Busca librerías de Frida cargadas en el proceso actual (/proc/self/maps)
+  private boolean isFridaDetected() {
+    try (BufferedReader reader = new BufferedReader(new FileReader("/proc/self/maps"))) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        if (line.contains("frida") || line.contains("gum-js-loop") || line.contains("linjector")) {
+          return true;
+        }
+      }
+    } catch (Exception ignored) {}
+    return false;
+  }
+
+  // Verifica si algún framework de hooking conocido está instalado
+  private boolean isXposedDetected() {
+    String[] knownPackages = {
+      "de.robv.android.xposed.installer",
+      "io.github.lsposed",
+      "org.lsposed.manager",
+      "com.zhenxi.xposed",
+      "com.saurik.substrate"
+    };
+    PackageManager pm = getPackageManager();
+    for (String pkg : knownPackages) {
+      try {
+        pm.getPackageInfo(pkg, 0);
+        return true;
+      } catch (PackageManager.NameNotFoundException ignored) {}
+    }
+    return false;
   }
 }

@@ -5,6 +5,7 @@ import SplashScreen from 'react-native-splash-screen';
 import BleManager from 'react-native-ble-manager';
 import DeviceInfo from 'react-native-device-info';
 import SecurityBlockScreen from './src/components/SecurityBlockScreen';
+import {initStorage} from './src/utils/Storage';
 // PANTALLAS
 import Login from './src/screens/login';
 import Main from './src/screens/Main';
@@ -58,6 +59,7 @@ export default function App() {
 
   const initApp = async () => {
     try {
+      await initStorage();
       await BleManager.start();
       if (!__DEV__) {
         const [rooted, emulator] = await Promise.all([

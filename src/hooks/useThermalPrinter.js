@@ -46,6 +46,16 @@ export default function useThermalPrinter() {
         setIsPrinting(false);
         throw new Error(ERROR_NAMES.CONNECTING_DEVICE_FAILED);
       }
+      if (message === ERROR_NAMES.PRINTER_COVER_OPEN) {
+        alert.show(ERROR_NAMES.PRINTER_COVER_OPEN);
+        setIsPrinting(false);
+        throw new Error('PRINTING_NOT_POSSIBLE');
+      }
+      if (message === ERROR_NAMES.PRINTER_PAPER_NEAR_END) {
+        alert.show(ERROR_NAMES.PRINTER_PAPER_NEAR_END);
+        setIsPrinting(false);
+        throw new Error('PRINTING_NOT_POSSIBLE');
+      }
       setIsPrinting(false);
     }
   };

@@ -38,6 +38,20 @@ export default function useAlert(navigation = null) {
           ],
         );
       },
+      PRINTER_COVER_OPEN: () => {
+        Alert.alert(
+          'Impresora',
+          'La tapa de la impresora está abierta. Ciérrala e intenta de nuevo.',
+          [{text: 'Entendido'}],
+        );
+      },
+      PRINTER_PAPER_NEAR_END: () => {
+        Alert.alert(
+          'Impresora',
+          'El papel de la impresora se está terminando o no hay papel. Verifica el rollo e intenta de nuevo.',
+          [{text: 'Entendido'}],
+        );
+      },
     };
     if (ACTIONS[errorType]) {
       ACTIONS[errorType]();

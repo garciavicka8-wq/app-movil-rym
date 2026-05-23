@@ -7,6 +7,7 @@ const STORAGE_ID = 'rym-app-v2';
 const STORAGE_ID_LEGACY = 'rym-app-storage';
 
 let appStorage = null;
+let initPromise = null;
 
 function generateEncryptionKey() {
   // crypto.getRandomValues disponible en React Native (Hermes/JSC modernos)
@@ -35,6 +36,12 @@ async function getOrCreateEncryptionKey() {
 
 // Llamar una vez al inicio de la app antes de cualquier lectura/escritura
 export async function initStorage() {
+  if (initPromise) return initPromise;
+  initPromise = _doInitStorage();
+  return initPromise;
+}
+
+async function _doInitStorage() {
   const encKey = await getOrCreateEncryptionKey();
   const encrypted = new MMKV({id: STORAGE_ID, encryptionKey: encKey});
 
@@ -60,6 +67,7 @@ export async function initStorage() {
 
   appStorage = encrypted;
 }
+
 
 function getStorage() {
   if (!appStorage) {

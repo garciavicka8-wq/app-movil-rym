@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, ActivityIndicator, StyleSheet, TouchableOpacity, DeviceEventEmitter } from 'react-native';
+import { View, Text, Modal, Alert, ActivityIndicator, StyleSheet, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import NetInfo from '@react-native-community/netinfo';
 import RNFS from 'react-native-fs';
@@ -108,14 +108,10 @@ export default function AppUpdater() {
 
   const startDownload = (url, updatedVersionCode) => {
     setDownloading(true);
-    // RNFS.DownloadDirectoryPath para que sea general en descargas y fácil de abrir 
-    // pero requiere permisos extra. DocumentDirectoryPath + FileProvider es mejor.
+    setProgress(0);
     const localFile = `${RNFS.DocumentDirectoryPath}/rymapp2_update_${updatedVersionCode}.apk`;
     setInstallPath(localFile);
-    
-    // IMPORTANTE: Laravel suele retornar http://127.0.0.1:8000/... por la variable APP_URL.
-    // Si la app está en emulador/celular, no puede leer 127.0.0.1 porque es su propio localhost.
-    // Reemplazamos la ruta con la IP/Url base real (p.ej. 10.0.2.2) que la app detectó.
+
     let finalDownloadUrl = url;
     if (finalDownloadUrl && (finalDownloadUrl.includes('127.0.0.1:8000') || finalDownloadUrl.includes('localhost:8000'))) {
       finalDownloadUrl = finalDownloadUrl
@@ -125,31 +121,49 @@ export default function AppUpdater() {
         .replace('https://localhost:8000', RYM_BASE_URL);
     }
 
-    // Validar si el archivo ya existe y borrarlo, para evitar que RNFS diga file exists.
     RNFS.exists(localFile).then((exists) => {
-      if (exists) {
-        return RNFS.unlink(localFile);
-      }
+      if (exists) return RNFS.unlink(localFile);
       return true;
     }).then(() => {
-      RNFS.downloadFile({
+      const { promise } = RNFS.downloadFile({
         fromUrl: finalDownloadUrl,
         toFile: localFile,
-        progress: (res) => {
-          const percent = (res.bytesWritten / res.contentLength) * 100;
-          setProgress(Math.round(percent));
+        begin: (res) => {
+          // contentLength === -1 cuando el servidor usa chunked transfer encoding
+          // (Apache puede eliminarlo aunque PHP lo declare).
+          // En ese caso mostramos progreso indeterminado (progress = -1).
+          if (res.contentLength <= 0) {
+            setProgress(-1);
+          }
         },
-        progressDivider: 2, // solo reportar cada 2% para no re-renderizar tanto
-      }).promise.then((r) => {
+        progress: (res) => {
+          if (res.contentLength > 0) {
+            const percent = (res.bytesWritten / res.contentLength) * 100;
+            setProgress(Math.round(percent));
+          }
+          // Si contentLength <= 0 dejamos progress en -1 (indeterminado)
+        },
+        progressDivider: 5,
+      });
+
+      promise.then((r) => {
         if (r.statusCode === 200) {
+          setProgress(100);
           installApp(localFile);
         } else {
-          console.log('Error de subida HTTP: ', r.statusCode);
+          setDownloading(false);
+          setProgress(0);
+          Alert.alert('Error', `No se pudo descargar la actualización (${r.statusCode}). Intenta de nuevo.`);
         }
       }).catch((err) => {
+        setDownloading(false);
+        setProgress(0);
         console.log('Download error:', err);
+        Alert.alert('Error', 'No se pudo descargar la actualización. Verifica tu conexión e intenta de nuevo.');
       });
     }).catch(err => {
+      setDownloading(false);
+      setProgress(0);
       console.log('FS error:', err);
     });
   };
@@ -203,7 +217,9 @@ export default function AppUpdater() {
               {progress < 100 ? (
                 <>
                   <ActivityIndicator size="small" color="#1a237e" />
-                  <Text style={styles.progressText}>Descargando: {progress}%</Text>
+                  <Text style={styles.progressText}>
+                    {progress >= 0 ? `Descargando: ${progress}%` : 'Descargando...'}
+                  </Text>
                 </>
               ) : (
                 <View style={{ alignItems: 'center', width: '100%' }}>

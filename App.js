@@ -60,7 +60,18 @@ export default function App() {
   const initApp = async () => {
     try {
       await initStorage();
+    } catch (e) {
+      console.warn('[initApp] initStorage failed:', e?.message);
+    }
+
+    try {
       await BleManager.start();
+    } catch (e) {
+      // BLE no es crítico — la app funciona sin impresora
+      console.warn('[initApp] BleManager.start failed:', e?.message);
+    }
+
+    try {
       if (!__DEV__) {
         const [rooted, emulator] = await Promise.all([
           DeviceInfo.isRooted(),
@@ -78,9 +89,9 @@ export default function App() {
         }
       }
       SplashScreen.hide();
-    } catch ({message}) {
+    } catch (e) {
       SplashScreen.hide();
-      Alert.alert('Error', message);
+      console.warn('[initApp] security check failed:', e?.message);
     }
   };
 

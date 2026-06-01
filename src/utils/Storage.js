@@ -51,14 +51,25 @@ async function _doInitStorage() {
   const legacyBase = `${RNFS.DocumentDirectoryPath}/mmkv/${STORAGE_ID_LEGACY}`;
   const legacyExists = await RNFS.exists(legacyBase);
   if (legacyExists) {
-    const legacy = new MMKV({id: STORAGE_ID_LEGACY});
-    for (const key of legacy.getAllKeys()) {
-      const val = legacy.getString(key);
-      if (val !== undefined) {
-        encrypted.set(key, val);
+    try {
+      const legacy = new MMKV({id: STORAGE_ID_LEGACY});
+      // getAllKeys puede fallar si el native instance no inicializó correctamente
+      // (incompatibilidad de versión del archivo MMKV). En ese caso saltamos la copia
+      // de claves pero eliminamos el archivo para que la migración no se reintente.
+      if (typeof legacy.getAllKeys === 'function') {
+        for (const key of legacy.getAllKeys()) {
+          const val = legacy.getString(key);
+          if (val !== undefined) {
+            encrypted.set(key, val);
+          }
+        }
+        legacy.clearAll();
       }
+    } catch (e) {
+      console.warn('[Storage] MMKV legacy migration failed:', e.message);
     }
-    legacy.clearAll();
+    // Borrar el archivo físico independientemente del resultado de la copia,
+    // para que este bloque no se ejecute en el próximo arranque.
     await Promise.allSettled([
       RNFS.unlink(legacyBase),
       RNFS.unlink(`${legacyBase}.crc`),

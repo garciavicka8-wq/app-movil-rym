@@ -29,7 +29,7 @@ export default function TicketsTab() {
 
   return (
     <>
-      <CustomStatusBar />
+      <CustomStatusBar color="darkBackground" />
       <Stack.Navigator
         initialRouteName={APP_NAVIGATION.SCREENS.TICKETS_MENU}
         screenOptions={{

@@ -34,12 +34,12 @@ export default function Recargas() {
 
   return (
     <>
-      <CustomStatusBar color={'blue'} />
+      <CustomStatusBar color={'darkBackground'} />
       <Stack.Navigator
         initialRouteName={APP_NAVIGATION.SCREENS.RECARGAS_MENU}
         screenOptions={{
           headerStyle: {
-            backgroundColor: Colors.blue,
+            backgroundColor: Colors.darkBackground,
           },
           headerTintColor: 'white',
         }}>

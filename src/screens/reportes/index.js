@@ -17,12 +17,12 @@ const Stack = createStackNavigator();
 export default function ReportesTab() {
   return (
     <>
-      <CustomStatusBar color={'purple'} />
+      <CustomStatusBar color={'darkBackground'} />
       <Stack.Navigator
         initialRouteName={APP_NAVIGATION.SCREENS.REPORTES_MENU}
         screenOptions={{
           headerStyle: {
-            backgroundColor: Colors.purple,
+            backgroundColor: Colors.darkBackground,
           },
           headerTintColor: 'white',
         }}>

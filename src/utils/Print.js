@@ -548,6 +548,18 @@ const Print = (() => {
     await BEP.printText('################################\n\r', {});
   }
 
+  const qrTicket = async numeroBoleto => {
+    try {
+      await BEP.printText('\n\r', {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`${numeroBoleto}\n\r`, {});
+      await BEP.printQRCode(numeroBoleto, 220, ERROR_CORRECTION.L, 0);
+      await BEP.printText('\n\r\n\r\n\r', {});
+    } catch (error) {
+      ToastAndroid.show('Error: impresora no conectada', ToastAndroid.LONG);
+    }
+  };
+
   return {
     accountStatus,
     transactionReceipt,
@@ -556,6 +568,7 @@ const Print = (() => {
     totalAccumulated,
     paymentTicket,
     winningNumbers,
+    qrTicket,
     test,
   };
 })();

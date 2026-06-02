@@ -38,7 +38,9 @@ public class MainActivity extends ReactActivity {
       android.os.Process.killProcess(android.os.Process.myPid());
       return;
     }
-    getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+    if (!BuildConfig.DEBUG) {
+      getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+    }
     getWindow().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
   }
 

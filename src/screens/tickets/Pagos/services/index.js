@@ -3,12 +3,21 @@ import {requestRymAPIConfig} from '../../../../services/http';
 
 const {buildFileObj, compressImage, deleteCapturedImage} = Utils;
 
-export const verifyTicket = async numeroBoleto => {
+export const verifyTicket = async (numeroBoleto, capturaUri) => {
+  const compressedUri = await compressImage(capturaUri);
+  const formData = new FormData();
+  formData.append('numero_boleto', numeroBoleto);
+  formData.append('captura', buildFileObj(compressedUri));
+
   const response = await requestRymAPIConfig({
     endpoint: 'tickets/verificarBoletoPremiado',
-    data: {numero_boleto: numeroBoleto},
+    data: formData,
     method: 'POST',
+    useJson: false,
   });
+
+  await deleteCapturedImage(compressedUri);
+
   if (response.error) {
     throw new Error(response.error_message);
   }
@@ -19,27 +28,22 @@ export async function registrarPago(
   numeroUsuario,
   numeroBoleto,
   premio,
-  capturaUri,
+  imageKey,
 ) {
-  const formData = new FormData();
-  const compressedUri = await compressImage(capturaUri);
-  formData.append('numero_usuario', numeroUsuario);
-  formData.append('numero_boleto', numeroBoleto);
-  formData.append('premio', premio);
-  formData.append('captura', buildFileObj(compressedUri));
-
   const response = await requestRymAPIConfig({
     endpoint: 'tickets/pagarPremio',
-    data: formData,
-    useJson: false,
+    data: {
+      numero_usuario: numeroUsuario,
+      numero_boleto: numeroBoleto,
+      premio,
+      image_key: imageKey,
+    },
+    method: 'POST',
   });
 
   if (response.error) {
     throw new Error(response.error_message);
   }
-
-  await deleteCapturedImage(compressedUri);
-  await deleteCapturedImage(capturaUri);
 
   return response.data;
 }

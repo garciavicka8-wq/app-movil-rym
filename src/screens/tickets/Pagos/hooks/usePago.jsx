@@ -18,7 +18,7 @@ export default function usePago(modal) {
   const [comprobandoTicket, setComprobandoTicket] = useState(false);
   const [premio, setPremio] = useState(null);
   const [numeroBoleto, setNumeroBoleto] = useState(null);
-  const [photoUri, setPhotoUri] = useState(null);
+  const [imageKey, setImageKey] = useState(null);
   const thermalPrinter = useThermalPrinter();
   const [limpiarInput, setLimpiarInput] = useState(null);
   const dispatch = useDispatch();
@@ -65,7 +65,8 @@ export default function usePago(modal) {
 
     try {
       setNumeroBoleto(numeroTicket);
-      const res = await verifyTicket(numeroTicket);
+      const res = await verifyTicket(numeroTicket, capturedImageUri);
+      Utils.deleteCapturedImage(capturedImageUri);
       //   SI EL BOLETO NO ES GANADOR
       if (!res.esGanador) {
         modal.setConfig({
@@ -77,12 +78,11 @@ export default function usePago(modal) {
           showCancelBtn: false,
           confirmBtnText: 'entendido',
         });
-        Utils.deleteCapturedImage(capturedImageUri);
       }
       //   SI EL BOLETO ES GANADOR
       if (res.esGanador) {
         setLimpiarInput(() => resetInputField);
-        setPhotoUri(capturedImageUri);
+        setImageKey(res.image_key);
         setPremio(res.premio);
         modal.setConfig({
           type: 'alert',
@@ -101,6 +101,7 @@ export default function usePago(modal) {
         message == ERROR_CODE_NAMES.OUTDATED_APP_VERSION ||
         message == ERROR_CODE_NAMES.DEACTIVATED_ACCOUNT
       ) {
+        Utils.deleteCapturedImage(capturedImageUri);
         logout();
         return;
       }
@@ -113,11 +114,10 @@ export default function usePago(modal) {
         showCancelBtn: false,
         confirmBtnText: 'Entendido',
       });
+      Utils.deleteCapturedImage(capturedImageUri);
       setComprobandoTicket(false);
       setNumeroBoleto(null);
-      Utils.deleteCapturedImage(capturedImageUri);
       setLimpiarInput(null);
-      setComprobandoTicket(false);
     }
   };
 
@@ -138,7 +138,7 @@ export default function usePago(modal) {
         usuarioLocalStorage.usuario,
         numeroBoleto,
         premio,
-        photoUri,
+        imageKey,
       );
       //  SI SE REGISTRO CORRECTAMENTE
       modal.setConfig({
@@ -175,7 +175,7 @@ export default function usePago(modal) {
       }
       setRegistrando(false);
       setPremio(0);
-      setPhotoUri(null);
+      setImageKey(null);
       setNumeroBoleto(null);
       setLimpiarInput(null);
     }
@@ -215,7 +215,6 @@ export default function usePago(modal) {
   //   HANDLE MODAL CANCEL
   const handleModalCancel = () => {
     modal.setConfig({open: false});
-    Utils.deleteCapturedImage(photoUri);
     if (limpiarInput) {
       limpiarInput();
     }

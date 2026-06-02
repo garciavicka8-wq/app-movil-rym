@@ -1,15 +1,18 @@
 import React, {useEffect} from 'react';
 import {StyleSheet} from 'react-native';
-import {Appbar} from 'react-native-paper';
+import {Appbar, FAB} from 'react-native-paper';
 import {Container, Content} from '../../../components/Layout';
 import ListaPagos from './components/ListaPagos';
 import RealizarPago from './components/RealizarPago';
-import {useCustomNavigation} from '../../../hooks';
+import {useCustomNavigation, useThermalPrinter} from '../../../hooks';
 import CustomStatusBar from '../../../components/CustomStatusBar';
-import {Colors} from '../../../utils';
+import {Colors, Print} from '../../../utils';
+
+const DEV_QR_BOLETO = '3710-01384995-89708';
 
 export default function Pagos({navigation}) {
   const {isFocused} = useCustomNavigation();
+  const thermalPrinter = useThermalPrinter();
 
   useEffect(() => {
     navigation.setOptions({headerShown: false});
@@ -20,21 +23,37 @@ export default function Pagos({navigation}) {
       {isFocused && <CustomStatusBar color="darkBackground" />}
       <Appbar.Header style={styles.appBar}>
         <Appbar.BackAction color="white" onPress={() => navigation.goBack()} />
-        <Appbar.Content 
-          color="white" 
-          titleStyle={styles.appBarTitle} 
-          title="Pagos de Premios" 
+        <Appbar.Content
+          color="white"
+          titleStyle={styles.appBarTitle}
+          title="Pagos de Premios"
         />
       </Appbar.Header>
       <Content marginBottom={15}>
         <RealizarPago />
         <ListaPagos />
       </Content>
+      {__DEV__ && (
+        <FAB
+          icon="qrcode"
+          label="QR test"
+          style={styles.fab}
+          onPress={async () => {
+            if (!(await thermalPrinter.isPrintingPossible())) return;
+            await thermalPrinter.print(() => Print.qrTicket(DEV_QR_BOLETO));
+          }}
+        />
+      )}
     </Container>
   );
 }
 
 const styles = StyleSheet.create({
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+  },
   appBar: {
     backgroundColor: '#0E1321',
     elevation: 5,

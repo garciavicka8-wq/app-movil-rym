@@ -80,7 +80,7 @@ export default function CustomScanner({onScanned}) {
             <QRCodeScanner
               cameraProps={{ref: cameraRef}}
               onRead={handleRead}
-              flashMode={RNCamera.Constants.FlashMode.off}
+              flashMode={RNCamera.Constants.FlashMode.on}
               showMarker={true}
               containerStyle={styles.scannerContainer}
               cameraStyle={styles.cameraStyle}

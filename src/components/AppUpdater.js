@@ -14,6 +14,9 @@ export default function AppUpdater() {
   const [progress, setProgress] = useState(0);
   const [isCellular, setIsCellular] = useState(false);
   const [installPath, setInstallPath] = useState(null);
+  // Fuente de verdad del tamaño total: se captura en begin y se reutiliza en progress
+  // para evitar que Apache (chunked encoding) reporte valores distintos entre callbacks.
+  const contentLengthRef = React.useRef(-1);
 
   useEffect(() => {
     NetInfo.fetch().then(state => {
@@ -109,6 +112,7 @@ export default function AppUpdater() {
   const startDownload = (url, updatedVersionCode) => {
     setDownloading(true);
     setProgress(0);
+    contentLengthRef.current = -1;
     const localFile = `${RNFS.DocumentDirectoryPath}/rymapp2_update_${updatedVersionCode}.apk`;
     setInstallPath(localFile);
 
@@ -129,19 +133,29 @@ export default function AppUpdater() {
         fromUrl: finalDownloadUrl,
         toFile: localFile,
         begin: (res) => {
-          // contentLength === -1 cuando el servidor usa chunked transfer encoding
-          // (Apache puede eliminarlo aunque PHP lo declare).
-          // En ese caso mostramos progreso indeterminado (progress = -1).
-          if (res.contentLength <= 0) {
+          // OkHttp reporta body.contentLength() = -1 cuando Apache usa chunked encoding,
+          // incluso si PHP seteó Content-Length en los headers. Como fallback leemos el
+          // header raw, que sí llega aunque OkHttp lo ignore para el streaming.
+          const rawCL = parseInt(
+            res.headers?.['Content-Length'] ??
+            res.headers?.['content-length'] ??
+            '-1',
+            10
+          );
+          const total = res.contentLength > 0 ? res.contentLength : rawCL;
+          contentLengthRef.current = total;
+          console.log('[AppUpdater] begin — contentLength:', res.contentLength, '| header raw:', rawCL, '| usando:', total);
+          if (total <= 0) {
             setProgress(-1);
           }
         },
         progress: (res) => {
-          if (res.contentLength > 0) {
-            const percent = (res.bytesWritten / res.contentLength) * 100;
-            setProgress(Math.round(percent));
+          const total = contentLengthRef.current;
+          if (total > 0 && res.bytesWritten >= 0) {
+            const pct = (res.bytesWritten / total) * 100;
+            setProgress(Math.min(99, Math.max(0, Math.round(pct))));
           }
-          // Si contentLength <= 0 dejamos progress en -1 (indeterminado)
+          // Si total <= 0, permanece en -1 (muestra "Descargando...")
         },
         progressDivider: 5,
       });

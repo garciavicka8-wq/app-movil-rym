@@ -30,11 +30,10 @@ export default function useCancelarBoleto(modal) {
     modal.setConfig({
       open: true,
       type: 'progress',
-      progressTitle: 'Comprobando boleto',
+      progressTitle: 'Cancelando boleto',
     });
 
     try {
-      // CHECK IF BLUETOOTH IS ENABLED AND PRINTER IS REGISTERED AND CONNECTED
       if (!(await printerHook.isPrintingPossible())) {
         setCancelandoTicket(false);
         return;
@@ -45,9 +44,7 @@ export default function useCancelarBoleto(modal) {
         capturedImageUri,
       );
 
-      // SI SE CANCELO CORRECTAMENTE
       if (boleto_cancelado) {
-        // IMPRIMIR COMPROBANTE CANCELACION
         await printerHook.print(async function () {
           await Print.canceledTicket(boleto_cancelado);
         });

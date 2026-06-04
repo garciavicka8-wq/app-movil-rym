@@ -554,11 +554,11 @@ const Utils = {
   compressImage: async function (uri) {
     try {
       const compressed = await ImageResizer.createResizedImage(
-        uri, // URI de la imagen original
-        800, // Ancho (puedes ajustar)
-        800, // Alto (ajustado para mantener proporción)
-        'JPEG', // Formato
-        60, // Calidad (0 a 100)
+        uri,
+        1200,
+        1200,
+        'JPEG',
+        80,
       );
 
       return compressed.uri; // Nuevo URI comprimido

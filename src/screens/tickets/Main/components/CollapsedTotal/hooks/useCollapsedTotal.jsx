@@ -3,7 +3,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useError, useThermalPrinter} from '../../../../../../hooks';
 import {setRegistrosAlMomento} from '../../../../../../features/tickets/cliente/clienteSlice';
 import {Print} from '../../../../../../utils';
-import {getTimestamp} from '../../../../../../database/facade';
+import {getServerTime} from '../../../../../../services/http';
 
 export default function useCollapsedTotal(modal) {
   const [showList, setShowList] = useState(true);
@@ -42,7 +42,7 @@ export default function useCollapsedTotal(modal) {
 
   const printTotal = async () => {
     try {
-      const timestamp = await getTimestamp();
+      const timestamp = await getServerTime();
       // IMPRIMIR
       await thermalPrinter.print(async function () {
         await Print.totalAccumulated(timestamp, total, registrosAlMomento);

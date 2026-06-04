@@ -1,6 +1,6 @@
 {
   "name": "rymapp2",
-  "version": "8.0.4",
+  "version": "8.0.6",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -23,7 +23,6 @@
     "buffer": "^6.0.3",
     "currency.js": "^2.0.4",
     "decimal.js": "^10.4.3",
-    "firebase": "^10.4.0",
     "formik": "^2.4.5",
     "laravel-echo": "^2.3.0",
     "moment": "^2.29.4",

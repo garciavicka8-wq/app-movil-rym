@@ -530,12 +530,12 @@ const Print = (() => {
       }`,
     );
 
-    await alignText('center');
-    await BEP.printQRCode(boleto.numeroBoleto, 220, ERROR_CORRECTION.L, 0);
     await alignText('left');
     await BEP.printText('--------------------------------\n\r', {});
     await BEP.printText('[   ] Cancelar ticket\n\r', {});
     await BEP.printText('--------------------------------\n\r', {});
+    await alignText('center');
+    await BEP.printQRCode(boleto.numeroBoleto, 220, ERROR_CORRECTION.L, 0);
     await BEP.printText(`\n\r\n\r\n\r`, {});
   }
 

@@ -136,6 +136,12 @@ const Sorteos = () => {
                 ]}>
                   {Moment(s.fecha).format('ddd DD')}
                 </Text>
+                <Text style={[
+                  styles.horaText,
+                  isSelected && styles.horaTextActive
+                ]}>
+                  {Moment(s.fecha).format('MMM')}
+                </Text>
               </View>
             </TouchableOpacity>
           );
@@ -229,6 +235,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#64748B',
     marginTop: 1,
+    textTransform: 'capitalize',
   },
   horaTextActive: {
     color: '#94A3B8',

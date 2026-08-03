@@ -64,3 +64,7 @@ yarn-error.log
 
 # testing
 /coverage
+
+# Firebase / Google Cloud service account credentials — never commit
+*firebase-adminsdk*.json
+**/notifications/*.json

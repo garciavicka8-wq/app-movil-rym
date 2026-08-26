@@ -17,9 +17,9 @@ import {
 } from './LogosBase64';
 
 
-// API LOCAL (artisan serve)
-const RYM_BASE_URL = __DEV__ 
-  ? 'http://192.168.3.10:8000' 
+// API LOCAL (artisan serve). Requiere `adb reverse tcp:8000 tcp:8000` con el dispositivo conectado.
+const RYM_BASE_URL = __DEV__
+  ? 'http://127.0.0.1:8000'
   : 'https://api-rym.mecaorg.com';
 const RYM_API_URL = `${RYM_BASE_URL}/api/v1`;
 const RYM_LOGOS_URL = `${RYM_BASE_URL}/storage/logos/`;

@@ -523,7 +523,7 @@ const Print = (() => {
     await printLine(`Total ${boleto.totalApostado} Pts`);
     await printLine(`ID ${boleto.numeroBoleto}`);
     await printLine(`V1N ${Utils.generateRandomNumber(16)}`);
-    await printLine(`COS ${Utils.generateRandomNumber(8)}`);
+    await printLine(`CODE ${Utils.generateRandomNumber(8)}`);
     await printLine(
       `Impresion ${Moment(boleto.fechaExp).format('DD/MM/YYYY')} ${
         boleto.horaImpresion
@@ -535,7 +535,12 @@ const Print = (() => {
     await BEP.printText('[   ] Cancelar ticket\n\r', {});
     await BEP.printText('--------------------------------\n\r', {});
     await alignText('center');
-    await BEP.printQRCode(boleto.numeroBoleto, 220, ERROR_CORRECTION.L, 0);
+    await BEP.printQRCode(
+      boleto.qrPayload ?? boleto.numeroBoleto,
+      220,
+      ERROR_CORRECTION.L,
+      0,
+    );
     await BEP.printText(`\n\r\n\r\n\r`, {});
   }
 

@@ -11,3 +11,4 @@ export {default as useAlert} from './useAlert';
 export {default as useSorteos} from './useSorteos';
 export {default as useGanadores} from './useGanadores';
 export {default as useError} from './useError';
+export {default as useServerClock} from './useServerClock';

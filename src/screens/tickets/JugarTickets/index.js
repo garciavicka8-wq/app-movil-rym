@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {StyleSheet} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import {Appbar} from 'react-native-paper';
 import ListaSorteosPendientes from './components/ListaSorteosPendientes';
 import TablaApuestas from './components/TablaApuestas';
@@ -7,14 +7,15 @@ import FooterContent from './components/FooterContent';
 import {Container, Content, Footer} from '../../../components/Layout';
 import {useNetInfo} from '@react-native-community/netinfo';
 import {NoConnectionSnackbar} from '../../../components';
-import {useCustomNavigation} from '../../../hooks';
+import {useCustomNavigation, useServerClock} from '../../../hooks';
 import CustomStatusBar from '../../../components/CustomStatusBar';
-import {Colors} from '../../../utils';
+import {Colors, Moment} from '../../../utils';
 
 export default function JugarTickets({navigation}) {
   const {isFocused} = useCustomNavigation();
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const netInfo = useNetInfo();
+  const now = useServerClock();
 
   useEffect(() => {
     navigation.setOptions({headerShown: false});
@@ -34,10 +35,16 @@ export default function JugarTickets({navigation}) {
       {isFocused && <CustomStatusBar color="darkBackground" />}
       <Appbar.Header style={styles.appBar}>
         <Appbar.BackAction color="white" onPress={() => navigation.goBack()} />
-        <Appbar.Content 
-          color="white" 
-          titleStyle={styles.appBarTitle} 
-          title="Jugar Tickets" 
+        <Appbar.Content
+          color="white"
+          title={
+            <View>
+              <Text style={styles.appBarTitle}>Jugar Tickets</Text>
+              <Text style={styles.appBarSubtitle}>
+                {Moment(now).format('dddd DD MMM · HH:mm:ss')}
+              </Text>
+            </View>
+          }
         />
       </Appbar.Header>
       
@@ -71,6 +78,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 1,
+    color: '#FFFFFF',
+  },
+  appBarSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    textTransform: 'capitalize',
+    marginTop: 2,
   },
   footer: {
     backgroundColor: '#FFFFFF',

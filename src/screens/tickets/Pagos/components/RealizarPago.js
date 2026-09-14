@@ -34,6 +34,7 @@ export default function RealizarPago() {
           <CustomTicketInputGroup
             onSubmit={_comprobarBoleto}
             disableSubmit={cargandoPagos}
+            displayValue={pagoHook.numeroBoletoMostrado}
           />
           <View style={styles.alertContainer}>
             <CustomAlert

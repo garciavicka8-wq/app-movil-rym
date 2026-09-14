@@ -19,6 +19,7 @@ export default function usePago(modal) {
   const [premio, setPremio] = useState(null);
   const [numeroBoleto, setNumeroBoleto] = useState(null);
   const [imageKey, setImageKey] = useState(null);
+  const [numeroBoletoMostrado, setNumeroBoletoMostrado] = useState(null);
   const thermalPrinter = useThermalPrinter();
   const [limpiarInput, setLimpiarInput] = useState(null);
   const dispatch = useDispatch();
@@ -57,6 +58,7 @@ export default function usePago(modal) {
   ) => {
     if (comprobandoTicket) return;
     setComprobandoTicket(true);
+    setNumeroBoletoMostrado('Verificando...');
     modal.setConfig({
       open: true,
       type: 'progress',
@@ -66,6 +68,7 @@ export default function usePago(modal) {
     try {
       setNumeroBoleto(numeroTicket);
       const res = await verifyTicket(numeroTicket, capturedImageUri);
+      setNumeroBoletoMostrado(res.numeroBoleto || null);
       Utils.deleteCapturedImage(capturedImageUri);
       //   SI EL BOLETO NO ES GANADOR
       if (!res.esGanador) {
@@ -117,6 +120,7 @@ export default function usePago(modal) {
       Utils.deleteCapturedImage(capturedImageUri);
       setComprobandoTicket(false);
       setNumeroBoleto(null);
+      setNumeroBoletoMostrado(null);
       setLimpiarInput(null);
     }
   };
@@ -177,6 +181,7 @@ export default function usePago(modal) {
       setPremio(0);
       setImageKey(null);
       setNumeroBoleto(null);
+      setNumeroBoletoMostrado(null);
       setLimpiarInput(null);
     }
   };
@@ -215,10 +220,17 @@ export default function usePago(modal) {
   //   HANDLE MODAL CANCEL
   const handleModalCancel = () => {
     modal.setConfig({open: false});
+    setNumeroBoletoMostrado(null);
     if (limpiarInput) {
       limpiarInput();
     }
   };
 
-  return {obtenerPagos, comprobarBoleto, registrar, handleModalCancel};
+  return {
+    obtenerPagos,
+    comprobarBoleto,
+    registrar,
+    handleModalCancel,
+    numeroBoletoMostrado,
+  };
 }

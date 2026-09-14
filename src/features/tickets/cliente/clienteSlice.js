@@ -2,7 +2,7 @@ import {createSlice} from '@reduxjs/toolkit';
 
 const initialState = {
   // BOLETOS, CANCELADOS Y PAGOS
-  // id, fecha, numeroBoleto, hora, total, tipo (boleto | cancelado | pago)
+  // id, fecha, numeroBoleto, hora, total, tipo (boleto | cancelado | pago), timestampRegistro (solo boleto)
   registrosAlMomento: [],
 };
 

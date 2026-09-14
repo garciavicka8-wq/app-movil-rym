@@ -7,8 +7,6 @@ import {
   View,
 } from 'react-native';
 import {Colors, Moment, Utils} from '../../../../../../utils';
-import {useState} from 'react';
-import ModalReimpresion from './ModalReimpresion';
 import {useNavigation} from '@react-navigation/native';
 import {APP_NAVIGATION} from '../../../../../../constants';
 
@@ -35,7 +33,6 @@ export default function ListaRegistros() {
 
 function RegistroItem({registro}) {
   const navigation = useNavigation();
-  const [mostrarModalReimpresion, setMostrarModalReimpresion] = useState(false);
   const TEXTO_HORA = {
     boleto: 'registrado a las ',
     cancelado: 'cancelado a las ',
@@ -43,48 +40,55 @@ function RegistroItem({registro}) {
   };
 
   const handleLongPress = () => {
-    if (registro.tipo === 'boleto') {
-      navigation.navigate(APP_NAVIGATION.SCREENS.CANCELACION_SOLICITUD, {registro});
-    }
+    if (registro.tipo !== 'boleto') return;
+
+    // Alert de selección deshabilitado temporalmente — al quitarse "Solicitar cancelación"
+    // (código conservado más abajo), la única acción disponible era "Reimprimir", así que
+    // se manda directo a esa pantalla sin mostrar el prompt.
+    // Alert.alert('Boleto', '¿Qué deseas hacer?', [
+    //   {
+    //     text: 'Solicitar cancelación',
+    //     onPress: () =>
+    //       navigation.navigate(APP_NAVIGATION.SCREENS.CANCELACION_SOLICITUD, {
+    //         registro,
+    //       }),
+    //   },
+    //   {
+    //     text: 'Reimprimir',
+    //     onPress: () =>
+    //       navigation.navigate(APP_NAVIGATION.SCREENS.REIMPRIMIR, {registro}),
+    //   },
+    // ]);
+    navigation.navigate(APP_NAVIGATION.SCREENS.REIMPRIMIR, {registro});
   };
 
   return (
-    <>
-      <TouchableWithoutFeedback onLongPress={handleLongPress}>
-        <View style={styles.registroItem}>
-          <View>
-            <Text>{Utils.shortenID(registro.numeroBoleto)}</Text>
-            <Text style={{fontSize: 12}}>
-              {TEXTO_HORA[registro.tipo]} {registro.hora}
-            </Text>
-            {registro.tipo === 'boleto' && (
-              <Text
-                style={{
-                  color: Colors.darkBlue,
-                  fontStyle: 'italic',
-                  fontSize: 12,
-                  fontWeight: 'bold',
-                }}>
-                manten presionado para solicitar cancelacion
-              </Text>
-            )}
-          </View>
-          <View>
+    <TouchableWithoutFeedback onLongPress={handleLongPress}>
+      <View style={styles.registroItem}>
+        <View>
+          <Text>{Utils.shortenID(registro.numeroBoleto)}</Text>
+          <Text style={{fontSize: 12}}>
+            {TEXTO_HORA[registro.tipo]} {registro.hora}
+          </Text>
+          {registro.tipo === 'boleto' && (
             <Text
-              style={{color: registro.tipo !== 'boleto' ? 'red' : undefined}}>
-              {registro.total} pts
+              style={{
+                color: Colors.darkBlue,
+                fontStyle: 'italic',
+                fontSize: 12,
+                fontWeight: 'bold',
+              }}>
+              manten presionado para reimprimir
             </Text>
-          </View>
+          )}
         </View>
-      </TouchableWithoutFeedback>
-      {/* REIMPRESION MODAL PAUSADO NO FUNCIONA POR EL MOMENTO*/}
-      {mostrarModalReimpresion && (
-        <ModalReimpresion
-          registro={registro}
-          onClose={() => setMostrarModalReimpresion(false)}
-        />
-      )}
-    </>
+        <View>
+          <Text style={{color: registro.tipo !== 'boleto' ? 'red' : undefined}}>
+            {registro.total} pts
+          </Text>
+        </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

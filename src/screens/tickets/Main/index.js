@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Colors, Storage} from '../../../utils';
 import CreditCard from '../../../components/CreditCard';
 import CustomStatusBar from '../../../components/CustomStatusBar';
+import ServerClock from '../../../components/ServerClock';
 import {useSelector} from 'react-redux';
 import {useCustomNavigation} from '../../../hooks';
 import {APP_NAVIGATION} from '../../../constants';
@@ -42,7 +43,10 @@ export default function Main() {
       <CustomStatusBar color="darkBackground" />
       <View style={styles.mainContainer}>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>{userName ? userName.toUpperCase() : 'USUARIO'}</Text>
+          <View>
+            <Text style={styles.headerTitle}>{userName ? userName.toUpperCase() : 'USUARIO'}</Text>
+            <ServerClock style={styles.headerClock} />
+          </View>
         <View style={styles.headerIcons}>
           <IconButton 
             icon="bell" 
@@ -128,6 +132,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 2,
+  },
+  headerClock: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
+    marginTop: 2,
+    letterSpacing: 1,
   },
   headerIcons: {
     flexDirection: 'row',

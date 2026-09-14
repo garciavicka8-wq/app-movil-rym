@@ -163,6 +163,10 @@ export default function CompartirButton() {
           hora: boletoRegistrado.horaImpresion,
           total: boletoRegistrado.totalApostado,
           tipo: 'boleto',
+          // Aproximación con reloj local, solo para deshabilitar el botón de
+          // Reimprimir en la UI — la ventana de 5 minutos real la valida el
+          // backend con su propio reloj de servidor.
+          timestampRegistro: Date.now(),
         }),
       );
 

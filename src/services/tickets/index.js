@@ -68,6 +68,21 @@ export async function requestTicketCancellation(formData) {
   }
 }
 
+export async function reimprimirTicketApi(numeroUsuario, numeroBoleto) {
+  try {
+    const response = await Request.post('tickets/reimprimir', {
+      numero_usuario: numeroUsuario,
+      numero_boleto: numeroBoleto,
+    });
+    if (response.data.error) {
+      throw new Error(response.data.error_message);
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function obtenerPeriodosReporteApi() {
   try {
     const response = await Request.get('tickets/report-periods');

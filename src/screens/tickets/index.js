@@ -9,6 +9,7 @@ import Cancelados from './Cancelados';
 import {IconButton} from 'react-native-paper';
 import CustomStatusBar from '../../components/CustomStatusBar';
 import TicketCancellationRequest from './Main/components/TicketCancellationRequest';
+import Reimprimir from './Reimprimir';
 import NotificationBell from '../../components/NotificationBell';
 import {View} from 'react-native';
 
@@ -74,6 +75,13 @@ export default function TicketsTab() {
         <Stack.Screen
           name={APP_NAVIGATION.SCREENS.CANCELACION_SOLICITUD}
           component={TicketCancellationRequest}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name={APP_NAVIGATION.SCREENS.REIMPRIMIR}
+          component={Reimprimir}
           options={{
             headerShown: false,
           }}

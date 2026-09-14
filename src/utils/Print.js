@@ -97,12 +97,12 @@ const Print = (() => {
     }
   };
   //  CREATE MODEL FOR TICKET TO BE PRINTED
-  const ticket = async (boleto, isMagico = false) => {
+  const ticket = async (boleto, isMagico = false, isReimpresion = false) => {
     // SI ESTA EN MODO DESARROLLO
     // if (__DEV__) return true;
     try {
       // TICKET HEADER
-      await printTicketHeader(boleto, isMagico);
+      await printTicketHeader(boleto, isMagico, isReimpresion);
       // IMPRIMIR JUGADAS
       await printTicketBody(boleto);
       // PRINT TICKET FOOTER
@@ -111,10 +111,6 @@ const Print = (() => {
       ToastAndroid.show(e.message, ToastAndroid.LONG);
       throw new Error(e);
     }
-  };
-  // REPRINT TICKET (PAUSADO NO FUNCIONA POR EL MOMENTO)
-  const reprintTicket = async numeroBoleto => {
-    return;
   };
   // CANCELED TICKET
   const canceledTicket = async ticket => {
@@ -304,6 +300,25 @@ const Print = (() => {
       throw new Error(message);
     }
   };
+
+  const pruebaImpresion = async () => {
+    try {
+      const LINE_SEPARATOR = Utils.generateLineSeparator(28, '-');
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText('PRUEBA DE IMPRESION\n\r', {});
+      await BEP.printText(`${LINE_SEPARATOR}\n\r`, {});
+      await BEP.printerAlign(ALIGN.LEFT);
+      await BEP.printText('ABCDEFGHIJKLMNOPQRSTUVWXYZ\n\r', {});
+      await BEP.printText('abcdefghijklmnopqrstuvwxyz\n\r', {});
+      await BEP.printText('0123456789\n\r', {});
+      await BEP.printText(`${LINE_SEPARATOR}\n\r`, {});
+      await BEP.printerAlign(ALIGN.CENTER);
+      await BEP.printText(`${Moment().format('ddd DD MMM YYYY HH:mm:ss')}\n\r`, {});
+      await BEP.printText('\n\n\n', {});
+    } catch ({message}) {
+      throw new Error(message);
+    }
+  };
   // PRIVATE FUNCTIONS
   // TICKET HEADER
   async function printAccountStatusHeader(accountStatus) {
@@ -463,7 +478,7 @@ const Print = (() => {
     await BEP.printText('\n\r\n\r\n\r\n\r', {});
   }
   // PRINT TICKET HEADER
-  async function printTicketHeader(boleto, isMagico) {
+  async function printTicketHeader(boleto, isMagico, isReimpresion = false) {
     await alignText('center');
     await BEP.printText(isMagico ? 'TKT Magic\n\r' : 'TKT Pluss\n\r', {
       encoding: 'GBK',
@@ -472,6 +487,15 @@ const Print = (() => {
       heigthtimes: 1,
       fonttype: 1,
     });
+    if (isReimpresion) {
+      await BEP.printText('*** REIMPRESION ***\n\r', {
+        encoding: 'GBK',
+        codepage: 0,
+        widthtimes: 0,
+        heigthtimes: 0,
+        fonttype: 1,
+      });
+    }
     await BEP.printText(
       `${Utils.obtenerNombreSorteo(boleto.codigoSorteo)} ${Moment(
         boleto.fechaSorteo,
@@ -579,6 +603,7 @@ const Print = (() => {
     winningNumbers,
     qrTicket,
     test,
+    pruebaImpresion,
   };
 })();
 

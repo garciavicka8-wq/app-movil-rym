@@ -42,6 +42,13 @@ export default function MenuOpciones() {
         onPress={() => handleNavigate('ESTABLECER_COMISION')}
       />
       <View style={styles.divider} />
+      <MenuOpcion
+        label="Soporte"
+        leftIcon="lifebuoy"
+        rightIcon="chevron-right"
+        onPress={() => handleNavigate('SOPORTE_MENU')}
+      />
+      <View style={styles.divider} />
       <LogoutButton />
     </View>
   );

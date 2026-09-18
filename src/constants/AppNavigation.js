@@ -42,6 +42,9 @@ const APP_NAVIGATION = {
     ESTADO_DE_CUENTA: 'EstadoDeCuenta',
     ESTABLECER_COMISION: 'EstablecerComision',
     SEGURIDAD: 'Seguridad',
+    SOPORTE_MENU: 'SoporteMenu',
+    SOPORTE_NUEVA: 'SoporteNueva',
+    SOPORTE_HISTORIAL: 'SoporteHistorial',
   },
 };
 

@@ -8,6 +8,9 @@ import RegistrarImpresora from './RegistrarImpresora';
 import CodigoPin from './CodigoPin';
 import EstablecerComision from './EstablecerComision';
 import Seguridad from './Seguridad';
+import SoporteMenu from './SoporteMenu';
+import SoporteNueva from './SoporteNueva';
+import SoporteHistorial from './SoporteHistorial';
 // NAVIGATION
 const Stack = createStackNavigator();
 
@@ -53,6 +56,21 @@ export default function Configuracion() {
           options={{
             headerTitle: 'Establecer Comisión',
           }}
+        />
+        <Stack.Screen
+          name={APP_NAVIGATION.SCREENS.SOPORTE_MENU}
+          component={SoporteMenu}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={APP_NAVIGATION.SCREENS.SOPORTE_NUEVA}
+          component={SoporteNueva}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={APP_NAVIGATION.SCREENS.SOPORTE_HISTORIAL}
+          component={SoporteHistorial}
+          options={{headerShown: false}}
         />
       </Stack.Navigator>
     </>

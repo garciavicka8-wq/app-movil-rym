@@ -20,6 +20,9 @@ import RegistrarImpresora from './src/screens/configuracion/RegistrarImpresora';
 import CodigoPin from './src/screens/configuracion/CodigoPin';
 import EstablecerComision from './src/screens/configuracion/EstablecerComision';
 import Seguridad from './src/screens/configuracion/Seguridad';
+import SoporteMenu from './src/screens/configuracion/SoporteMenu';
+import SoporteNueva from './src/screens/configuracion/SoporteNueva';
+import SoporteHistorial from './src/screens/configuracion/SoporteHistorial';
 import {useAuthContext} from './src/context/AuthContext';
 import Notificaciones from './src/screens/notificaciones';
 import {NotificationUtils} from './src/utils';
@@ -196,6 +199,21 @@ export default function App() {
                   backgroundColor: Colors.dark,
                 },
               }}
+            />
+            <Stack.Screen
+              name={APP_NAVIGATION.SCREENS.SOPORTE_MENU}
+              component={SoporteMenu}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen
+              name={APP_NAVIGATION.SCREENS.SOPORTE_NUEVA}
+              component={SoporteNueva}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen
+              name={APP_NAVIGATION.SCREENS.SOPORTE_HISTORIAL}
+              component={SoporteHistorial}
+              options={{headerShown: false}}
             />
             {/* NOTIFICACIONES */}
             <Stack.Screen

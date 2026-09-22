@@ -14,8 +14,12 @@ import * as Yup from 'yup';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import CustomStatusBar from '../../../components/CustomStatusBar';
 import CustomNumericField from '../../../components/CustomNumericField';
+import CustomPhotoCapture from '../../../components/CustomPhotoCapture';
 import {Colors, Storage} from '../../../utils';
-import {crearSolicitudSoporteApi} from '../../../services/soporte';
+import {
+  crearSolicitudSoporteApi,
+  subirImagenSoporteApi,
+} from '../../../services/soporte';
 
 const TITULOS = {
   diferencia_premio: 'Diferencia para pago de premio',
@@ -35,6 +39,7 @@ export default function SoporteNueva() {
   const {tipo} = route.params || {};
   const [loading, setLoading] = useState(false);
   const [insumoSeleccionado, setInsumoSeleccionado] = useState(null);
+  const [fotoUri, setFotoUri] = useState(null);
 
   const esDiferenciaPremio = tipo === 'diferencia_premio';
 
@@ -78,11 +83,16 @@ export default function SoporteNueva() {
           }
         : {insumo: insumoSeleccionado, cantidad: values.cantidad || null};
 
+      const imagenUrl = fotoUri
+        ? await subirImagenSoporteApi(fotoUri)
+        : null;
+
       await crearSolicitudSoporteApi(
         usuario.usuario,
         tipo,
         values.detalle || null,
         payload,
+        imagenUrl,
       );
 
       Alert.alert(
@@ -180,6 +190,15 @@ export default function SoporteNueva() {
           placeholder="Escribe cualquier detalle adicional"
           outlineColor="#CBD5E1"
           activeOutlineColor={Colors.primary}
+        />
+
+        <Text style={styles.label}>Foto (opcional)</Text>
+        <CustomPhotoCapture
+          imageUri={fotoUri}
+          onCapture={setFotoUri}
+          onRemove={() => setFotoUri(null)}
+          label="Tomar foto"
+          disabled={loading}
         />
 
         <Button

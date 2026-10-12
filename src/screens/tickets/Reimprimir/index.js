@@ -86,21 +86,27 @@ export default function Reimprimir() {
         .min(4, 'El pin debe ser de 4 digitos')
         .max(4, 'El pin debe ser de 4 digitos'),
     }),
-    onSubmit: () => handleReimprimir(),
+    onSubmit: () => handlePruebaImpresion(),
   });
 
   const [testingPrinter, setTestingPrinter] = useState(false);
-  const [printerVerificada, setPrinterVerificada] = useState(false);
 
+  // Con el PIN ya validado: primero la hoja de prueba y, solo si el usuario
+  // confirma que salió, se registra la reimpresión y se imprime el ticket.
   const handlePruebaImpresion = async () => {
     setTestingPrinter(true);
     try {
       if (await thermalPrinter.isPrintingPossible()) {
         await thermalPrinter.print(() => Print.pruebaImpresion());
-        Alert.alert('Prueba de impresión', '¿Se imprimió correctamente?', [
-          {text: 'No', style: 'cancel', onPress: () => setPrinterVerificada(false)},
-          {text: 'Sí', onPress: () => setPrinterVerificada(true)},
-        ]);
+        Alert.alert(
+          'Prueba de impresión',
+          '¿Se imprimió la hoja de prueba?',
+          [
+            {text: 'No', style: 'cancel'},
+            {text: 'Sí', onPress: () => handleReimprimir()},
+          ],
+          {cancelable: false},
+        );
       }
     } catch (error) {
       Alert.alert('Error', error.message || 'Ocurrió un error al probar la impresora.');
@@ -206,28 +212,15 @@ export default function Reimprimir() {
         />
 
         <Button
-          mode="outlined"
-          onPress={handlePruebaImpresion}
-          style={styles.testButton}
+          mode="contained"
+          onPress={() => formik.handleSubmit()}
+          style={styles.sendButton}
           contentStyle={{height: 50}}
           labelStyle={styles.buttonLabel}
-          textColor={Colors.primary}
-          disabled={testingPrinter}>
-          {testingPrinter ? 'Probando impresora...' : 'Prueba de impresión'}
+          buttonColor={Colors.primary}
+          disabled={testingPrinter || expirado || remainingMs === null}>
+          {testingPrinter ? 'Probando impresora...' : 'Imprimir ticket'}
         </Button>
-
-        {printerVerificada && (
-          <Button
-            mode="contained"
-            onPress={() => formik.handleSubmit()}
-            style={styles.sendButton}
-            contentStyle={{height: 50}}
-            labelStyle={styles.buttonLabel}
-            buttonColor={Colors.primary}
-            disabled={expirado || remainingMs === null}>
-            Reimprimir
-          </Button>
-        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -303,13 +296,6 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     fontSize: 18,
-  },
-  testButton: {
-    marginTop: 10,
-    marginBottom: 10,
-    borderRadius: 12,
-    borderColor: Colors.primary,
-    borderWidth: 1.5,
   },
   sendButton: {
     marginTop: 10,

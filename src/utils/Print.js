@@ -305,7 +305,13 @@ const Print = (() => {
     try {
       const LINE_SEPARATOR = Utils.generateLineSeparator(28, '-');
       await BEP.printerAlign(ALIGN.CENTER);
-      await BEP.printText('PRUEBA DE IMPRESION\n\r', {});
+      await BEP.printText('PRUEBA DE IMPRESORA\n\r', {});
+      await BEP.printText(`${LINE_SEPARATOR}\n\r`, {});
+      await BEP.printText('*** ESTE NO ES SU TICKET ***\n\r', {});
+      await BEP.printText('No tiene ningun valor\n\r', {});
+      await BEP.printText(`${LINE_SEPARATOR}\n\r`, {});
+      await BEP.printText('Confirme en la aplicacion\n\r', {});
+      await BEP.printText('para imprimir su ticket\n\r', {});
       await BEP.printText(`${LINE_SEPARATOR}\n\r`, {});
       await BEP.printerAlign(ALIGN.LEFT);
       await BEP.printText('ABCDEFGHIJKLMNOPQRSTUVWXYZ\n\r', {});

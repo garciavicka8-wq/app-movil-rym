@@ -1,6 +1,6 @@
 {
   "name": "rymapp2",
-  "version": "8.2.1",
+  "version": "8.2.2",
   "private": true,
   "scripts": {
     "android": "react-native run-android",

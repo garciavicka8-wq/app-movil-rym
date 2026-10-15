@@ -6,7 +6,6 @@ export async function uploadDepositReceipt(formData) {
     const response = await Request.post(
       'comprobantes/depositos/subirCaptura',
       formData,
-      false,
     );
     if (response.data.error) {
       throw new Error(response.data.error_message);

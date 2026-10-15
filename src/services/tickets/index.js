@@ -45,7 +45,6 @@ export async function uploadTicketCapture(formData) {
     const response = await Request.post(
       'comprobantes/premios/subirCaptura',
       formData,
-      false,
     );
     if (response.data.data.error) {
       throw new Error(response.data.data.error_message);

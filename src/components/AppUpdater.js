@@ -12,6 +12,8 @@ export default function AppUpdater() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
+  // Bytes descargados: se muestran en MB cuando el servidor no manda el tamaño total.
+  const [bytesWritten, setBytesWritten] = useState(0);
   const [isCellular, setIsCellular] = useState(false);
   const [installPath, setInstallPath] = useState(null);
   // Fuente de verdad del tamaño total: se captura en begin y se reutiliza en progress
@@ -112,6 +114,7 @@ export default function AppUpdater() {
   const startDownload = (url, updatedVersionCode) => {
     setDownloading(true);
     setProgress(0);
+    setBytesWritten(0);
     contentLengthRef.current = -1;
     const localFile = `${RNFS.DocumentDirectoryPath}/rymapp2_update_${updatedVersionCode}.apk`;
     setInstallPath(localFile);
@@ -132,6 +135,9 @@ export default function AppUpdater() {
       const { promise } = RNFS.downloadFile({
         fromUrl: finalDownloadUrl,
         toFile: localFile,
+        // Sin gzip: si el servidor comprime, quita Content-Length y no hay porcentaje.
+        // El APK ya viene comprimido, no se pierde nada.
+        headers: { 'Accept-Encoding': 'identity' },
         begin: (res) => {
           // OkHttp reporta body.contentLength() = -1 cuando Apache usa chunked encoding,
           // incluso si PHP seteó Content-Length en los headers. Como fallback leemos el
@@ -154,8 +160,10 @@ export default function AppUpdater() {
           if (total > 0 && res.bytesWritten >= 0) {
             const pct = (res.bytesWritten / total) * 100;
             setProgress(Math.min(99, Math.max(0, Math.round(pct))));
+          } else if (res.bytesWritten >= 0) {
+            // Sin tamaño total: progress queda en -1 y se muestran los MB descargados
+            setBytesWritten(res.bytesWritten);
           }
-          // Si total <= 0, permanece en -1 (muestra "Descargando...")
         },
         progressDivider: 5,
       });
@@ -229,12 +237,24 @@ export default function AppUpdater() {
           ) : (
             <View style={styles.progressContainer}>
               {progress < 100 ? (
-                <>
-                  <ActivityIndicator size="small" color="#1a237e" />
-                  <Text style={styles.progressText}>
-                    {progress >= 0 ? `Descargando: ${progress}%` : 'Descargando...'}
-                  </Text>
-                </>
+                <View style={styles.progressBox}>
+                  <Text style={styles.progressLabel}>Descargando actualización</Text>
+                  {progress >= 0 ? (
+                    <>
+                      <View style={styles.progressTrack}>
+                        <View style={[styles.progressFill, { width: `${progress}%` }]} />
+                      </View>
+                      <Text style={styles.progressPercent}>{progress}%</Text>
+                    </>
+                  ) : (
+                    <View style={styles.progressIndeterminate}>
+                      <ActivityIndicator size="large" color="#1a237e" />
+                      <Text style={styles.progressPercent}>
+                        {bytesWritten > 0 ? `${(bytesWritten / (1024 * 1024)).toFixed(1)} MB` : '...'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               ) : (
                 <View style={{ alignItems: 'center', width: '100%' }}>
                   <Text style={styles.progressText}>APK listo para instalar</Text>
@@ -349,6 +369,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     borderRadius: 20,
     width: '100%',
+  },
+  progressBox: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  progressLabel: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#dcdcdc',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 9,
+    backgroundColor: '#1a237e',
+  },
+  progressIndeterminate: {
+    alignItems: 'center',
+  },
+  progressPercent: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#1a237e',
+    marginTop: 10,
   },
   progressText: {
     marginLeft: 15,

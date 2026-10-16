@@ -226,7 +226,7 @@ export default function AppUpdater() {
 
           {isCellular && !downloading ? (
             <Text style={styles.cellularWarning}>
-              Estás usando datos móviles. Te sugerimos conectarte a una red Wi-Fi antes de descargar.
+              La actualización pesa aprox. 70 MB. Puedes descargarla con datos móviles o con Wi-Fi.
             </Text>
           ) : null}
 
@@ -338,11 +338,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   cellularWarning: {
-    color: '#d32f2f',
+    color: '#666',
     textAlign: 'center',
     marginBottom: 15,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
     paddingHorizontal: 15,
   },
   downloadButton: {

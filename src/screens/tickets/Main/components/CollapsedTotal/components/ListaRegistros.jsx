@@ -42,6 +42,14 @@ function RegistroItem({registro}) {
   const handleLongPress = () => {
     if (registro.tipo !== 'boleto') return;
 
+    if (registro.via === 'whatsapp') {
+      Alert.alert(
+        'Boleto',
+        'Los boletos enviados por WhatsApp no se pueden reimprimir.',
+      );
+      return;
+    }
+
     // Alert de selección deshabilitado temporalmente — al quitarse "Solicitar cancelación"
     // (código conservado más abajo), la única acción disponible era "Reimprimir", así que
     // se manda directo a esa pantalla sin mostrar el prompt.
@@ -70,7 +78,7 @@ function RegistroItem({registro}) {
           <Text style={{fontSize: 12}}>
             {TEXTO_HORA[registro.tipo]} {registro.hora}
           </Text>
-          {registro.tipo === 'boleto' && (
+          {registro.tipo === 'boleto' && registro.via !== 'whatsapp' && (
             <Text
               style={{
                 color: Colors.darkBlue,

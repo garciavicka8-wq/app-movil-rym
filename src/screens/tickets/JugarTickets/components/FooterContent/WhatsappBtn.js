@@ -205,7 +205,7 @@ export default function WhatsappBtn() {
         hora: boletoRegistrado.horaImpresion,
         total: boletoRegistrado.totalApostado,
         tipo: 'boleto',
-        via: boletoRegistrado.via,
+        via: 'whatsapp',
       }),
     );
 

@@ -54,8 +54,12 @@ export default function Reimprimir() {
     // transcurrido se mide con ese mismo reloj: si el celular tiene la hora
     // desfasada respecto al servidor, el desfase se cancela. La ventana real de
     // 5 minutos la valida el backend.
+    // Sin timestampRegistro no hay contador que mostrar (antes se quedaba fijo en 5:00).
+    if (!registro?.timestampRegistro) {
+      return;
+    }
     const calcularRestante = () => {
-      const transcurrido = Date.now() - (registro?.timestampRegistro ?? Date.now());
+      const transcurrido = Date.now() - registro.timestampRegistro;
       return Math.max(0, VENTANA_MS - transcurrido);
     };
     setRemainingMs(calcularRestante());
@@ -138,6 +142,7 @@ export default function Reimprimir() {
     }
   };
 
+  const sinContador = !registro?.timestampRegistro;
   const expirado = remainingMs !== null && remainingMs <= 0;
   const minutos = remainingMs !== null ? Math.floor(remainingMs / 60000) : null;
   const segundos = remainingMs !== null ? Math.floor((remainingMs % 60000) / 1000) : null;
@@ -179,7 +184,9 @@ export default function Reimprimir() {
         )}
 
         <Text style={expirado ? styles.tiempoExpirado : styles.tiempoRestante}>
-          {remainingMs === null
+          {sinContador
+            ? 'Tiempo no disponible, el sistema validará si aún se puede reimprimir.'
+            : remainingMs === null
             ? 'Verificando tiempo disponible...'
             : expirado
             ? 'Ya pasaron los 5 minutos, este boleto no se puede reimprimir.'
@@ -211,7 +218,9 @@ export default function Reimprimir() {
           contentStyle={{height: 50}}
           labelStyle={styles.buttonLabel}
           buttonColor={Colors.primary}
-          disabled={testingPrinter || expirado || remainingMs === null}>
+          disabled={
+            testingPrinter || expirado || (!sinContador && remainingMs === null)
+          }>
           {testingPrinter ? 'Probando impresora...' : 'Imprimir ticket'}
         </Button>
       </ScrollView>

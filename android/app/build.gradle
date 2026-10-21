@@ -84,6 +84,10 @@ android {
         versionCode 110
         versionName "8.2.4"
         missingDimensionStrategy 'react-native-camera', 'general'
+        // APK especial para el cliente (verifica información con varios usuarios):
+        // `gradlew assembleRelease -PpermitirCapturas=true` quita FLAG_SECURE.
+        // Los builds normales siguen bloqueando capturas y grabación de pantalla.
+        buildConfigField "boolean", "PERMITIR_CAPTURAS", (project.findProperty('permitirCapturas') == 'true').toString()
     }
     signingConfigs {
         debug {

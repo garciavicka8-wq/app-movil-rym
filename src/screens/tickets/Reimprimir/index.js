@@ -13,7 +13,6 @@ import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {Colors, Print, Storage, Utils} from '../../../utils';
-import {getServerTime} from '../../../services/http';
 import {reimprimirTicketApi} from '../../../services/tickets';
 import {useThermalPrinter} from '../../../hooks';
 import CustomStatusBar from '../../../components/CustomStatusBar';
@@ -51,27 +50,21 @@ export default function Reimprimir() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const iniciarConteo = async () => {
-      try {
-        const serverNow = await getServerTime();
-        const transcurrido = serverNow - (registro?.timestampRegistro ?? serverNow);
-        if (!isMounted) return;
-        setRemainingMs(Math.max(0, VENTANA_MS - transcurrido));
-      } catch (e) {
-        // Si falla el reloj de servidor, dejamos que el backend sea quien decida
-        if (isMounted) setRemainingMs(VENTANA_MS);
-      }
+    // timestampRegistro se guardó con el reloj del celular al vender, así que el
+    // transcurrido se mide con ese mismo reloj: si el celular tiene la hora
+    // desfasada respecto al servidor, el desfase se cancela. La ventana real de
+    // 5 minutos la valida el backend.
+    const calcularRestante = () => {
+      const transcurrido = Date.now() - (registro?.timestampRegistro ?? Date.now());
+      return Math.max(0, VENTANA_MS - transcurrido);
     };
-    iniciarConteo();
+    setRemainingMs(calcularRestante());
 
     intervalRef.current = setInterval(() => {
-      setRemainingMs(prev => (prev === null ? null : Math.max(0, prev - 1000)));
+      setRemainingMs(calcularRestante());
     }, 1000);
 
     return () => {
-      isMounted = false;
       clearInterval(intervalRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

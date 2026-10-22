@@ -18,7 +18,9 @@ export default function ReporteButton({
     return (
       <Col style={styles.diaCol}>
         <View style={[styles.diaBtn, styles.disabledBtn]}>
-          <Text style={styles.disabledText}>{label}</Text>
+          <Text style={styles.disabledText} numberOfLines={1} adjustsFontSizeToFit>
+            {label}
+          </Text>
         </View>
       </Col>
     );
@@ -36,6 +38,8 @@ export default function ReporteButton({
             <Icon name={icon} size={22} color={selected ? '#3B82F6' : iconColor} />
           ) : (
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
               style={[
                 styles.diaText,
                 {color: selected ? '#3B82F6' : textColor}
@@ -55,6 +59,7 @@ const styles = StyleSheet.create({
   },
   diaBtn: {
     height: 54,
+    paddingHorizontal: 4,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',

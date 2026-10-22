@@ -81,8 +81,8 @@ android {
         applicationId "com.rymapp2"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 110
-        versionName "8.2.4"
+        versionCode 111
+        versionName "8.2.5"
         missingDimensionStrategy 'react-native-camera', 'general'
         // APK especial para el cliente (verifica información con varios usuarios):
         // `gradlew assembleRelease -PpermitirCapturas=true` quita FLAG_SECURE.

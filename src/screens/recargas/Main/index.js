@@ -28,6 +28,7 @@ import {getProducts} from '../../../services/taecel';
 import {Button} from 'react-native-paper';
 import CustomStatusBar from '../../../components/CustomStatusBar';
 import ServerClock from '../../../components/ServerClock';
+import NotificationBell from '../../../components/NotificationBell';
 
 export default function RecargasMenu() {
   const {isAuthenticated} = useAuthContext();
@@ -131,13 +132,7 @@ export default function RecargasMenu() {
             <ServerClock style={styles.headerClock} />
           </View>
         <View style={styles.headerIcons}>
-          <IconButton 
-            icon="bell" 
-            iconColor="#FBBF24" 
-            size={24} 
-            style={styles.headerIconBg} 
-            onPress={() => navigation.navigate(APP_NAVIGATION.SCREENS.NOTIFICACIONES)}
-          />
+          <NotificationBell color="#FBBF24" style={styles.headerIconBg} />
           <IconButton 
             icon="cog" 
             iconColor={Colors.white} 

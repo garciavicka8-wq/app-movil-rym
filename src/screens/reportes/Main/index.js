@@ -6,6 +6,7 @@ import {Colors, Storage} from '../../../utils';
 import {useCustomNavigation} from '../../../hooks';
 import CustomStatusBar from '../../../components/CustomStatusBar';
 import ServerClock from '../../../components/ServerClock';
+import NotificationBell from '../../../components/NotificationBell';
 import {APP_NAVIGATION} from '../../../constants';
 import {useNavigation} from '@react-navigation/native';
 
@@ -65,13 +66,7 @@ export default function Main() {
             <ServerClock style={styles.headerClock} />
           </View>
         <View style={styles.headerIcons}>
-          <IconButton 
-            icon="bell" 
-            iconColor="#FBBF24" 
-            size={24} 
-            style={styles.headerIconBg} 
-            onPress={() => navigation.navigate(APP_NAVIGATION.SCREENS.NOTIFICACIONES)}
-          />
+          <NotificationBell color="#FBBF24" style={styles.headerIconBg} />
           <IconButton 
             icon="cog" 
             iconColor={Colors.white} 
